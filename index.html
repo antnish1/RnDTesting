@@ -3436,17 +3436,27 @@ const grouped = {};
 
 if(activeTab === "PendingApproval"){
   filtered = orders.filter(o => 
-    o.items.some(x => isPendingApprovalStatus(x.ApprovalStatus))
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status === "PENDING APPROVAL" || status === "APPROVAL PENDING" || isPendingApprovalStatus(x.ApprovalStatus);
+    })
   );
 }
 else if(activeTab === "Approved"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "Approved")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status === "APPROVED" || status === "PENDING";
+    })
   );
 }
 else if(activeTab === "Rejected"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "Rejected")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      return status === "REJECTED" || approval === "REJECTED";
+    })
   );
 }
 else if(activeTab === "All"){
@@ -3491,7 +3501,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
               <th>Qty</th>
               <th>Value</th>
               <th>Order No</th>
-              <th class="px-4 py-3 text-center">Approval</th>
+              <th class="px-4 py-3 text-center">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -3499,8 +3509,17 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   paginatedOrders.forEach(o=>{
 
-    const rawApprovalStatus = o.items[0].ApprovalStatus || "PendingApproval";
-    const approvalStatus = isPendingApprovalStatus(rawApprovalStatus) ? "Pending Approval" : rawApprovalStatus;
+    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
+    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
+    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
+    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
+    const tableStatus = isRejected
+      ? "Rejected"
+      : isPendingApproval
+        ? "Pending Approval"
+        : isApproved
+          ? "Approved"
+          : (o.items[0].Status || "Pending Approval");
       
     const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
@@ -3523,17 +3542,17 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
       <span class="px-2 py-1 rounded text-xs font-semibold"
         style="
           background:${
-            approvalStatus === "Approved" ? "#d1fae5" :
-            approvalStatus === "Rejected" ? "#fde2e2" :
+            tableStatus === "Approved" ? "#d1fae5" :
+            tableStatus === "Rejected" ? "#fde2e2" :
             "#fef3c7"
           };
           color:${
-            approvalStatus === "Approved" ? "#065f46" :
-            approvalStatus === "Rejected" ? "#7f1d1d" :
+            tableStatus === "Approved" ? "#065f46" :
+            tableStatus === "Rejected" ? "#7f1d1d" :
             "#92400e"
           };
         ">
-        ${approvalStatus}
+        ${tableStatus}
       </span>
     </td>
     </tr>`;
@@ -3629,6 +3648,16 @@ async function openSuperOrder(orderNo){
 async function updateApproval(orderNo, status){
 
   showLoader();
+  const user = getUser();
+
+  const updatePayload = { ApprovalStatus: status };
+  if(status === "Approved"){
+    updatePayload.Status = "Approved";
+    updatePayload.ApprovedBySuper = user.Name || "";
+    updatePayload.ApprovedAt = new Date().toISOString();
+  } else if(status === "Rejected"){
+    updatePayload.Status = "Rejected";
+  }
 
   const updatePayload = { ApprovalStatus: status };
   if(status === "Approved"){
