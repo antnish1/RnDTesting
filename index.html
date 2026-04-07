@@ -2428,7 +2428,7 @@ if(isSuper){
         Approve
       </button>
 
-      <button onclick="rejectOrder('${orderNo}')"
+      <button onclick="updateApproval('${orderNo}','Rejected')"
         class="px-4 py-2 rounded-lg font-semibold"
         style="background:#ef4444;color:white;">
         Reject
@@ -3425,7 +3425,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
     html += `
-            <tr onclick="openSuperOrder('${o.OrderNo}')"
+            <tr onclick="openOrderView('${o.OrderNo}')"
             class="cursor-pointer transition hover:scale-[1.01]"
             style="${
               o.OrderType === 'VOR'
@@ -3564,6 +3564,23 @@ async function updateApproval(orderNo, status){
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
+}
+
+async function approveOrder(orderNo){
+  await updateApproval(orderNo, "Approved");
+}
+
+function goBack(){
+  const user = getUser();
+  if(user.Role === "super"){
+    loadSuper(window.activeTab || "PendingApproval", true);
+  } else {
+    loadAdmin(window.activeTab || "Pending", true);
+  }
+}
+
+function downloadOrder(orderNo){
+  downloadOrderExcel(orderNo);
 }
 
     
