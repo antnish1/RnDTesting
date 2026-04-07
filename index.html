@@ -1762,8 +1762,10 @@ function getStatusPill(status){
   
 async function openOrderView(orderNo){
 
-const user = getUser();
 
+const user = getUser();
+const isSuper = user.Role === "super";
+    
   showLoader();
 
   const { data } = await db
@@ -1830,7 +1832,7 @@ const statusPill = getStatusPill(orderStatus);
     </tr>
     `).join("");
 
-
+const user = getUser();
 const isAdmin = user.Branch === "HQ";
   
 document.getElementById("main").innerHTML = `
@@ -1857,78 +1859,74 @@ document.getElementById("main").innerHTML = `
       </p>
     </div>
 
-${isAdmin ? `
-  <div class="flex items-center gap-2">
+${isSuper ? `
 
-    <input 
-      id="processOrderNo"
-      placeholder="Enter Order No"
-      class="pc-field max-w-[160px]"
-    />
+<div class="flex gap-3">
 
-<div class="flex items-center gap-3">
+  <!-- ✅ APPROVE -->
+  <button onclick="approveOrder('${orderNo}')"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:#10b981;color:white;">
+    Approve
+  </button>
 
-  <!-- PROCESS -->
-<button onclick="processOrder('${orderNo}')"
-  class="pc-action-btn"
-  style="background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));">
-  ⚙️ Process
-</button>
+  <!-- ✅ REJECT -->
+  <button onclick="rejectOrder('${orderNo}')"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:#ef4444;color:white;">
+    Reject
+  </button>
 
-  <!-- REJECT -->
-<button onclick="confirmReject('${orderNo}')"
-  class="pc-action-btn"
-  style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
-  ❌ Reject
-</button>
+  <!-- ✅ DOWNLOAD -->
+  <button onclick="downloadOrder('${orderNo}')"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:var(--pc-secondary);color:white;">
+    Download
+  </button>
 
-  <!-- DOWNLOAD (NEW FEATURE - see below) -->
-<button onclick="downloadOrderExcel('${orderNo}')"
-  class="pc-action-btn"
-  style="background: linear-gradient(135deg, #10b981, #059669);">
-  ⬇️ Download
-</button>
-
-  <!-- BACK -->
-  <button 
-    onclick="${isAdmin ? "loadAdmin('Pending')" : "loadTrack('track')"}"
-    class="pc-action-btn"
-    style="
-      background: rgba(255,255,255,0.7);
-      border: 1px solid var(--pc-border);
-      color: var(--pc-text);
-    ">
-    ← Back
+  <!-- ✅ BACK -->
+  <button onclick="goBack()"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:#e5e7eb;">
+    Back
   </button>
 
 </div>
 
-  </div>
 ` : `
-<div class="flex items-center gap-3 ml-auto">
 
-  <!-- DOWNLOAD -->
-  <button onclick="downloadOrderExcel('${orderNo}')"
-    class="pc-action-btn"
-    style="background: linear-gradient(135deg, #10b981, #059669);">
-    ⬇️ Download
+<div class="flex gap-3">
+
+  <input value="${orderNo}" readonly
+    class="pc-field w-[140px]" />
+
+  <button onclick="processOrder('${orderNo}')"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:#f59e0b;color:white;">
+    Process
   </button>
 
-  <!-- BACK -->
-  <button 
-    onclick="loadTrack('track')"
-    class="pc-action-btn"
-    style="
-      background: rgba(255,255,255,0.7);
-      border: 1px solid var(--pc-border);
-      color: var(--pc-text);
-    ">
-    ← Back
+  <button onclick="rejectOrder('${orderNo}')"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:#ef4444;color:white;">
+    Reject
+  </button>
+
+  <button onclick="downloadOrder('${orderNo}')"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:var(--pc-secondary);color:white;">
+    Download
+  </button>
+
+  <button onclick="goBack()"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background:#e5e7eb;">
+    Back
   </button>
 
 </div>
-`}
 
+`}
   </div>
 
 </div>
@@ -2178,6 +2176,32 @@ async function processOrder(orderNo){
 }
 
 
+
+
+async function approveOrder(orderNo){
+
+  showLoader();
+
+  const { error } = await db
+    .from("requests")
+    .update({
+      ApprovalStatus: "Approved"
+    })
+    .eq("OrderNo", orderNo);
+
+  hideLoader();
+
+  if(error){
+    return showPopup("Approval failed ❗", "error");
+  }
+
+  showPopup("Order Approved ✅", "success");
+
+  loadSuper("PendingApproval");
+}
+
+
+    
 async function rejectOrder(orderNo){
 
   showLoader();
