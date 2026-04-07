@@ -3372,7 +3372,7 @@ else if(activeTab === "All"){
   // PAGINATION
   const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
   const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   // UI (reuse same table)
   let html = `
