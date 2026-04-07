@@ -902,6 +902,9 @@ renderIcons();
 // ✅ Load correct screen
 if(isAdmin){
   loadAdmin(window.activeTab || "Pending");
+
+  // ✅ ADD THIS LINE (VERY IMPORTANT)
+  setTimeout(loadPendingCount, 200);
 }
 else if(isSuper){
   loadSuper(window.activeTab || "PendingApproval");
