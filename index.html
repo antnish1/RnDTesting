@@ -89,370 +89,55 @@
 </div>
 
 <style>
-
-
 :root {
-  --pc-primary: #81A6C6;
---pc-secondary: #5F88A8;   /* darker accent for readability */
-  --pc-light: #F3E3D0;
-  --pc-warm: #D2C4B4;
-
-  /* semantic aliases (used later) */
-  --pc-bg: #F3E3D0;        /* page background */
-  --pc-surface: #FFFFFF;   /* cards/surfaces */
-  --pc-border: #D2C4B4;    /* borders */
-  --pc-text: #1F2937;      /* main text */
---pc-text-muted: #4B5563;  /* stronger muted text */
+  --pc-primary: #2563eb;
+  --pc-secondary: #1d4ed8;
+  --pc-light: #eff6ff;
+  --pc-warm: #e2e8f0;
+  --pc-bg: #f8fafc;
+  --pc-surface: #ffffff;
+  --pc-border: #dbe4ef;
+  --pc-text: #0f172a;
+  --pc-text-muted: #475569;
+  --pc-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
 }
-
-
-
+* { box-sizing: border-box; }
 body {
   font-family: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   letter-spacing: 0.01em;
+  background: radial-gradient(circle at 15% -10%, rgba(37, 99, 235, 0.16) 0%, transparent 45%), radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.12) 0%, transparent 38%), var(--pc-bg);
 }
-
-.pc-icon {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2;
-  vertical-align: middle;
-}
-
-.pc-btn-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-    
-.menu-btn {
-  position: relative;
-  padding: 10px 18px;
-  background: rgba(170, 205, 220, 0.08);
-  border: 1px solid var(--pc-border);
-  border-radius: 10px;
-  color: var(--pc-text);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  transition: all 0.22s ease;
-}
-
-/* 🔥 HOVER EFFECT */
-.menu-btn:hover {
-  background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));
-  color: #ffffff !important;   /* ✅ FIX */
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(129, 166, 198, 0.28);
-}
-/* 🔥 ACTIVE CLICK */
-.menu-btn:active {
-  transform: scale(0.98);
-}
-
-/* 🔥 SUBTLE GLOW */
-.menu-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-}
-
-.menu-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  opacity: 0;
-  transition: opacity 0.25s;
-  box-shadow: 0 0 0 2px rgba(170, 205, 220, 0.28) inset;
-}
-
-.menu-btn:hover::after {
-  opacity: 1;
-}
-
-
-
-.active-tab {
-  background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));
-  color: #ffffff;   /* ✅ FIX */
-  box-shadow: 0 6px 18px rgba(129, 166, 198, 0.25);
-}
-.top-btn {
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-weight: 600;
-
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-
-  background: rgba(255,255,255,0.7);
-  border: 1px solid rgba(0,0,0,0.08);
-
-  transition: all 0.2s ease;
-}
-
-.top-btn:hover {
-    color: #111827; /* darker text for light bg */
-  background: rgba(255,255,255,0.95);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.active-top-btn {
-  background: linear-gradient(135deg, #5B7FA3, #3E5C76);
-  color: white;
-  border-color: #6E95B8;
-}
-    
-.logout-btn {
-  background: #ef4444;
-  color: white;
-  border: none;
-}
-
-.logout-btn {
-  background: #b85c5c;
-  color: #fff;
-  border: 1px solid #9f4c4c;
-}
-
-.logout-btn:hover {
-  background: #a54b4b;
-}
-    
-
-input:focus, select:focus, button:focus {
-  box-shadow: 0 0 0 3px rgba(170, 205, 220, 0.35);
-  border-color: var(--pc-secondary) !important;
-}
-
-.pc-field {
-  background: #FFFFFF;
-  border: 1px solid #BFAF9D;
-  color: #1F2937;
-  border-radius: 10px;
-  padding: 10px 12px;
-  width: 100%;
-  transition: all 0.2s ease;
-}
-
-.pc-field::placeholder {
-  color: #6B7280;
-}
-
-.pc-field:focus {
-  outline: none;
-  border-color: var(--pc-secondary);
-  box-shadow: 0 0 0 3px rgba(170, 205, 220, 0.25);
-}
-
-.pc-section {
-  background: linear-gradient(180deg, rgba(170,205,220,0.06), rgba(129,166,198,0.06));
-  border: 1px solid var(--pc-border);
-  border-radius: 12px;
-  padding: 16px;
-  padding-top: 24px;
-}
-
-.pc-field option {
-  color: #1F2937;
-  background: #FFFFFF;
-}
-    
-    
-
-/* Smooth UI feel */
-* {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* Card hover lift */
-.pc-section:hover {
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
-}
-
-/* Table polish */
-table {
-  border-color: var(--pc-border) !important;
-}
-
-thead th {
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-tbody tr {
-  border-bottom: 1px solid rgba(170, 205, 220, 0.16);
-}
-
-tbody tr:hover {
-  background: rgba(170, 205, 220, 0.06);
-}
-
-/* Generic soft button hover */
-button:hover {
-  filter: none;
-}
-
-/* Disabled fields look intentional */
-input[readonly], select:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Better numeric emphasis */
-#total {
-  color: var(--pc-secondary);
-  font-weight: 800;
-}
-
-select option {
-  background: #FFFFFF;
-  color: #1F2937;
-}
-    
-
-tbody tr {
-  transition: all 0.2s ease;
-}
-
-tbody tr:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-}
-
-
-/* ================= TRACK TABLE STRONG HOVER ================= */
-
-.track-table tbody tr {
-  transition: all 0.25s ease;
-  position: relative;
-}
-
-/* 🔥 STRONG HOVER (CLEARLY VISIBLE) */
-.track-table tbody tr:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(129, 166, 198, 0.35),
-    rgba(170, 205, 220, 0.35)
-  ) !important;
-
-  transform: translateY(-3px) scale(1.015);
-  box-shadow: 0 12px 28px rgba(129, 166, 198, 0.35);
-  z-index: 5;
-}
-
-/* 🔥 CLICK EFFECT */
-.track-table tbody tr:active {
-  transform: scale(0.98);
-}
-
-/* 🔥 LEFT ACCENT BAR (VERY IMPORTANT FOR CLARITY) */
-.track-table tbody tr:hover td:first-child {
-  border-left: 5px solid var(--pc-secondary);
-}
-
-/* 🔥 OPTIONAL: TEXT EMPHASIS ON HOVER */
-.track-table tbody tr:hover td {
-  font-weight: 500;
-}
-
-
-/* ===== PREMIUM BUTTON HOVER SYSTEM ===== */
-
-button {
-  transition: all 0.25s ease;
-}
-
-/* PRIMARY BUTTONS */
-button[style*="linear-gradient"]:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.25);
-  filter: brightness(1.08);
-}
-
-/* CLICK FEEDBACK */
-button:active {
-  transform: scale(0.97);
-}
-
-/* BACK BUTTON (LIGHT STYLE) */
-button[style*="rgba(255,255,255"]:hover {
-  background: #ffffff !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-    
-.pc-action-btn {
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-weight: 600;
-  color: white;
-  transition: all 0.25s ease;
-}
-
-.pc-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
-}
-
-tr[style*="f59e0b"]:hover {
-  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
-}
-
-
-.track-table tbody tr:nth-child(even) {
-  background: rgba(0,0,0,0.02);
-}
-    
-
-.track-table td {
-  vertical-align: middle;
-}
-
-.search-bar {
-  width: 420px;               /* 🔥 DOUBLE SIZE */
-  height: 44px;
-
-  padding: 0 16px 0 42px;    /* space for icon */
-
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,0.1);
-
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(8px);
-
-  font-size: 14px;
-  font-weight: 500;
-
-  box-shadow: 
-    inset 0 1px 2px rgba(0,0,0,0.05),
-    0 4px 14px rgba(0,0,0,0.08);
-
-  transition: all 0.25s ease;
-}
-
-/* 🔥 FOCUS EFFECT */
-.search-bar:focus {
-  border-color: var(--pc-secondary);
-  box-shadow: 
-    0 0 0 3px rgba(129,166,198,0.25),
-    0 8px 20px rgba(0,0,0,0.12);
-}
-
-/* 🔥 PLACEHOLDER */
-.search-bar::placeholder {
-  color: #6b7280;
-  font-weight: 400;
-}
-    
-    
+.pc-icon { width: 16px; height: 16px; stroke-width: 2; vertical-align: middle; }
+.pc-btn-inline { display: inline-flex; align-items: center; gap: 8px; }
+.pc-shell { max-width: 1600px; margin: 0 auto; }
+.pc-glass { background: linear-gradient(125deg, rgba(255,255,255,0.92), rgba(255,255,255,0.76)); border: 1px solid rgba(148, 163, 184, 0.34); backdrop-filter: blur(10px); box-shadow: var(--pc-shadow); }
+.menu-btn, .top-btn { position: relative; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--pc-border); color: var(--pc-text); font-size: 13px; font-weight: 600; background: rgba(255, 255, 255, 0.75); transition: all .2s ease; display: inline-flex; align-items: center; gap: 8px; }
+.menu-btn:hover, .top-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(37, 99, 235, 0.16); border-color: #93c5fd; background: #fff; }
+.active-tab, .active-top-btn { background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary)); color: #fff; border-color: transparent; box-shadow: 0 12px 28px rgba(29, 78, 216, 0.28); }
+.logout-btn { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; border: none; }
+.logout-btn:hover { box-shadow: 0 10px 25px rgba(185, 28, 28, 0.35); }
+input:focus, select:focus, button:focus { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18); border-color: #60a5fa !important; }
+.pc-field { background: #fff; border: 1px solid var(--pc-border); color: var(--pc-text); border-radius: 12px; padding: 10px 12px; width: 100%; transition: all 0.2s ease; }
+.pc-field::placeholder { color: #94a3b8; }
+.pc-field:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+.pc-field option { color: var(--pc-text); background: #fff; }
+.pc-section { background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); border: 1px solid var(--pc-border); border-radius: 18px; padding: 20px; padding-top: 26px; box-shadow: 0 12px 30px rgba(15,23,42,0.05); }
+.pc-section:hover { box-shadow: 0 18px 38px rgba(15,23,42,0.10); }
+table { border-color: var(--pc-border) !important; }
+thead th { font-weight: 700; letter-spacing: .04em; color: #334155; }
+tbody tr { border-bottom: 1px solid #edf2f7; transition: all .18s ease; }
+tbody tr:hover { background: #f8fbff; transform: translateY(-1px); }
+.track-table tbody tr:hover { background: linear-gradient(135deg, rgba(37,99,235,.10), rgba(14,165,233,.08)) !important; box-shadow: 0 12px 26px rgba(30,64,175,.12); z-index: 2; }
+.track-table tbody tr:hover td:first-child { border-left: 4px solid var(--pc-primary); }
+.track-table td { vertical-align: middle; }
+.track-table tbody tr:nth-child(even) { background: rgba(248, 250, 252, 0.8); }
+.pc-action-btn { padding: 9px 16px; border-radius: 12px; font-weight: 600; color: white; transition: all .2s ease; }
+.pc-action-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(15,23,42,.20); }
+.search-bar { width: clamp(260px, 34vw, 460px); height: 44px; padding: 0 16px 0 42px; border-radius: 12px; border: 1px solid var(--pc-border); background: #fff; font-size: 14px; font-weight: 500; box-shadow: inset 0 1px 2px rgba(15,23,42,.05); }
+.search-bar:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(37,99,235,.14),0 8px 20px rgba(15,23,42,.08); }
+.search-bar::placeholder { color: #94a3b8; font-weight: 500; }
+input[readonly], select:disabled { opacity: .75; cursor: not-allowed; }
+#total { color: var(--pc-secondary); font-weight: 800; }
 </style>
 
 
@@ -568,35 +253,19 @@ async function loadLogin(){
 
 document.getElementById("app").innerHTML = `
 <div class="min-h-screen flex items-center justify-center px-4">
-  <div class="w-full max-w-sm p-7 rounded-2xl space-y-5 shadow-2xl"
-       style="background: linear-gradient(180deg, rgba(170,205,220,0.10), rgba(129,166,198,0.10)); border: 1px solid var(--pc-border); backdrop-filter: blur(8px);">
-
-<div class="flex justify-center">
-  <img 
-    src="HDU4w-removebg-preview.png"
-    class="h-16 w-auto object-contain"
-  />
-</div>
-
-    <p class="text-center text-sm" style="color: var(--pc-text-muted); margin-top: -8px;">
-      Secure branch access
-    </p>
-
-    <select id="branch"
-      class="w-full p-2.5 rounded-lg outline-none transition"
-      style="background: #FFFFFF; border: 1px solid #BFAF9D; color: #1F2937;">
-    </select>
-
-    <input id="password" type="password" placeholder="Password"
-      class="w-full p-2.5 rounded-lg outline-none transition"
-      style="background: #FFFFFF; border: 1px solid #BFAF9D; color: #1F2937;" />
-
-    <button onclick="login()"
-      class="w-full py-2.5 rounded-lg font-semibold transition duration-200"
-      style="background: var(--pc-primary); color: #0f1720;">
-      Login
-    </button>
-
+  <div class="w-full max-w-md p-8 rounded-3xl space-y-6 pc-glass">
+    <div class="space-y-3 text-center">
+      <div class="flex justify-center">
+        <img src="HDU4w-removebg-preview.png" class="h-16 w-auto object-contain"/>
+      </div>
+      <h1 class="text-xl font-bold" style="color: var(--pc-text);">Parts Connect Portal</h1>
+      <p class="text-sm" style="color: var(--pc-text-muted);">Secure enterprise branch access</p>
+    </div>
+    <div class="space-y-4">
+      <select id="branch" class="pc-field"></select>
+      <input id="password" type="password" placeholder="Password" class="pc-field" />
+      <button onclick="login()" class="w-full py-2.5 rounded-xl font-semibold" style="background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary)); color: #fff;">Login</button>
+    </div>
   </div>
 </div>
 `;
@@ -745,12 +414,12 @@ if(isAdmin){
   window.activeTab = window.activeTab || "create";
 }
 document.getElementById("app").innerHTML = `
-<div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
+<div class="pc-shell w-full px-4 md:px-6 lg:px-10 py-6 space-y-5">
 
   <div class="space-y-4">
 
 <!-- HEADER WITH LOGOUT -->
-<div class="w-full rounded-2xl px-6 py-3 flex justify-between items-center backdrop-blur-md"
+<div class="w-full rounded-2xl px-6 py-4 flex justify-between items-center pc-glass"
      style="
   background: linear-gradient(
     to right,
@@ -1699,68 +1368,8 @@ let html = `
 
 paginatedOrders.forEach((o,i)=>{
 
-const statuses = o.items.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-
-    
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-
-  if(s.includes("PEND")){
-    return "PENDING";
-  }
-
-  return s;
-});;
-
-let orderStatus = "PENDING";
-
-// ✅ PRIORITY BASED (TOP → DOWN)
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "PENDING";
-}
+const orderStatus = getOrderStatusFromItems(o.items);
+const statusPill = getStatusPill(orderStatus);
   
 
 const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
@@ -1817,22 +1426,8 @@ o.OrderType === 'VOR'
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
     style="
-      background:${
-        orderStatus === "DISPATCHED" ? "#d1fae5" :
-          orderStatus === "REJECTED" ? "#fde2e2" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-        orderStatus === "PROCESSED" ? "#fef3c7" :
-        orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        orderStatus === "DISPATCHED" ? "#065f46" :
-          orderStatus === "REJECTED" ? "#7f1d1d" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-        orderStatus === "PROCESSED" ? "#92400e" :
-        orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
+      background:${statusPill.background};
+      color:${statusPill.color};
     ">
     ${orderStatus}
   </span>
@@ -2012,65 +1607,8 @@ let html = `
 
 paginatedOrders.forEach((o,i)=>{
 
-const statuses = o.items.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-  if(s.includes("PEND")){
-    return "PENDING";
-  }
-
-  return s;
-});
-
-let orderStatus = "PENDING";
-
-// ✅ PRIORITY BASED (TOP → DOWN)
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "PENDING";
-}
+const orderStatus = getOrderStatusFromItems(o.items);
+const statusPill = getStatusPill(orderStatus);
 
 const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
@@ -2121,22 +1659,8 @@ style="${
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
     style="
-      background:${
-        orderStatus === "DISPATCHED" ? "#d1fae5" :
-          orderStatus === "REJECTED" ? "#fde2e2" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-        orderStatus === "PROCESSED" ? "#fef3c7" :
-        orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        orderStatus === "DISPATCHED" ? "#065f46" :
-          orderStatus === "REJECTED" ? "#7f1d1d" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-        orderStatus === "PROCESSED" ? "#92400e" :
-        orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
+      background:${statusPill.background};
+      color:${statusPill.color};
     ">
     ${orderStatus}
   </span>
@@ -2279,6 +1803,32 @@ function formatDateTime(val){
 
   return `${day}-${month}-${year} ${hours}:${mins} ${ampm}`;
 }
+
+function normalizeStatus(raw){
+  const s = (raw || "").toString().trim().toUpperCase();
+  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")) return s.includes("NOT") ? "NOT DESPATCHED" : "DISPATCHED";
+  if(s.includes("REJECT")) return "REJECTED";
+  if(s.includes("PROCESS")) return "PROCESSED";
+  if(s.includes("PEND")) return "PENDING";
+  return s;
+}
+
+function getOrderStatusFromItems(items){
+  const statuses = items.map(x => normalizeStatus(x.Status));
+  if(statuses.every(s => s === "REJECTED")) return "REJECTED";
+  if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
+  if(statuses.includes("DISPATCHED")) return "PARTIALLY DISPATCHED";
+  if(statuses.every(s => s === "NOT DESPATCHED")) return "NOT DESPATCHED";
+  if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
+  return "PENDING";
+}
+
+function getStatusPill(status){
+  return {
+    background: status === "DISPATCHED" ? "#d1fae5" : status === "REJECTED" ? "#fde2e2" : status === "PARTIALLY DISPATCHED" ? "#fef3c7" : status === "PROCESSED" ? "#fef3c7" : status === "NOT DESPATCHED" ? "#dbeafe" : "#fde2e2",
+    color: status === "DISPATCHED" ? "#065f46" : status === "REJECTED" ? "#7f1d1d" : status === "PARTIALLY DISPATCHED" ? "#92400e" : status === "PROCESSED" ? "#92400e" : status === "NOT DESPATCHED" ? "#1e3a8a" : "#7f1d1d"
+  };
+}
   
 async function openOrderView(orderNo){
 
@@ -2302,68 +1852,8 @@ const isSuper = user.Role === "super";
 
   const total = data.reduce((s,x)=>s+Number(x.Value||0),0);
 
-let orderStatus = "PENDING";
-
-const statuses = data.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  // 🔥 NORMALIZE ALL POSSIBLE VALUES
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-
-  if(s.includes("PEND")){
-    return "PENDING";
-  }
-
-
-    
-  return s;
-});
-
-// ✅ ALL DISPATCHED
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "PENDING";
-}
+const orderStatus = getOrderStatusFromItems(data);
+const statusPill = getStatusPill(orderStatus);
   let partsHTML = data.map(r=>`
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
   
