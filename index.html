@@ -3659,6 +3659,13 @@ async function updateApproval(orderNo, status){
     updatePayload.Status = "Rejected";
   }
 
+  const updatePayload = { ApprovalStatus: status };
+  if(status === "Approved"){
+    updatePayload.Status = "Approved";
+  } else if(status === "Rejected"){
+    updatePayload.Status = "Rejected";
+  }
+
   const { error } = await db
     .from("requests")
     .update(updatePayload)
