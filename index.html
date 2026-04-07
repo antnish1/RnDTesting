@@ -1718,7 +1718,7 @@ if(s.includes("REJECT")){
     return "PROCESSED";
   }
 
-  if(s.includes("PENDING APPROVAL")){
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
     return "PENDING APPROVAL";
   }
 
@@ -1901,13 +1901,19 @@ async function loadPendingCount(){
 
   const { data, error } = await db
     .from("requests")
-    .select("OrderNo, Status")
-    .eq("Status", "Approved");
+    .select("OrderNo, Status, ApprovalStatus");
 
   if(error) return;
 
   // ✅ GET UNIQUE ORDER COUNT
-  const uniqueOrders = [...new Set(data.map(d => d.OrderNo))];
+  const uniqueOrders = [...new Set(
+    data
+      .filter(d => {
+        const status = (d.Status || "").toString().trim().toUpperCase();
+        return (status === "APPROVED" || status === "PENDING") && !isPendingApprovalStatus(d.ApprovalStatus);
+      })
+      .map(d => d.OrderNo)
+  )];
   const count = uniqueOrders.length;
 
   const el = document.getElementById("pendingCount");
@@ -1960,7 +1966,8 @@ if(activeTab === "Approved"){
   filtered = orders.filter(o => 
     o.items.some(x => {
       const status = (x.Status || "").toString().trim().toUpperCase();
-      return status === "APPROVED" || status === "PENDING";
+      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+      return (status === "APPROVED" || status === "PENDING") && !pendingApproval;
     })
   );
 }
@@ -1969,7 +1976,8 @@ else{
   filtered = orders.filter(o => 
     o.items.some(x => {
       const status = (x.Status || "").toString().trim().toUpperCase();
-      return status !== "APPROVED" && status !== "PENDING" && status !== "PENDING APPROVAL";
+      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+      return pendingApproval || (status !== "APPROVED" && status !== "PENDING" && status !== "PENDING APPROVAL");
     })
   );
 }
@@ -2041,7 +2049,7 @@ const statuses = o.items.map(x => {
 if(s.includes("REJECT")){
   return "REJECTED";
 }
-  if(s.includes("PENDING APPROVAL")){
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
     return "PENDING APPROVAL";
   }
   if(s.includes("PEND")){
@@ -2298,6 +2306,11 @@ function formatDateTime(val){
 
   return `${day}-${month}-${year} ${hours}:${mins} ${ampm}`;
 }
+
+function isPendingApprovalStatus(val){
+  const s = (val || "").toString().trim().toUpperCase();
+  return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
+}
   
 async function openOrderView(orderNo){
 
@@ -2339,7 +2352,7 @@ if(s.includes("REJECT")){
   if(s.includes("PROCESS")){
     return "PROCESSED";
   }
-  if(s.includes("PENDING APPROVAL")){
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
     return "PENDING APPROVAL";
   }
 
@@ -3360,16 +3373,40 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
     .order("created_at",{ascending:false});
 
-  GLOBAL_DATA = data;
+  // ✅ FORCE STATUS ALIGNMENT FOR NOT-YET-APPROVED ORDERS
+  const pendingApprovalOrderNos = [...new Set(
+    (data || [])
+      .filter(r => isPendingApprovalStatus(r.ApprovalStatus))
+      .map(r => r.OrderNo)
+  )];
+
+  for (const orderNo of pendingApprovalOrderNos){
+    await db
+      .from("requests")
+      .update({ Status: "PENDING APPROVAL", ApprovalStatus: "PendingApproval" })
+      .eq("OrderNo", orderNo);
+  }
+
+  if(pendingApprovalOrderNos.length){
+    const { data: refreshed } = await db
+      .from("requests")
+      .select("*")
+      .eq("ApprovedBy", user.Name)
+      .order("created_at",{ascending:false});
+    GLOBAL_DATA = refreshed || [];
+  } else {
+    GLOBAL_DATA = data || [];
+  }
   hideLoader();
 
   // GROUP
 const grouped = {};
-data.forEach(r=>{
+(GLOBAL_DATA || []).forEach(r=>{
 
   // ✅ ADD THIS LINE (MANDATORY FIX)
-  if(!r.ApprovalStatus){
+  if(!r.ApprovalStatus || isPendingApprovalStatus(r.ApprovalStatus)){
     r.ApprovalStatus = "PendingApproval";
+    r.Status = "PENDING APPROVAL";
   }
 
   if(!grouped[r.OrderNo]){
@@ -3386,7 +3423,7 @@ data.forEach(r=>{
 
 if(activeTab === "PendingApproval"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "PendingApproval")
+    o.items.some(x => isPendingApprovalStatus(x.ApprovalStatus))
   );
 }
 else if(activeTab === "Approved"){
@@ -3449,7 +3486,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   paginatedOrders.forEach(o=>{
 
-    const approvalStatus = o.items[0].ApprovalStatus || "PendingApproval";
+    const rawApprovalStatus = o.items[0].ApprovalStatus || "PendingApproval";
+    const approvalStatus = isPendingApprovalStatus(rawApprovalStatus) ? "Pending Approval" : rawApprovalStatus;
       
     const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
@@ -3657,14 +3695,16 @@ function changePage(direction){
       orders = orders.filter(o => 
         o.some(x => {
           const status = (x.Status || "").toString().trim().toUpperCase();
-          return status === "APPROVED" || status === "PENDING";
+          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+          return (status === "APPROVED" || status === "PENDING") && !pendingApproval;
         })
       );
     } else {
       orders = orders.filter(o => 
         o.some(x => {
           const status = (x.Status || "").toString().trim().toUpperCase();
-          return status !== "APPROVED" && status !== "PENDING" && status !== "PENDING APPROVAL";
+          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+          return pendingApproval || (status !== "APPROVED" && status !== "PENDING" && status !== "PENDING APPROVAL");
         })
       );
     }
