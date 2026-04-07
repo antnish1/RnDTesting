@@ -2344,6 +2344,16 @@ function getOrderCommentCount(orderObj){
   const raw = orderObj?.items?.[0]?.OrderComments || orderObj?.OrderComments;
   return parseOrderComments(raw).length;
 }
+
+function getCommentUserBg(by){
+  const palettes = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9"];
+  const name = (by || "").toString();
+  let hash = 0;
+  for(let i = 0; i < name.length; i++){
+    hash = (hash + name.charCodeAt(i)) % palettes.length;
+  }
+  return palettes[hash];
+}
   
 async function openOrderView(orderNo){
 
@@ -2487,18 +2497,15 @@ const isAdmin = user.Branch === "HQ";
 const orderComments = parseOrderComments(order.OrderComments);
 const commentsHTML = orderComments.length
   ? orderComments.map(c => `
-      <div class="p-2 rounded-lg flex gap-2" style="background: #fff; border:1px solid var(--pc-border);">
-        <div class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold"
-             style="background: #e0e7ff; color:#3730a3;">
-          ${(c.by || "U").charAt(0).toUpperCase()}
-        </div>
-        <div class="flex-1">
-          <div class="text-[11px] font-semibold">${c.by || "-"}</div>
-          <div class="text-xs">${c.text || ""}</div>
+      <div class="px-3 py-2 rounded-lg text-xs" style="background:${getCommentUserBg(c.by)}; border:1px solid var(--pc-border);">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-semibold">${c.by || "-"}</span>
+          <span style="color: var(--pc-text-muted);">=&gt;</span>
+          <span>"${c.text || ""}"</span>
+          <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</span>
           ${c.attachmentName
-            ? `<div class="mt-1 text-[11px]"><a href="${c.attachmentUrl}" target="_blank" style="color:#2563eb;">📎 ${c.attachmentName}</a></div>`
+            ? `<a href="${c.attachmentUrl}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${c.attachmentName}</a>`
             : ""}
-          <div class="text-[10px] mt-1" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</div>
         </div>
       </div>
     `).join("")
@@ -2524,21 +2531,21 @@ let actionButtons = "";
 
 if(isSuper){
   actionButtons = `
-    <div class="flex gap-2 items-center flex-nowrap">
-
-      <select id="changeApprover" class="pc-field w-[220px]">
-        ${superApproverOptions}
-      </select>
-
-      <button onclick="sendToApprover('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#1d4ed8;color:white;">
-        Send for Approval
-      </button>
+    <div class="flex gap-2 items-center flex-wrap justify-end">
+      <div class="flex gap-2 items-center mr-3">
+        <button onclick="sendToApprover('${orderNo}')"
+          class="px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:#2563eb;color:white;">
+          Send
+        </button>
+        <select id="changeApprover" class="pc-field w-[190px] text-sm">
+          ${superApproverOptions}
+        </select>
+      </div>
 
       <button onclick="approveOrder('${orderNo}')"
         class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#10b981;color:white;">
+        style="background:#16a34a;color:white;">
         Approve
       </button>
 
@@ -2550,13 +2557,13 @@ if(isSuper){
 
       <button onclick="downloadOrder('${orderNo}')"
         class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#4b5563;color:white;">
+        style="background:#475569;color:white;">
         Download
       </button>
 
       <button onclick="goBack()"
         class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#f3f4f6;color:#111827;">
+        style="background:#e2e8f0;color:#0f172a;">
         Back
       </button>
 
@@ -2768,29 +2775,30 @@ ${actionButtons}
       </span>
     </div>
 
-    <div class="space-y-3 mt-2">
-      <button onclick="toggleCommentBox()"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#1d4ed8; color:white;">
-        Add Comment
-      </button>
-      <div id="commentComposer" class="hidden space-y-2">
-        <textarea id="orderCommentInput" class="pc-field" rows="2"
-          placeholder="Write a comment..."></textarea>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="document.getElementById('commentAttachment').click()"
-            class="px-3 py-1 rounded-lg text-sm"
-            style="background:#f3f4f6; border:1px solid var(--pc-border);">
-            📎
-          </button>
-          <span id="commentFileName" class="text-xs" style="color: var(--pc-text-muted);">Attach file</span>
-          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
-        </div>
-        <button onclick="addOrderComment('${orderNo}')"
+    <div class="space-y-2 mt-2">
+      <div class="flex items-center gap-2">
+        <button onclick="toggleCommentBox()"
           class="px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#4b5563; color:white;">
+          style="background:#334155; color:white;">
+          Add Comment
+        </button>
+        <button id="postCommentBtn" onclick="addOrderComment('${orderNo}')"
+          class="px-3 py-2 rounded-lg font-semibold text-sm hidden"
+          style="background:#2563eb; color:white;">
           Post Comment
         </button>
+      </div>
+      <div id="commentComposer" class="hidden">
+        <div class="relative">
+          <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
+          <button type="button" onclick="document.getElementById('commentAttachment').click()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
+            style="background:#f1f5f9; border:1px solid var(--pc-border);">
+            📎
+          </button>
+          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
+        </div>
+        <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
       </div>
       <div class="space-y-2">${commentsHTML}</div>
     </div>
@@ -3819,11 +3827,14 @@ async function sendToApprover(orderNo){
 }
 
 function toggleCommentBox(){
-  document.getElementById("commentComposer")?.classList.toggle("hidden");
+  const composer = document.getElementById("commentComposer");
+  const postBtn = document.getElementById("postCommentBtn");
+  composer?.classList.toggle("hidden");
+  postBtn?.classList.toggle("hidden");
 }
 
 function updateCommentFileName(input){
-  const fileName = input?.files?.[0]?.name || "Attach file";
+  const fileName = input?.files?.[0]?.name || "No file selected";
   const label = document.getElementById("commentFileName");
   if(label) label.textContent = fileName;
 }
