@@ -3407,6 +3407,8 @@ else if(activeTab === "All"){
 
   paginatedOrders.forEach(o=>{
 
+    const approvalStatus = o.items[0].ApprovalStatus || "PendingApproval";
+      
     const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
     html += `
