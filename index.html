@@ -937,8 +937,9 @@ main.innerHTML = `
           style="opacity: 0.85;"
           readonly />
 
-        <input id="approvedBy" placeholder="Approved By"
-          class="pc-field"/>
+        <select id="approvedBy" class="pc-field">
+          <option value="">Select Approver</option>
+        </select>
     </div>
   </div>
 
@@ -1070,7 +1071,30 @@ addRow();
 // AUTO FILL EMPLOYEE NAME
 const user = getUser();
 document.getElementById("employeeName").value = user.Name || "";
-  
+
+// 🔥 LOAD SUPER USERS INTO APPROVED BY DROPDOWN
+(async function loadSuperUsers(){
+
+  const { data, error } = await db
+    .from("users")
+    .select("Name")
+    .eq("Role", "super");
+
+  if(error){
+    console.error("Error loading super users", error);
+    return;
+  }
+
+  const dropdown = document.getElementById("approvedBy");
+
+  dropdown.innerHTML = `<option value="">Select Approver</option>`;
+
+  data.forEach(u => {
+    dropdown.innerHTML += `<option value="${u.Name}">${u.Name}</option>`;
+  });
+
+})();
+    
 
   const orderTypeEl = document.getElementById("orderType");
   const orderForEl = document.getElementById("orderFor");
@@ -1517,7 +1541,8 @@ rows.forEach(r=>{
     Value: dnp * qty,
 
     OrderNo: orderNo,
-    Status: "Pending"
+    Status: "Pending",
+    ApprovalStatus: "PendingApproval"
   });
 
 });
