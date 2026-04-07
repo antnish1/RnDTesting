@@ -1578,7 +1578,7 @@ rows.forEach(r=>{
     Value: dnp * qty,
 
     OrderNo: orderNo,
-    Status: "Pending",
+    Status: "PENDING APPROVAL",
     ApprovalStatus: "PendingApproval"
   });
 
@@ -1718,6 +1718,10 @@ if(s.includes("REJECT")){
     return "PROCESSED";
   }
 
+  if(s.includes("PENDING APPROVAL")){
+    return "PENDING APPROVAL";
+  }
+
   if(s.includes("PEND")){
     return "PENDING";
   }
@@ -1755,6 +1759,9 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 // 🟠 PROCESSED
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
+}
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
 }
 
 // ⚪ DEFAULT
@@ -1955,9 +1962,12 @@ if(activeTab === "Pending"){
   );
 }
 else{
-  // ✅ ALL NON-PENDING (Processed + Dispatched + Partial)
+  // ✅ ALL NON-PENDING (excluding Pending + Pending Approval)
   filtered = orders.filter(o => 
-    o.items.some(x => x.Status !== "Pending")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status !== "PENDING" && status !== "PENDING APPROVAL";
+    })
   );
 }
 
@@ -2028,6 +2038,9 @@ const statuses = o.items.map(x => {
 if(s.includes("REJECT")){
   return "REJECTED";
 }
+  if(s.includes("PENDING APPROVAL")){
+    return "PENDING APPROVAL";
+  }
   if(s.includes("PEND")){
     return "PENDING";
   }
@@ -2065,6 +2078,9 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 // 🟠 PROCESSED
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
+}
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
 }
 
 // ⚪ DEFAULT
@@ -2320,6 +2336,9 @@ if(s.includes("REJECT")){
   if(s.includes("PROCESS")){
     return "PROCESSED";
   }
+  if(s.includes("PENDING APPROVAL")){
+    return "PENDING APPROVAL";
+  }
 
   if(s.includes("PEND")){
     return "PENDING";
@@ -2358,6 +2377,9 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 // 🟠 PROCESSED
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
+}
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
 }
 
 // ⚪ DEFAULT
@@ -3554,9 +3576,16 @@ async function updateApproval(orderNo, status){
 
   showLoader();
 
+  const updatePayload = { ApprovalStatus: status };
+  if(status === "Approved"){
+    updatePayload.Status = "Pending";
+  } else if(status === "Rejected"){
+    updatePayload.Status = "Rejected";
+  }
+
   const { error } = await db
     .from("requests")
-    .update({ ApprovalStatus: status })
+    .update(updatePayload)
     .eq("OrderNo", orderNo);
 
   hideLoader();
