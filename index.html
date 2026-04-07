@@ -143,13 +143,16 @@ input[readonly], select:disabled { opacity: .75; cursor: not-allowed; }
 
   
 <script>
- let GLOBAL_DATA = []; // stores current table data
-    let CURRENT_PAGE = 1;
+// =========================
+// CONFIG
+// =========================
+let GLOBAL_DATA = []; // stores current table data
+let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
-    const db = createClient(
+const db = createClient(
 
 
 
@@ -162,6 +165,9 @@ let currentRow = null;
 
 
 
+// =========================
+// SERVICES
+// =========================
 // ✅ REALTIME LISTENER FOR PENDING COUNT (NO LOGIC CHANGE)
 db.channel('requests-changes')
   .on(
@@ -176,7 +182,9 @@ db.channel('requests-changes')
 
 
 
-// ---------- UTIL ----------
+// =========================
+// UTILITIES
+// =========================
 function showLoader(){ document.getElementById("loader").classList.remove("hidden"); }
 function hideLoader(){ document.getElementById("loader").classList.add("hidden"); }
 function cancelUpload(){
@@ -1402,7 +1410,17 @@ let html = `
 
     <div class="overflow-x-auto mt-2">
 
-      <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+      <table class="track-table w-full text-sm border rounded-lg overflow-hidden table-fixed">
+        <colgroup>
+          <col style="width: 13%">
+          <col style="width: 11%">
+          <col style="width: 18%">
+          <col style="width: 11%">
+          <col style="width: 9%">
+          <col style="width: 13%">
+          <col style="width: 13%">
+          <col style="width: 12%">
+        </colgroup>
 
         <thead class="text-xs uppercase tracking-wider border-b"
               style="background: var(--pc-warm); color: var(--pc-text);">
@@ -1641,7 +1659,17 @@ let html = `
 
   <div class="overflow-x-auto mt-2">
 
-    <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+    <table class="track-table w-full text-sm border rounded-lg overflow-hidden table-fixed">
+      <colgroup>
+        <col style="width: 13%">
+        <col style="width: 11%">
+        <col style="width: 18%">
+        <col style="width: 11%">
+        <col style="width: 9%">
+        <col style="width: 13%">
+        <col style="width: 13%">
+        <col style="width: 12%">
+      </colgroup>
 
       <thead class="text-xs uppercase tracking-wider border-b"
             style="background: var(--pc-warm); color: var(--pc-text);">
@@ -2784,7 +2812,7 @@ function renderSearchResults(data){
     </div>
 
     <div class="overflow-x-auto">
-      <table class="track-table w-full text-sm text-center border rounded-lg">
+      <table class="track-table w-full text-sm border rounded-lg table-fixed">
 
         <thead class="text-xs uppercase">
           <tr>
@@ -2799,6 +2827,10 @@ function renderSearchResults(data){
 
         <tbody>
   `;
+
+  if(!orders.length){
+    html += `<tr><td colspan="6" class="px-4 py-8 text-center" style="color: var(--pc-text-muted);">No matching results.</td></tr>`;
+  }
 
   orders.forEach(o=>{
 
@@ -2940,7 +2972,17 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
       </div>
 
       <div class="overflow-x-auto mt-2">
-        <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+        <table class="track-table w-full text-sm border rounded-lg overflow-hidden table-fixed">
+          <colgroup>
+            <col style="width: 14%">
+            <col style="width: 10%">
+            <col style="width: 17%">
+            <col style="width: 11%">
+            <col style="width: 8%">
+            <col style="width: 14%">
+            <col style="width: 14%">
+            <col style="width: 12%">
+          </colgroup>
           <thead class="text-xs uppercase tracking-wider border-b"
             style="background: var(--pc-warm); color: var(--pc-text);">
             <tr>
@@ -2959,6 +3001,10 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
           </thead>
           <tbody>
   `;
+
+  if(!paginatedOrders.length){
+    html += `<tr><td colspan="8" class="px-4 py-8 text-center" style="color: var(--pc-text-muted);">No orders in this view.</td></tr>`;
+  }
 
   paginatedOrders.forEach(o=>{
 
