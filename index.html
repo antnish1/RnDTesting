@@ -740,7 +740,7 @@ const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isAdmin){
-  window.activeTab = "Pending";
+  window.activeTab = "Approved";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -846,12 +846,12 @@ document.getElementById("app").innerHTML = `
     </button>
 
 ` : `
-    <button onclick="loadAdmin('Pending')" 
-    class="top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}"
-    data-tab="Pending">
+    <button onclick="loadAdmin('Approved')" 
+    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
+    data-tab="Approved">
     
       <span class="flex items-center gap-2">
-        Pending
+        Approved
         <span id="pendingCount" 
           class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full">
         </span>
@@ -901,7 +901,7 @@ renderIcons();
     
 // ✅ Load correct screen
 if(isAdmin){
-  loadAdmin(window.activeTab || "Pending");
+  loadAdmin(window.activeTab || "Approved");
 
   // ✅ ADD THIS LINE (VERY IMPORTANT)
   setTimeout(loadPendingCount, 200);
@@ -1578,7 +1578,7 @@ rows.forEach(r=>{
     Value: dnp * qty,
 
     OrderNo: orderNo,
-    Status: "Pending",
+    Status: "PENDING APPROVAL",
     ApprovalStatus: "PendingApproval"
   });
 
@@ -1718,14 +1718,18 @@ if(s.includes("REJECT")){
     return "PROCESSED";
   }
 
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
+    return "PENDING APPROVAL";
+  }
+
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
   return s;
 });;
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 // ✅ PRIORITY BASED (TOP → DOWN)
 
@@ -1756,10 +1760,13 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
 }
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
+}
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
   
 
@@ -1894,13 +1901,23 @@ async function loadPendingCount(){
 
   const { data, error } = await db
     .from("requests")
-    .select("OrderNo, Status")
-    .eq("Status", "Pending");
+    .select("OrderNo, Status, ApprovalStatus");
 
   if(error) return;
 
   // ✅ GET UNIQUE ORDER COUNT
-  const uniqueOrders = [...new Set(data.map(d => d.OrderNo))];
+  const uniqueOrders = [...new Set(
+    data
+      .filter(d => {
+        const status = (d.Status || "").toString().trim().toUpperCase();
+        const approval = (d.ApprovalStatus || "").toString().trim().toUpperCase();
+        return (status === "APPROVED" || status === "PENDING")
+          && !isPendingApprovalStatus(d.ApprovalStatus)
+          && approval !== "REJECTED"
+          && (approval === "APPROVED" || approval === "");
+      })
+      .map(d => d.OrderNo)
+  )];
   const count = uniqueOrders.length;
 
   const el = document.getElementById("pendingCount");
@@ -1916,7 +1933,7 @@ async function loadPendingCount(){
 }
   
 // ---------- ADMIN ----------
-async function loadAdmin(activeTab = "Pending", skipReset = false){
+async function loadAdmin(activeTab = "Approved", skipReset = false){
 
 if(!skipReset){
   CURRENT_PAGE = 1;
@@ -1949,15 +1966,32 @@ const orders = Object.values(grouped)
 // FILTER
 let filtered;
 
-if(activeTab === "Pending"){
+if(activeTab === "Approved"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.Status === "Pending")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+      return (status === "APPROVED" || status === "PENDING")
+        && !pendingApproval
+        && approval !== "REJECTED"
+        && (approval === "APPROVED" || approval === "");
+    })
   );
 }
 else{
-  // ✅ ALL NON-PENDING (Processed + Dispatched + Partial)
+  // ✅ ALL NON-APPROVED/NON-PENDING-APPROVAL (exclude super-rejected)
   filtered = orders.filter(o => 
-    o.items.some(x => x.Status !== "Pending")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+      return status !== "APPROVED"
+        && status !== "PENDING"
+        && status !== "PENDING APPROVAL"
+        && !pendingApproval
+        && approval !== "REJECTED";
+    })
   );
 }
 
@@ -2028,14 +2062,17 @@ const statuses = o.items.map(x => {
 if(s.includes("REJECT")){
   return "REJECTED";
 }
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
+    return "PENDING APPROVAL";
+  }
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
   return s;
 });
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 // ✅ PRIORITY BASED (TOP → DOWN)
 
@@ -2066,10 +2103,13 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
 }
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
+}
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
 
 const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
@@ -2279,6 +2319,11 @@ function formatDateTime(val){
 
   return `${day}-${month}-${year} ${hours}:${mins} ${ampm}`;
 }
+
+function isPendingApprovalStatus(val){
+  const s = (val || "").toString().trim().toUpperCase();
+  return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
+}
   
 async function openOrderView(orderNo){
 
@@ -2302,7 +2347,7 @@ const isSuper = user.Role === "super";
 
   const total = data.reduce((s,x)=>s+Number(x.Value||0),0);
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 const statuses = data.map(x => {
   let s = (x.Status || "").toString().trim().toUpperCase();
@@ -2320,9 +2365,12 @@ if(s.includes("REJECT")){
   if(s.includes("PROCESS")){
     return "PROCESSED";
   }
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
+    return "PENDING APPROVAL";
+  }
 
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
 
@@ -2359,10 +2407,13 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
 }
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
+}
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
   let partsHTML = data.map(r=>`
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
@@ -2428,7 +2479,7 @@ if(isSuper){
         Approve
       </button>
 
-      <button onclick="rejectOrder('${orderNo}')"
+      <button onclick="updateApproval('${orderNo}','Rejected')"
         class="px-4 py-2 rounded-lg font-semibold"
         style="background:#ef4444;color:white;">
         Reject
@@ -2453,7 +2504,11 @@ else{
   actionButtons = `
     <div class="flex gap-3">
 
-      <input value="${orderNo}" readonly class="pc-field w-[140px]" />
+      <input
+        id="processOrderNo"
+        value="${orderNo}"
+        class="pc-field w-[160px]"
+      />
 
       <button onclick="processOrder('${orderNo}')"
         class="px-4 py-2 rounded-lg font-semibold"
@@ -3331,16 +3386,40 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
     .order("created_at",{ascending:false});
 
-  GLOBAL_DATA = data;
+  // ✅ FORCE STATUS ALIGNMENT FOR NOT-YET-APPROVED ORDERS
+  const pendingApprovalOrderNos = [...new Set(
+    (data || [])
+      .filter(r => isPendingApprovalStatus(r.ApprovalStatus))
+      .map(r => r.OrderNo)
+  )];
+
+  for (const orderNo of pendingApprovalOrderNos){
+    await db
+      .from("requests")
+      .update({ Status: "PENDING APPROVAL", ApprovalStatus: "PendingApproval" })
+      .eq("OrderNo", orderNo);
+  }
+
+  if(pendingApprovalOrderNos.length){
+    const { data: refreshed } = await db
+      .from("requests")
+      .select("*")
+      .eq("ApprovedBy", user.Name)
+      .order("created_at",{ascending:false});
+    GLOBAL_DATA = refreshed || [];
+  } else {
+    GLOBAL_DATA = data || [];
+  }
   hideLoader();
 
   // GROUP
 const grouped = {};
-data.forEach(r=>{
+(GLOBAL_DATA || []).forEach(r=>{
 
   // ✅ ADD THIS LINE (MANDATORY FIX)
-  if(!r.ApprovalStatus){
+  if(!r.ApprovalStatus || isPendingApprovalStatus(r.ApprovalStatus)){
     r.ApprovalStatus = "PendingApproval";
+    r.Status = "PENDING APPROVAL";
   }
 
   if(!grouped[r.OrderNo]){
@@ -3357,17 +3436,27 @@ data.forEach(r=>{
 
 if(activeTab === "PendingApproval"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "PendingApproval")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status === "PENDING APPROVAL" || status === "APPROVAL PENDING" || isPendingApprovalStatus(x.ApprovalStatus);
+    })
   );
 }
 else if(activeTab === "Approved"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "Approved")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status === "APPROVED" || status === "PENDING";
+    })
   );
 }
 else if(activeTab === "Rejected"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "Rejected")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      return status === "REJECTED" || approval === "REJECTED";
+    })
   );
 }
 else if(activeTab === "All"){
@@ -3412,7 +3501,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
               <th>Qty</th>
               <th>Value</th>
               <th>Order No</th>
-              <th class="px-4 py-3 text-center">Approval</th>
+              <th class="px-4 py-3 text-center">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -3420,12 +3509,22 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   paginatedOrders.forEach(o=>{
 
-    const approvalStatus = o.items[0].ApprovalStatus || "PendingApproval";
+    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
+    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
+    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
+    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
+    const tableStatus = isRejected
+      ? "Rejected"
+      : isPendingApproval
+        ? "Pending Approval"
+        : isApproved
+          ? "Approved"
+          : (o.items[0].Status || "Pending Approval");
       
     const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
     html += `
-            <tr onclick="openSuperOrder('${o.OrderNo}')"
+            <tr onclick="openOrderView('${o.OrderNo}')"
             class="cursor-pointer transition hover:scale-[1.01]"
             style="${
               o.OrderType === 'VOR'
@@ -3443,17 +3542,17 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
       <span class="px-2 py-1 rounded text-xs font-semibold"
         style="
           background:${
-            approvalStatus === "Approved" ? "#d1fae5" :
-            approvalStatus === "Rejected" ? "#fde2e2" :
+            tableStatus === "Approved" ? "#d1fae5" :
+            tableStatus === "Rejected" ? "#fde2e2" :
             "#fef3c7"
           };
           color:${
-            approvalStatus === "Approved" ? "#065f46" :
-            approvalStatus === "Rejected" ? "#7f1d1d" :
+            tableStatus === "Approved" ? "#065f46" :
+            tableStatus === "Rejected" ? "#7f1d1d" :
             "#92400e"
           };
         ">
-        ${approvalStatus}
+        ${tableStatus}
       </span>
     </td>
     </tr>`;
@@ -3549,10 +3648,20 @@ async function openSuperOrder(orderNo){
 async function updateApproval(orderNo, status){
 
   showLoader();
+  const user = getUser();
+
+  const updatePayload = { ApprovalStatus: status };
+  if(status === "Approved"){
+    updatePayload.Status = "Approved";
+    updatePayload.ApprovedBySuper = user.Name || "";
+    updatePayload.ApprovedAt = new Date().toISOString();
+  } else if(status === "Rejected"){
+    updatePayload.Status = "Rejected";
+  }
 
   const { error } = await db
     .from("requests")
-    .update({ ApprovalStatus: status })
+    .update(updatePayload)
     .eq("OrderNo", orderNo);
 
   hideLoader();
@@ -3564,6 +3673,23 @@ async function updateApproval(orderNo, status){
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
+}
+
+async function approveOrder(orderNo){
+  await updateApproval(orderNo, "Approved");
+}
+
+function goBack(){
+  const user = getUser();
+  if(user.Role === "super"){
+    loadSuper(window.activeTab || "PendingApproval", true);
+  } else {
+    loadAdmin(window.activeTab || "Approved", true);
+  }
+}
+
+function downloadOrder(orderNo){
+  downloadOrderExcel(orderNo);
 }
 
     
@@ -3600,13 +3726,30 @@ function changePage(direction){
 
   if(user.Role === "admin" || user.Branch === "HQ"){
 
-    if(window.activeTab === "Pending"){
+    if(window.activeTab === "Approved"){
       orders = orders.filter(o => 
-        o.some(x => x.Status === "Pending")
+        o.some(x => {
+          const status = (x.Status || "").toString().trim().toUpperCase();
+          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+          return (status === "APPROVED" || status === "PENDING")
+            && !pendingApproval
+            && approval !== "REJECTED"
+            && (approval === "APPROVED" || approval === "");
+        })
       );
     } else {
       orders = orders.filter(o => 
-        o.some(x => x.Status !== "Pending")
+        o.some(x => {
+          const status = (x.Status || "").toString().trim().toUpperCase();
+          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+          return status !== "APPROVED"
+            && status !== "PENDING"
+            && status !== "PENDING APPROVAL"
+            && !pendingApproval
+            && approval !== "REJECTED";
+        })
       );
     }
 
