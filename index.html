@@ -2282,10 +2282,6 @@ function formatDateTime(val){
   
 async function openOrderView(orderNo){
 
-
-const user = getUser();
-const isSuper = user.Role === "super";
-    
   showLoader();
 
   const { data } = await db
@@ -2439,74 +2435,78 @@ document.getElementById("main").innerHTML = `
       </p>
     </div>
 
-${isSuper ? `
+${isAdmin ? `
+  <div class="flex items-center gap-2">
 
-<div class="flex gap-3">
+    <input 
+      id="processOrderNo"
+      placeholder="Enter Order No"
+      class="pc-field max-w-[160px]"
+    />
 
-  <!-- ✅ APPROVE -->
-  <button onclick="approveOrder('${orderNo}')"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:#10b981;color:white;">
-    Approve
-  </button>
+<div class="flex items-center gap-3">
 
-  <!-- ✅ REJECT -->
-  <button onclick="rejectOrder('${orderNo}')"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:#ef4444;color:white;">
-    Reject
-  </button>
+  <!-- PROCESS -->
+<button onclick="processOrder('${orderNo}')"
+  class="pc-action-btn"
+  style="background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));">
+  ⚙️ Process
+</button>
 
-  <!-- ✅ DOWNLOAD -->
-  <button onclick="downloadOrder('${orderNo}')"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:var(--pc-secondary);color:white;">
-    Download
-  </button>
+  <!-- REJECT -->
+<button onclick="confirmReject('${orderNo}')"
+  class="pc-action-btn"
+  style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+  ❌ Reject
+</button>
 
-  <!-- ✅ BACK -->
-  <button onclick="goBack()"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:#e5e7eb;">
-    Back
+  <!-- DOWNLOAD (NEW FEATURE - see below) -->
+<button onclick="downloadOrderExcel('${orderNo}')"
+  class="pc-action-btn"
+  style="background: linear-gradient(135deg, #10b981, #059669);">
+  ⬇️ Download
+</button>
+
+  <!-- BACK -->
+  <button 
+    onclick="${isAdmin ? "loadAdmin('Pending')" : "loadTrack('track')"}"
+    class="pc-action-btn"
+    style="
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--pc-border);
+      color: var(--pc-text);
+    ">
+    ← Back
   </button>
 
 </div>
 
+  </div>
 ` : `
+<div class="flex items-center gap-3 ml-auto">
 
-<div class="flex gap-3">
-
-  <input value="${orderNo}" readonly
-    class="pc-field w-[140px]" />
-
-  <button onclick="processOrder('${orderNo}')"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:#f59e0b;color:white;">
-    Process
+  <!-- DOWNLOAD -->
+  <button onclick="downloadOrderExcel('${orderNo}')"
+    class="pc-action-btn"
+    style="background: linear-gradient(135deg, #10b981, #059669);">
+    ⬇️ Download
   </button>
 
-  <button onclick="rejectOrder('${orderNo}')"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:#ef4444;color:white;">
-    Reject
-  </button>
-
-  <button onclick="downloadOrder('${orderNo}')"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:var(--pc-secondary);color:white;">
-    Download
-  </button>
-
-  <button onclick="goBack()"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background:#e5e7eb;">
-    Back
+  <!-- BACK -->
+  <button 
+    onclick="loadTrack('track')"
+    class="pc-action-btn"
+    style="
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--pc-border);
+      color: var(--pc-text);
+    ">
+    ← Back
   </button>
 
 </div>
-
 `}
+
   </div>
 
 </div>
@@ -2756,32 +2756,6 @@ async function processOrder(orderNo){
 }
 
 
-
-
-async function approveOrder(orderNo){
-
-  showLoader();
-
-  const { error } = await db
-    .from("requests")
-    .update({
-      ApprovalStatus: "Approved"
-    })
-    .eq("OrderNo", orderNo);
-
-  hideLoader();
-
-  if(error){
-    return showPopup("Approval failed ❗", "error");
-  }
-
-  showPopup("Order Approved ✅", "success");
-
-  loadSuper("PendingApproval");
-}
-
-
-    
 async function rejectOrder(orderNo){
 
   showLoader();
