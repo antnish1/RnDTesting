@@ -1458,8 +1458,11 @@ if(orderType === "VOR"){
     return showPopup("All fields mandatory for VOR ❗");
   }
 }
-
-
+const approvedBy = document.getElementById("approvedBy").value;
+// 🔥 APPROVER MUST BE SELECTED FOR ALL ORDERS
+if(!approvedBy){
+  return showPopup("Please select Approver ❗");
+}
 // SOP / ZSPL / ZMAC RULES
 if(orderType === "SOP" || orderType === "ZSPL" || orderType === "ZMAC"){
 
