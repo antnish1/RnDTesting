@@ -3375,8 +3375,8 @@ else if(activeTab === "All"){
 
   // PAGINATION
 const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
-const paginatedOrders = orders.slice(start, start + PAGE_SIZE);
-const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
     
   // UI (reuse same table)
@@ -3627,20 +3627,23 @@ function changePage(direction){
 function changePage(step){
 
   const newPage = CURRENT_PAGE + step;
-
   if(newPage < 1) return;
 
   CURRENT_PAGE = newPage;
 
   const user = getUser();
   const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isSuper = user.Role === "super";
 
   if(isAdmin){
     loadAdmin(window.activeTab, true);
-  }else{
+  }
+  else if(isSuper){
+    loadSuper(window.activeTab, true); // ✅ ADD THIS
+  }
+  else{
     loadTrack("track", true);
   }
-
 }
     
 
