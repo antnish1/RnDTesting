@@ -417,18 +417,18 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: 420px;               /* 🔥 DOUBLE SIZE */
-  height: 44px;
+  width: clamp(180px, 28vw, 320px);
+  height: 40px;
 
-  padding: 0 16px 0 42px;    /* space for icon */
+  padding: 0 12px 0 36px;    /* space for icon */
 
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(0,0,0,0.1);
 
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(8px);
 
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 
   box-shadow: 
@@ -3266,7 +3266,9 @@ function handleUniversalSearch(value){
       (r.PartNo || "").toLowerCase().includes(search) ||
       (r.CustomerName || "").toLowerCase().includes(search) ||
       (r.MachineNo || "").toLowerCase().includes(search) ||
-      (r.Branch || "").toLowerCase().includes(search)
+      (r.Branch || "").toLowerCase().includes(search) ||
+      (r.OrderType || "").toLowerCase().includes(search) ||
+      (r.Status || "").toLowerCase().includes(search)
     );
 
   });
@@ -3532,7 +3534,25 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
                 : ''
             }">
       <td>${formatDateTime(o.created_at)}</td>
-      <td>${o.OrderType}</td>
+      <td>
+        <span class="px-2 py-1 rounded-full text-xs font-semibold"
+          style="
+            background:${
+              o.OrderType === 'VOR' ? '#fef3c7' :
+              o.OrderType === 'SOP' ? '#dbeafe' :
+              o.OrderType === 'ZMAC' ? '#e0e7ff' :
+              '#ede9fe'
+            };
+            color:${
+              o.OrderType === 'VOR' ? '#92400e' :
+              o.OrderType === 'SOP' ? '#1e3a8a' :
+              o.OrderType === 'ZMAC' ? '#3730a3' :
+              '#5b21b6'
+            };
+          ">
+          ${o.OrderType || "-"}
+        </span>
+      </td>
       <td>${o.CustomerName || "Stock"}</td>
       <td>${o.Branch}</td>
       <td>${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
