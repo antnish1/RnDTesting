@@ -1960,7 +1960,7 @@ else{
 
 const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
 const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
-const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     
 // UI
 let html = `
@@ -3450,6 +3450,35 @@ else if(activeTab === "All"){
           </tbody>
         </table>
       </div>
+
+
+
+
+<div class="flex justify-between items-center mt-4">
+
+  <button onclick="changePage(-1)"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
+    ⬅ Prev
+  </button>
+
+  <span class="text-sm font-semibold">
+    Page ${CURRENT_PAGE} / ${totalPages}
+  </span>
+
+  <button onclick="changePage(1)"
+    class="px-4 py-2 rounded-lg font-semibold"
+    style="background: var(--pc-secondary); color:white;"
+    ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
+    Next ➡
+  </button>
+
+</div>
+
+
+
+      
     </div>
   </div>`;
 
