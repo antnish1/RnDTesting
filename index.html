@@ -2365,6 +2365,78 @@ else{
   orderStatus = "PENDING";
 }
   let partsHTML = data.map(r=>`
+
+
+
+let actionButtons = "";
+
+if(isSuper){
+  actionButtons = `
+    <div class="flex gap-3">
+
+      <button onclick="approveOrder('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#10b981;color:white;">
+        Approve
+      </button>
+
+      <button onclick="rejectOrder('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#ef4444;color:white;">
+        Reject
+      </button>
+
+      <button onclick="downloadOrder('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:var(--pc-secondary);color:white;">
+        Download
+      </button>
+
+      <button onclick="goBack()"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#e5e7eb;">
+        Back
+      </button>
+
+    </div>
+  `;
+}
+else{
+  actionButtons = `
+    <div class="flex gap-3">
+
+      <input value="${orderNo}" readonly class="pc-field w-[140px]" />
+
+      <button onclick="processOrder('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#f59e0b;color:white;">
+        Process
+      </button>
+
+      <button onclick="rejectOrder('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#ef4444;color:white;">
+        Reject
+      </button>
+
+      <button onclick="downloadOrder('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:var(--pc-secondary);color:white;">
+        Download
+      </button>
+
+      <button onclick="goBack()"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#e5e7eb;">
+        Back
+      </button>
+
+    </div>
+  `;
+}
+
+
+  
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
   
     <td class="p-2">${r.PartNo}</td>
