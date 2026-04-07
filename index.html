@@ -2282,6 +2282,9 @@ function formatDateTime(val){
   
 async function openOrderView(orderNo){
 
+const user = getUser();
+const isSuper = user.Role === "super";
+
   showLoader();
 
   const { data } = await db
@@ -2408,7 +2411,7 @@ else{
     </tr>
     `).join("");
 
-const user = getUser();
+
 const isAdmin = user.Branch === "HQ";
   
 document.getElementById("main").innerHTML = `
