@@ -3317,17 +3317,13 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   const user = getUser();
 
-const from = (CURRENT_PAGE - 1) * PAGE_SIZE;
-const to = from + PAGE_SIZE - 1;
+  const { data } = await db
+    .from("requests")
+    .select("*")
+    .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
+    .order("created_at",{ascending:false});
 
-const { data, count } = await db
-  .from("requests")
-  .select("*", { count: "exact" }) // 🔥 IMPORTANT
-  .eq("ApprovedBy", user.Name)
-  .order("created_at", { ascending: false })
-  .range(from, to);
-
-
+  GLOBAL_DATA = data;
   hideLoader();
 
   // GROUP
@@ -3380,7 +3376,7 @@ else if(activeTab === "All"){
   // PAGINATION
 const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
 const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
-const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
     
   // UI (reuse same table)
@@ -3643,12 +3639,14 @@ function changePage(step){
     loadAdmin(window.activeTab, true);
   }
   else if(isSuper){
-    loadSuper(window.activeTab, true);
+    loadSuper(window.activeTab, true); // ✅ ADD THIS
   }
   else{
     loadTrack("track", true);
   }
 }
+    
+
 
 
     
