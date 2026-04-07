@@ -2340,9 +2340,29 @@ function parseOrderComments(raw){
   }
 }
 
+function getLocalOrderComments(orderNo){
+  try{
+    const raw = localStorage.getItem(`order_comments_${orderNo}`);
+    return raw ? parseOrderComments(raw) : [];
+  }catch{
+    return [];
+  }
+}
+
+function saveLocalOrderComments(orderNo, comments){
+  localStorage.setItem(`order_comments_${orderNo}`, JSON.stringify(comments || []));
+}
+
+function getMergedOrderComments(orderNo, raw){
+  const dbComments = parseOrderComments(raw);
+  const localComments = getLocalOrderComments(orderNo);
+  return [...dbComments, ...localComments];
+}
+
 function getOrderCommentCount(orderObj){
   const raw = orderObj?.items?.[0]?.OrderComments || orderObj?.OrderComments;
-  return parseOrderComments(raw).length;
+  const orderNo = orderObj?.OrderNo || orderObj?.items?.[0]?.OrderNo;
+  return getMergedOrderComments(orderNo, raw).length;
 }
   
 async function openOrderView(orderNo){
@@ -2484,13 +2504,22 @@ else{
 
 
 const isAdmin = user.Branch === "HQ";
-const orderComments = parseOrderComments(order.OrderComments);
+const orderComments = getMergedOrderComments(orderNo, order.OrderComments);
 const commentsHTML = orderComments.length
   ? orderComments.map(c => `
-      <div class="text-xs p-2 rounded-lg" style="background: rgba(0,0,0,0.04);">
-        <div class="font-semibold">${c.by || "-"}</div>
-        <div>${c.text || ""}</div>
-        <div style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</div>
+      <div class="p-3 rounded-xl flex gap-3" style="background: #fff; border:1px solid var(--pc-border); box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+             style="background: #e0e7ff; color:#3730a3;">
+          ${(c.by || "U").charAt(0).toUpperCase()}
+        </div>
+        <div class="flex-1">
+          <div class="text-xs font-semibold">${c.by || "-"}</div>
+          <div class="text-xs mt-1">${c.text || ""}</div>
+          ${c.attachmentName
+            ? `<div class="mt-2 text-xs"><a href="${c.attachmentUrl}" target="_blank" style="color:#2563eb;">📎 ${c.attachmentName}</a></div>`
+            : ""}
+          <div class="text-[11px] mt-1" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</div>
+        </div>
       </div>
     `).join("")
   : `<div class="text-xs" style="color: var(--pc-text-muted);">No comments yet.</div>`;
@@ -2515,39 +2544,39 @@ let actionButtons = "";
 
 if(isSuper){
   actionButtons = `
-    <div class="flex gap-3 items-center flex-wrap">
+    <div class="flex gap-2 items-center flex-wrap">
 
-      <select id="changeApprover" class="pc-field w-[200px]">
+      <select id="changeApprover" class="pc-field w-[150px]">
         ${superApproverOptions}
       </select>
 
       <button onclick="sendToApprover('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#2563eb;color:white;">
-        Send
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#1d4ed8;color:white;">
+        Send for Approval
       </button>
 
       <button onclick="approveOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#10b981;color:white;">
         Approve
       </button>
 
       <button onclick="updateApproval('${orderNo}','Rejected')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#ef4444;color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#dc2626;color:white;">
         Reject
       </button>
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:var(--pc-secondary);color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#4b5563;color:white;">
         Download
       </button>
 
       <button onclick="goBack()"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#e5e7eb;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#f3f4f6;color:#111827;">
         Back
       </button>
 
@@ -2556,7 +2585,7 @@ if(isSuper){
 }
 else{
   actionButtons = `
-    <div class="flex gap-3">
+    <div class="flex gap-2 items-center flex-wrap">
 
       <input
         id="processOrderNo"
@@ -2565,20 +2594,20 @@ else{
       />
 
       <button onclick="processOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#f59e0b;color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#2563eb;color:white;">
         Process
       </button>
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:var(--pc-secondary);color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#4b5563;color:white;">
         Download
       </button>
 
       <button onclick="goBack()"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#e5e7eb;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#f3f4f6;color:#111827;">
         Back
       </button>
 
@@ -2760,13 +2789,21 @@ ${actionButtons}
     </div>
 
     <div class="space-y-3 mt-2">
-      <textarea id="orderCommentInput" class="pc-field" rows="2"
-        placeholder="Add comment..."></textarea>
-      <button onclick="addOrderComment('${orderNo}')"
+      <button onclick="toggleCommentBox()"
         class="px-4 py-2 rounded-lg font-semibold"
-        style="background: var(--pc-secondary); color:white;">
+        style="background:#1d4ed8; color:white;">
         Add Comment
       </button>
+      <div id="commentComposer" class="hidden space-y-2">
+        <textarea id="orderCommentInput" class="pc-field" rows="2"
+          placeholder="Write a comment..."></textarea>
+        <input id="commentAttachment" type="file" class="pc-field" />
+        <button onclick="addOrderComment('${orderNo}')"
+          class="px-4 py-2 rounded-lg font-semibold"
+          style="background: var(--pc-secondary); color:white;">
+          Post Comment
+        </button>
+      </div>
       <div class="space-y-2">${commentsHTML}</div>
     </div>
   </div>
@@ -3793,11 +3830,29 @@ async function sendToApprover(orderNo){
   openOrderView(orderNo);
 }
 
+function toggleCommentBox(){
+  document.getElementById("commentComposer")?.classList.toggle("hidden");
+}
+
 async function addOrderComment(orderNo){
   const input = document.getElementById("orderCommentInput");
+  const fileInput = document.getElementById("commentAttachment");
   const text = (input?.value || "").trim();
   if(!text){
     return showPopup("Please enter comment ❗");
+  }
+
+  let attachmentUrl = "";
+  let attachmentName = "";
+  const file = fileInput?.files?.[0];
+  if(file){
+    attachmentName = file.name;
+    attachmentUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || "");
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
   }
 
   const user = getUser();
@@ -3811,8 +3866,12 @@ async function addOrderComment(orderNo){
   existing.push({
     by: user.Name || user.Role || "User",
     text,
-    at: new Date().toISOString()
+    at: new Date().toISOString(),
+    attachmentName,
+    attachmentUrl
   });
+
+  saveLocalOrderComments(orderNo, existing);
 
   showLoader();
   const { error } = await db
@@ -3822,10 +3881,10 @@ async function addOrderComment(orderNo){
   hideLoader();
 
   if(error){
-    return showPopup("Failed to add comment ❌");
+    showPopup("Comment saved locally ✅ (DB sync failed)");
+  } else {
+    showPopup("Comment added ✅");
   }
-
-  showPopup("Comment added ✅");
   openOrderView(orderNo);
 }
 
