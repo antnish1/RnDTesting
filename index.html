@@ -326,69 +326,45 @@ loadBranch();
 }
 
 
-function renderHeader(){
+function updateMenuHighlight(){
 
-  const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  document.querySelectorAll("[data-tab]").forEach(btn=>{
+    btn.classList.remove("active-top-btn", "active-tab");
+
+    if(btn.dataset.tab === window.activeTab){
+      btn.classList.add("active-top-btn", "active-tab");
+    }
+  });
+
+}
+
+function buildRoleNavigation(isAdmin, isSuper){
+  if(!isAdmin && !isSuper){
+    return `
+      <button onclick="loadCreate('create')" class="nav-btn top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}" data-tab="create">
+        <i data-lucide="file-plus-2" class="w-4 h-4"></i> New Order
+      </button>
+      <button onclick="loadTrack('track')" class="nav-btn top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}" data-tab="track">
+        <i data-lucide="search-check" class="w-4 h-4"></i> Track Orders
+      </button>
+    `;
+  }
+
+  if(isSuper){
+    return `
+      <button onclick="loadSuper('PendingApproval')" class="nav-btn top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}" data-tab="PendingApproval">Pending Approvals</button>
+      <button onclick="loadSuper('Approved')" class="nav-btn top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}" data-tab="Approved">Approved</button>
+      <button onclick="loadSuper('Rejected')" class="nav-btn top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}" data-tab="Rejected">Rejected</button>
+      <button onclick="loadSuper('All')" class="nav-btn top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}" data-tab="All">All Orders</button>
+    `;
+  }
 
   return `
-  <div class="space-y-4">
-
-  <!-- HEADER -->
-<div class="w-full rounded-2xl px-6 py-4 shadow-xl flex justify-between items-center"
-     style="background: linear-gradient(90deg, rgba(170,205,220,0.10), rgba(129,166,198,0.10)); border: 1px solid var(--pc-border);">
-
-  <h1 class="text-2xl font-bold tracking-wide" style="color: var(--pc-light);">
-    PARTS CONNECT PORTAL :
-    <span class="ml-2" style="color: var(--pc-secondary);">${user.Branch}</span>
-  </h1>
-
-  <div class="flex items-center gap-3">
-
-    ${!isAdmin ? `
-        <button onclick="loadCreate('create')" 
-        class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
-        data-tab="create">
-        New Order
-      </button>
-
-      <button onclick="loadTrack('track')" 
-      class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
-        Track Orders
-      </button>
-    ` : ``}
-
-    <button onclick="logout()" 
-    class="top-btn logout-btn">
-      Logout
+    <button onclick="loadAdmin('Pending')" class="nav-btn top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}" data-tab="Pending">
+      Pending <span id="pendingCount" class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full ml-auto"></span>
     </button>
-
-  </div>
-
-</div>
-
-  <!-- MENU -->
-  <div class="w-full px-4 py-3 rounded-xl" style="background: rgba(170,205,220,0.06); border: 1px solid var(--pc-border);">
-
-    <div class="flex gap-3">
-
-      ${!isAdmin ? `
-        <button onclick="loadCreate('create')" 
-        class="menu-btn ${window.activeTab==='create' ? 'active-tab' : ''}">
-          New Order
-        </button>
-
-        <button onclick="loadTrack('track')" 
-        class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
-          Track Orders
-        </button>
-      ` : ``}
-
-    </div>
-
-  </div>
-
-  </div>
+    <button onclick="loadAdmin('Processed')" class="nav-btn top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}" data-tab="Processed">Processed</button>
+    <button onclick="loadUpload()" class="nav-btn top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}" data-tab="upload">Upload Center</button>
   `;
 }
 
@@ -1918,7 +1894,6 @@ function getStatusPill(status){
 async function openOrderView(orderNo){
 
 const user = getUser();
-const isSuper = user.Role === "super";
 
   showLoader();
 
@@ -2816,12 +2791,12 @@ function renderSearchResults(data){
 
         <thead class="text-xs uppercase">
           <tr>
-            <th>Date</th>
-            <th>Order Type</th>
-            <th>Branch</th>
-            <th>Qty</th>
-            <th>Value</th>
-            <th>Order No</th>
+            <th class="px-4 py-3 text-center">Date</th>
+            <th class="px-4 py-3 text-center">Order Type</th>
+            <th class="px-4 py-3 text-left">Branch</th>
+            <th class="px-4 py-3 text-right">Qty</th>
+            <th class="px-4 py-3 text-right">Value</th>
+            <th class="px-4 py-3 text-center">Order No</th>
           </tr>
         </thead>
 
@@ -2840,8 +2815,8 @@ function renderSearchResults(data){
     <tr onclick="openOrderView('${o.OrderNo}')"
     class="cursor-pointer hover:bg-gray-100">
 
-      <td>${formatDateTime(o.created_at)}</td>
-      <td>
+      <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
+      <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded-full text-xs font-semibold"
     style="
       background:${
@@ -2860,10 +2835,10 @@ function renderSearchResults(data){
     ${o.OrderType || "-"}
   </span>
 </td>
-      <td>${o.Branch || "-"}</td>
-      <td class="px-4 py-3 text-center">${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
-      <td>₹ ${total.toFixed(2)}</td>
-      <td class="font-semibold">${o.OrderNo}</td>
+      <td class="px-4 py-3 text-left">${o.Branch || "-"}</td>
+      <td class="px-4 py-3 text-right">${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
+      <td class="px-4 py-3 text-right">₹ ${total.toFixed(2)}</td>
+      <td class="px-4 py-3 text-center font-semibold">${o.OrderNo}</td>
 
     </tr>
     `;
@@ -3171,55 +3146,6 @@ if(user.Role === "admin" || user.Branch === "HQ"){
 }
 
     
-function changePage(direction){
-
-  const user = getUser();
-
-  let grouped = {};
-
-  GLOBAL_DATA.forEach(r => {
-    if(!grouped[r.OrderNo]){
-      grouped[r.OrderNo] = [];
-    }
-    grouped[r.OrderNo].push(r);
-  });
-
-  let orders = Object.values(grouped);
-
-  if(user.Role === "admin" || user.Branch === "HQ"){
-
-    if(window.activeTab === "Pending"){
-      orders = orders.filter(o => 
-        o.some(x => x.Status === "Pending")
-      );
-    } else {
-      orders = orders.filter(o => 
-        o.some(x => x.Status !== "Pending")
-      );
-    }
-
-  } else {
-    orders = orders.filter(o => 
-      o.every(x => x.Branch === user.Branch)
-    );
-  }
-
-  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
-
-  CURRENT_PAGE += direction;
-
-  if(CURRENT_PAGE < 1) CURRENT_PAGE = 1;
-  if(CURRENT_PAGE > totalPages) CURRENT_PAGE = totalPages;
-
-  // 🔥 THIS IS THE REAL FIX
-  if(user.Role === "admin" || user.Branch === "HQ"){
-    loadAdmin(window.activeTab, true);
-  } else {
-    loadTrack("track", true);
-  }
-}
-    
-
 function changePage(step){
 
   const newPage = CURRENT_PAGE + step;
