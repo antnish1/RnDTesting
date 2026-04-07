@@ -2453,7 +2453,11 @@ else{
   actionButtons = `
     <div class="flex gap-3">
 
-      <input value="${orderNo}" readonly class="pc-field w-[140px]" />
+      <input
+        id="processOrderNo"
+        value="${orderNo}"
+        class="pc-field w-[160px]"
+      />
 
       <button onclick="processOrder('${orderNo}')"
         class="px-4 py-2 rounded-lg font-semibold"
