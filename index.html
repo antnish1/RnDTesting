@@ -3323,13 +3323,19 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   hideLoader();
 
   // GROUP
-  const grouped = {};
-  data.forEach(r=>{
-    if(!grouped[r.OrderNo]){
-      grouped[r.OrderNo] = { ...r, items:[] };
-    }
-    grouped[r.OrderNo].items.push(r);
-  });
+const grouped = {};
+data.forEach(r=>{
+
+  // ✅ ADD THIS LINE (MANDATORY FIX)
+  if(!r.ApprovalStatus){
+    r.ApprovalStatus = "PendingApproval";
+  }
+
+  if(!grouped[r.OrderNo]){
+    grouped[r.OrderNo] = { ...r, items:[] };
+  }
+  grouped[r.OrderNo].items.push(r);
+});
 
   const orders = Object.values(grouped)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -3337,21 +3343,28 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   // FILTER TABS
   let filtered;
 
-  if(activeTab === "PendingApproval"){
-    filtered = orders.filter(o => 
-      o.items.some(x => x.ApprovalStatus === "PendingApproval")
-    );
-  }
-  else if(activeTab === "Approved"){
-    filtered = orders.filter(o => 
-      o.items.some(x => x.ApprovalStatus === "Approved")
-    );
-  }
-  else if(activeTab === "Rejected"){
-    filtered = orders.filter(o => 
-      o.items.some(x => x.ApprovalStatus === "Rejected")
-    );
-  }
+if(activeTab === "PendingApproval"){
+  filtered = orders.filter(o => 
+    o.items.some(x => x.ApprovalStatus === "PendingApproval")
+  );
+}
+else if(activeTab === "Approved"){
+  filtered = orders.filter(o => 
+    o.items.some(x => x.ApprovalStatus === "Approved")
+  );
+}
+else if(activeTab === "Rejected"){
+  filtered = orders.filter(o => 
+    o.items.some(x => x.ApprovalStatus === "Rejected")
+  );
+}
+else if(activeTab === "All"){
+  filtered = orders.filter(o => 
+    o.items.some(x => 
+      x.ApprovedBy === getUser().Name
+    )
+  );
+}
   else{
     filtered = orders;
   }
@@ -3376,6 +3389,9 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
           <thead class="text-xs uppercase tracking-wider border-b"
             style="background: var(--pc-warm); color: var(--pc-text);">
             <tr>
+
+            
+            
               <th>Date</th>
               <th>Order Type</th>
               <th>Customer</th>
@@ -3383,6 +3399,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
               <th>Qty</th>
               <th>Value</th>
               <th>Order No</th>
+              <th class="px-4 py-3 text-center">Approval</th>
             </tr>
           </thead>
           <tbody>
@@ -3393,8 +3410,13 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
 
     html += `
-    <tr onclick="openSuperOrder('${o.OrderNo}')"
-      class="cursor-pointer hover:scale-[1.01]">
+            <tr onclick="openSuperOrder('${o.OrderNo}')"
+            class="cursor-pointer transition hover:scale-[1.01]"
+            style="${
+              o.OrderType === 'VOR'
+                ? 'background: rgba(245, 158, 11, 0.12); border-left: 4px solid #f59e0b;'
+                : ''
+            }">
       <td>${formatDateTime(o.created_at)}</td>
       <td>${o.OrderType}</td>
       <td>${o.CustomerName || "Stock"}</td>
@@ -3402,6 +3424,23 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
       <td>${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
       <td>₹ ${total.toLocaleString("en-IN")}</td>
       <td>${o.OrderNo}</td>
+      <td class="px-4 py-3 text-center">
+      <span class="px-2 py-1 rounded text-xs font-semibold"
+        style="
+          background:${
+            approvalStatus === "Approved" ? "#d1fae5" :
+            approvalStatus === "Rejected" ? "#fde2e2" :
+            "#fef3c7"
+          };
+          color:${
+            approvalStatus === "Approved" ? "#065f46" :
+            approvalStatus === "Rejected" ? "#7f1d1d" :
+            "#92400e"
+          };
+        ">
+        ${approvalStatus}
+      </span>
+    </td>
     </tr>`;
   });
 
