@@ -735,6 +735,7 @@ function loadBranch(){
 
 const user = getUser();
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+    const isSuper = user.Role === "super";
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
@@ -800,7 +801,7 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  ${!isAdmin ? `
+  ${!isAdmin && !isSuper ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -818,8 +819,33 @@ document.getElementById("app").innerHTML = `
   Track Orders
 </span>
     </button>
-  ` : `
-    <button onclick="loadAdmin('Pending')" 
+` : isSuper ? `
+
+    <button onclick="loadSuper('PendingApproval')" 
+    class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
+    data-tab="PendingApproval">
+      Pending Approvals
+    </button>
+
+    <button onclick="loadSuper('Approved')" 
+    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
+    data-tab="Approved">
+      Approved
+    </button>
+
+    <button onclick="loadSuper('Rejected')" 
+    class="top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}"
+    data-tab="Rejected">
+      Rejected
+    </button>
+
+    <button onclick="loadSuper('All')" 
+    class="top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}"
+    data-tab="All">
+      All Orders
+    </button>
+
+` : `
     class="top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}"
     data-tab="Pending">
     
@@ -875,6 +901,11 @@ renderIcons();
 // ✅ Load correct screen
 if(isAdmin){
   loadAdmin(window.activeTab || "Pending");
+}
+else if(isSuper){
+  loadSuper(window.activeTab || "PendingApproval");
+}
+else{
   setTimeout(loadPendingCount, 200);
 
 }else{
@@ -3271,6 +3302,192 @@ function clearUniversalSearch(){
 
 
 
+async function loadSuper(activeTab = "PendingApproval", skipReset = false){
+
+  if(!skipReset){
+    CURRENT_PAGE = 1;
+  }
+
+  window.activeTab = activeTab;
+  updateMenuHighlight();
+  showLoader();
+
+  const user = getUser();
+
+  const { data } = await db
+    .from("requests")
+    .select("*")
+    .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
+    .order("created_at",{ascending:false});
+
+  GLOBAL_DATA = data;
+  hideLoader();
+
+  // GROUP
+  const grouped = {};
+  data.forEach(r=>{
+    if(!grouped[r.OrderNo]){
+      grouped[r.OrderNo] = { ...r, items:[] };
+    }
+    grouped[r.OrderNo].items.push(r);
+  });
+
+  const orders = Object.values(grouped)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // FILTER TABS
+  let filtered;
+
+  if(activeTab === "PendingApproval"){
+    filtered = orders.filter(o => 
+      o.items.some(x => x.ApprovalStatus === "PendingApproval")
+    );
+  }
+  else if(activeTab === "Approved"){
+    filtered = orders.filter(o => 
+      o.items.some(x => x.ApprovalStatus === "Approved")
+    );
+  }
+  else if(activeTab === "Rejected"){
+    filtered = orders.filter(o => 
+      o.items.some(x => x.ApprovalStatus === "Rejected")
+    );
+  }
+  else{
+    filtered = orders;
+  }
+
+  // PAGINATION
+  const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
+  const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+  // UI (reuse same table)
+  let html = `
+  <div class="space-y-4">
+    <div class="relative pc-section">
+      <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+        <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+          ${activeTab.toUpperCase()} ORDERS
+        </span>
+      </div>
+
+      <div class="overflow-x-auto mt-2">
+        <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+          <thead class="text-xs uppercase tracking-wider border-b"
+            style="background: var(--pc-warm); color: var(--pc-text);">
+            <tr>
+              <th>Date</th>
+              <th>Order Type</th>
+              <th>Customer</th>
+              <th>Branch</th>
+              <th>Qty</th>
+              <th>Value</th>
+              <th>Order No</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+
+  paginatedOrders.forEach(o=>{
+
+    const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+
+    html += `
+    <tr onclick="openSuperOrder('${o.OrderNo}')"
+      class="cursor-pointer hover:scale-[1.01]">
+      <td>${formatDateTime(o.created_at)}</td>
+      <td>${o.OrderType}</td>
+      <td>${o.CustomerName || "Stock"}</td>
+      <td>${o.Branch}</td>
+      <td>${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
+      <td>₹ ${total.toLocaleString("en-IN")}</td>
+      <td>${o.OrderNo}</td>
+    </tr>`;
+  });
+
+  html += `
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById("main").innerHTML = html;
+}
+
+
+async function openSuperOrder(orderNo){
+
+  showLoader();
+
+  const { data } = await db
+    .from("requests")
+    .select("*")
+    .eq("OrderNo", orderNo);
+
+  hideLoader();
+
+  const order = data[0];
+
+  let html = `
+  <div class="space-y-4">
+
+    <button onclick="loadSuper(window.activeTab)"
+      class="px-4 py-2 rounded bg-gray-200">
+      ← Back
+    </button>
+
+    <div class="pc-section">
+      <h3 class="font-bold mb-2">Order No: ${orderNo}</h3>
+
+      <div class="flex gap-3 mt-4">
+
+        <button onclick="updateApproval('${orderNo}','Approved')"
+          class="px-4 py-2 rounded bg-green-500 text-white">
+          Approve
+        </button>
+
+        <button onclick="updateApproval('${orderNo}','Rejected')"
+          class="px-4 py-2 rounded bg-red-500 text-white">
+          Reject
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+  `;
+
+  document.getElementById("main").innerHTML = html;
+}
+
+
+
+async function updateApproval(orderNo, status){
+
+  showLoader();
+
+  const { error } = await db
+    .from("requests")
+    .update({ ApprovalStatus: status })
+    .eq("OrderNo", orderNo);
+
+  hideLoader();
+
+  if(error){
+    return showPopup("Update failed ❌");
+  }
+
+  showPopup("Updated successfully ✅");
+
+  loadSuper(window.activeTab);
+}
+
+    
+    
+
+    
 
 function refreshCurrentView(){
 
