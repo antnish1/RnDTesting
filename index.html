@@ -740,7 +740,7 @@ const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isAdmin){
-  window.activeTab = "Pending";
+  window.activeTab = "Approved";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -846,12 +846,12 @@ document.getElementById("app").innerHTML = `
     </button>
 
 ` : `
-    <button onclick="loadAdmin('Pending')" 
-    class="top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}"
-    data-tab="Pending">
+    <button onclick="loadAdmin('Approved')" 
+    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
+    data-tab="Approved">
     
       <span class="flex items-center gap-2">
-        Pending
+        Approved
         <span id="pendingCount" 
           class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full">
         </span>
@@ -901,7 +901,7 @@ renderIcons();
     
 // ✅ Load correct screen
 if(isAdmin){
-  loadAdmin(window.activeTab || "Pending");
+  loadAdmin(window.activeTab || "Approved");
 
   // ✅ ADD THIS LINE (VERY IMPORTANT)
   setTimeout(loadPendingCount, 200);
@@ -1723,13 +1723,13 @@ if(s.includes("REJECT")){
   }
 
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
   return s;
 });;
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 // ✅ PRIORITY BASED (TOP → DOWN)
 
@@ -1766,7 +1766,7 @@ else if(statuses.every(s => s === "PENDING APPROVAL")){
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
   
 
@@ -1902,7 +1902,7 @@ async function loadPendingCount(){
   const { data, error } = await db
     .from("requests")
     .select("OrderNo, Status")
-    .eq("Status", "Pending");
+    .eq("Status", "Approved");
 
   if(error) return;
 
@@ -1923,7 +1923,7 @@ async function loadPendingCount(){
 }
   
 // ---------- ADMIN ----------
-async function loadAdmin(activeTab = "Pending", skipReset = false){
+async function loadAdmin(activeTab = "Approved", skipReset = false){
 
 if(!skipReset){
   CURRENT_PAGE = 1;
@@ -1956,17 +1956,20 @@ const orders = Object.values(grouped)
 // FILTER
 let filtered;
 
-if(activeTab === "Pending"){
-  filtered = orders.filter(o => 
-    o.items.some(x => x.Status === "Pending")
-  );
-}
-else{
-  // ✅ ALL NON-PENDING (excluding Pending + Pending Approval)
+if(activeTab === "Approved"){
   filtered = orders.filter(o => 
     o.items.some(x => {
       const status = (x.Status || "").toString().trim().toUpperCase();
-      return status !== "PENDING" && status !== "PENDING APPROVAL";
+      return status === "APPROVED" || status === "PENDING";
+    })
+  );
+}
+else{
+  // ✅ ALL NON-APPROVED (excluding Approved + Pending + Pending Approval)
+  filtered = orders.filter(o => 
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status !== "APPROVED" && status !== "PENDING" && status !== "PENDING APPROVAL";
     })
   );
 }
@@ -2042,13 +2045,13 @@ if(s.includes("REJECT")){
     return "PENDING APPROVAL";
   }
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
   return s;
 });
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 // ✅ PRIORITY BASED (TOP → DOWN)
 
@@ -2085,7 +2088,7 @@ else if(statuses.every(s => s === "PENDING APPROVAL")){
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
 
 const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
@@ -2318,7 +2321,7 @@ const isSuper = user.Role === "super";
 
   const total = data.reduce((s,x)=>s+Number(x.Value||0),0);
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 const statuses = data.map(x => {
   let s = (x.Status || "").toString().trim().toUpperCase();
@@ -2341,7 +2344,7 @@ if(s.includes("REJECT")){
   }
 
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
 
@@ -2384,7 +2387,7 @@ else if(statuses.every(s => s === "PENDING APPROVAL")){
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
   let partsHTML = data.map(r=>`
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
@@ -3578,7 +3581,7 @@ async function updateApproval(orderNo, status){
 
   const updatePayload = { ApprovalStatus: status };
   if(status === "Approved"){
-    updatePayload.Status = "Pending";
+    updatePayload.Status = "Approved";
   } else if(status === "Rejected"){
     updatePayload.Status = "Rejected";
   }
@@ -3608,7 +3611,7 @@ function goBack(){
   if(user.Role === "super"){
     loadSuper(window.activeTab || "PendingApproval", true);
   } else {
-    loadAdmin(window.activeTab || "Pending", true);
+    loadAdmin(window.activeTab || "Approved", true);
   }
 }
 
@@ -3650,13 +3653,19 @@ function changePage(direction){
 
   if(user.Role === "admin" || user.Branch === "HQ"){
 
-    if(window.activeTab === "Pending"){
+    if(window.activeTab === "Approved"){
       orders = orders.filter(o => 
-        o.some(x => x.Status === "Pending")
+        o.some(x => {
+          const status = (x.Status || "").toString().trim().toUpperCase();
+          return status === "APPROVED" || status === "PENDING";
+        })
       );
     } else {
       orders = orders.filter(o => 
-        o.some(x => x.Status !== "Pending")
+        o.some(x => {
+          const status = (x.Status || "").toString().trim().toUpperCase();
+          return status !== "APPROVED" && status !== "PENDING" && status !== "PENDING APPROVAL";
+        })
       );
     }
 
