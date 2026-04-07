@@ -387,16 +387,54 @@ function renderHeader(){
 
 function updateMenuHighlight(){
 
-  document.querySelectorAll(".top-btn").forEach(btn=>{
-    btn.classList.remove("active-top-btn");
+  document.querySelectorAll("[data-tab]").forEach(btn=>{
+    btn.classList.remove("active-top-btn", "active-tab");
 
     if(btn.dataset.tab === window.activeTab){
-      btn.classList.add("active-top-btn");
+      btn.classList.add("active-top-btn", "active-tab");
     }
   });
 
 }
 
+function buildRoleNavigation(isAdmin, isSuper){
+  if(!isAdmin && !isSuper){
+    return `
+      <button onclick="loadCreate('create')" class="nav-btn top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}" data-tab="create">
+        <i data-lucide="file-plus-2" class="w-4 h-4"></i> New Order
+      </button>
+      <button onclick="loadTrack('track')" class="nav-btn top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}" data-tab="track">
+        <i data-lucide="search-check" class="w-4 h-4"></i> Track Orders
+      </button>
+    `;
+  }
+
+  if(isSuper){
+    return `
+      <button onclick="loadSuper('PendingApproval')" class="nav-btn top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}" data-tab="PendingApproval">Pending Approvals</button>
+      <button onclick="loadSuper('Approved')" class="nav-btn top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}" data-tab="Approved">Approved</button>
+      <button onclick="loadSuper('Rejected')" class="nav-btn top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}" data-tab="Rejected">Rejected</button>
+      <button onclick="loadSuper('All')" class="nav-btn top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}" data-tab="All">All Orders</button>
+    `;
+  }
+
+  return `
+    <button onclick="loadAdmin('Pending')" class="nav-btn top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}" data-tab="Pending">
+      Pending <span id="pendingCount" class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full ml-auto"></span>
+    </button>
+    <button onclick="loadAdmin('Processed')" class="nav-btn top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}" data-tab="Processed">Processed</button>
+    <button onclick="loadUpload()" class="nav-btn top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}" data-tab="upload">Upload Center</button>
+  `;
+}
+
+const debouncedUniversalSearch = (() => {
+  let timer = null;
+  return (value) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => handleUniversalSearch(value), 180);
+  };
+})();
+  
   
   
 // ---------- BRANCH ----------
@@ -554,14 +592,33 @@ document.getElementById("app").innerHTML = `
 
   </div>
 
-</div>
+      <div class="pt-4">
+        <p class="text-[11px] px-2 mb-2 uppercase tracking-[0.18em]" style="color: var(--pc-text-muted);">Navigation</p>
+        ${buildRoleNavigation(isAdmin, isSuper)}
+      </div>
 
+      <div class="mt-auto pt-4 border-t" style="border-color: var(--pc-border);">
+        <button onclick="logout()" class="nav-btn top-btn logout-btn w-full">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+        </button>
+      </div>
+    </aside>
 
+    <section class="pc-main-wrap">
+      <header class="pc-topbar pc-glass">
+        <div>
+          <h1 class="text-lg font-semibold" style="color: var(--pc-text);">Enterprise Order Workspace</h1>
+          <p class="text-xs" style="color: var(--pc-text-muted);">Manage requests, approvals, uploads, and order tracking from one place.</p>
+        </div>
+        <div class="relative">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+          <input id="universalSearch" placeholder="Search orders, parts, customers..." class="pc-field search-bar" oninput="debouncedUniversalSearch(this.value)" />
+        </div>
+      </header>
 
+      <main id="main" class="pc-content"></main>
+    </section>
   </div>
-
-  <div id="main" class="w-full"></div>
-
 </div>
 `;
 
