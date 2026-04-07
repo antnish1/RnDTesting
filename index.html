@@ -160,7 +160,26 @@ input[readonly], select:disabled { opacity: .75; cursor: not-allowed; }
 let GLOBAL_DATA = []; // stores current table data
 let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
-const { createClient } = supabase;
+const supabaseLib = window.supabase;
+if(!supabaseLib || typeof supabaseLib.createClient !== "function"){
+  document.addEventListener("DOMContentLoaded", () => {
+    const app = document.getElementById("app");
+    if(app){
+      app.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center px-4">
+          <div class="max-w-lg w-full p-6 rounded-2xl pc-glass text-center space-y-3">
+            <h2 class="text-lg font-semibold" style="color: var(--pc-text);">Application failed to initialize</h2>
+            <p class="text-sm" style="color: var(--pc-text-muted);">
+              Supabase library did not load. Please check network/CDN access and refresh.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+  });
+  throw new Error("Supabase client library not loaded");
+}
+const { createClient } = supabaseLib;
 let cancelUploadFlag = false;
 let currentRow = null;
 const db = createClient(
