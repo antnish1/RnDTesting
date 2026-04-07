@@ -3374,15 +3374,9 @@ else if(activeTab === "All"){
   }
 
   // PAGINATION
-const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-
-if (CURRENT_PAGE > totalPages) {
-  CURRENT_PAGE = totalPages;
-}
-
-const start = Math.max(0, (CURRENT_PAGE - 1) * PAGE_SIZE);
-
-const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
+const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
+const paginatedOrders = orders.slice(start, start + PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
 
     
   // UI (reuse same table)
