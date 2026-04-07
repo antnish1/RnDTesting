@@ -2157,7 +2157,12 @@ style="${
 <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
   ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
 </td>
-<td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">${o.OrderNo}</td>
+<td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">
+  ${o.OrderNo}
+  ${getOrderCommentCount(o) > 0
+    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+    : ""}
+</td>
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
     style="
@@ -2324,6 +2329,21 @@ function isPendingApprovalStatus(val){
   const s = (val || "").toString().trim().toUpperCase();
   return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
 }
+
+function parseOrderComments(raw){
+  if(!raw) return [];
+  try{
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  }catch{
+    return [];
+  }
+}
+
+function getOrderCommentCount(orderObj){
+  const raw = orderObj?.items?.[0]?.OrderComments || orderObj?.OrderComments;
+  return parseOrderComments(raw).length;
+}
   
 async function openOrderView(orderNo){
 
@@ -2464,6 +2484,30 @@ else{
 
 
 const isAdmin = user.Branch === "HQ";
+const orderComments = parseOrderComments(order.OrderComments);
+const commentsHTML = orderComments.length
+  ? orderComments.map(c => `
+      <div class="text-xs p-2 rounded-lg" style="background: rgba(0,0,0,0.04);">
+        <div class="font-semibold">${c.by || "-"}</div>
+        <div>${c.text || ""}</div>
+        <div style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</div>
+      </div>
+    `).join("")
+  : `<div class="text-xs" style="color: var(--pc-text-muted);">No comments yet.</div>`;
+let superApproverOptions = `<option value="">Select Super Approver</option>`;
+
+if(isSuper){
+  const { data: superUsers } = await db
+    .from("users")
+    .select("Name")
+    .eq("Role", "super");
+
+  if(superUsers && superUsers.length){
+    superApproverOptions += superUsers
+      .map(u => `<option value="${u.Name}" ${u.Name === order.ApprovedBy ? "selected" : ""}>${u.Name}</option>`)
+      .join("");
+  }
+}
 
 
 
@@ -2471,7 +2515,17 @@ let actionButtons = "";
 
 if(isSuper){
   actionButtons = `
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center flex-wrap">
+
+      <select id="changeApprover" class="pc-field w-[200px]">
+        ${superApproverOptions}
+      </select>
+
+      <button onclick="sendToApprover('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background:#2563eb;color:white;">
+        Send
+      </button>
 
       <button onclick="approveOrder('${orderNo}')"
         class="px-4 py-2 rounded-lg font-semibold"
@@ -2514,12 +2568,6 @@ else{
         class="px-4 py-2 rounded-lg font-semibold"
         style="background:#f59e0b;color:white;">
         Process
-      </button>
-
-      <button onclick="rejectOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#ef4444;color:white;">
-        Reject
       </button>
 
       <button onclick="downloadOrder('${orderNo}')"
@@ -2702,6 +2750,25 @@ ${actionButtons}
 
     </div>
 
+  </div>
+
+  <div class="relative pc-section">
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+        COMMENTS (${orderComments.length})
+      </span>
+    </div>
+
+    <div class="space-y-3 mt-2">
+      <textarea id="orderCommentInput" class="pc-field" rows="2"
+        placeholder="Add comment..."></textarea>
+      <button onclick="addOrderComment('${orderNo}')"
+        class="px-4 py-2 rounded-lg font-semibold"
+        style="background: var(--pc-secondary); color:white;">
+        Add Comment
+      </button>
+      <div class="space-y-2">${commentsHTML}</div>
+    </div>
   </div>
 
 </div>
@@ -3346,7 +3413,12 @@ function renderSearchResults(data){
       <td>${o.Branch || "-"}</td>
       <td class="px-4 py-3 text-center">${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
       <td>₹ ${total.toFixed(2)}</td>
-      <td class="font-semibold">${o.OrderNo}</td>
+      <td class="font-semibold">
+        ${o.OrderNo}
+        ${getOrderCommentCount(o) > 0
+          ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+          : ""}
+      </td>
 
     </tr>
     `;
@@ -3557,7 +3629,12 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
       <td>${o.Branch}</td>
       <td>${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
       <td>₹ ${total.toLocaleString("en-IN")}</td>
-      <td>${o.OrderNo}</td>
+      <td>
+        ${o.OrderNo}
+        ${getOrderCommentCount(o) > 0
+          ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+          : ""}
+      </td>
       <td class="px-4 py-3 text-center">
       <span class="px-2 py-1 rounded text-xs font-semibold"
         style="
@@ -3693,6 +3770,63 @@ async function updateApproval(orderNo, status){
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
+}
+
+async function sendToApprover(orderNo){
+  const approver = document.getElementById("changeApprover")?.value;
+  if(!approver){
+    return showPopup("Please select approver ❗");
+  }
+
+  showLoader();
+  const { error } = await db
+    .from("requests")
+    .update({ ApprovedBy: approver })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+
+  if(error){
+    return showPopup("Failed to update approver ❌");
+  }
+
+  showPopup("Approver updated ✅");
+  openOrderView(orderNo);
+}
+
+async function addOrderComment(orderNo){
+  const input = document.getElementById("orderCommentInput");
+  const text = (input?.value || "").trim();
+  if(!text){
+    return showPopup("Please enter comment ❗");
+  }
+
+  const user = getUser();
+  const { data } = await db
+    .from("requests")
+    .select("OrderComments")
+    .eq("OrderNo", orderNo)
+    .limit(1);
+
+  const existing = parseOrderComments(data?.[0]?.OrderComments);
+  existing.push({
+    by: user.Name || user.Role || "User",
+    text,
+    at: new Date().toISOString()
+  });
+
+  showLoader();
+  const { error } = await db
+    .from("requests")
+    .update({ OrderComments: JSON.stringify(existing) })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+
+  if(error){
+    return showPopup("Failed to add comment ❌");
+  }
+
+  showPopup("Comment added ✅");
+  openOrderView(orderNo);
 }
 
 async function approveOrder(orderNo){
