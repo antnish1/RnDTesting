@@ -124,7 +124,7 @@ input:focus, select:focus, button:focus { box-shadow: 0 0 0 3px rgba(37, 99, 235
 .pc-section { background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); border: 1px solid var(--pc-border); border-radius: 18px; padding: 20px; padding-top: 26px; box-shadow: 0 12px 30px rgba(15,23,42,0.05); }
 .pc-section:hover { box-shadow: 0 18px 38px rgba(15,23,42,0.10); }
 table { border-color: var(--pc-border) !important; }
-.track-table thead th { font-weight: 700; letter-spacing: .04em; color: #334155; position: sticky; top: 0; background: #f1f5f9; z-index: 1; }
+thead th { font-weight: 700; letter-spacing: .04em; color: #334155; }
 tbody tr { border-bottom: 1px solid #edf2f7; transition: all .18s ease; }
 tbody tr:hover { background: #f8fbff; transform: translateY(-1px); }
 .track-table tbody tr:hover { background: linear-gradient(135deg, rgba(37,99,235,.10), rgba(14,165,233,.08)) !important; box-shadow: 0 12px 26px rgba(30,64,175,.12); z-index: 2; }
@@ -138,17 +138,6 @@ tbody tr:hover { background: #f8fbff; transform: translateY(-1px); }
 .search-bar::placeholder { color: #94a3b8; font-weight: 500; }
 input[readonly], select:disabled { opacity: .75; cursor: not-allowed; }
 #total { color: var(--pc-secondary); font-weight: 800; }
-.pc-app-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; min-height: calc(100vh - 48px); }
-.pc-sidebar { position: sticky; top: 24px; height: calc(100vh - 48px); border-radius: 20px; padding: 20px 14px; display: flex; flex-direction: column; }
-.pc-sidebar .nav-btn { width: 100%; justify-content: flex-start; padding: 11px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 13px; }
-.pc-main-wrap { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
-.pc-topbar { position: sticky; top: 24px; z-index: 20; border-radius: 20px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.pc-content { min-height: 70vh; }
-@media (max-width: 1024px) {
-  .pc-app-layout { grid-template-columns: 1fr; }
-  .pc-sidebar { position: static; height: auto; }
-  .pc-topbar { position: static; }
-}
 </style>
 
 
@@ -379,6 +368,49 @@ function buildRoleNavigation(isAdmin, isSuper){
   `;
 }
 
+
+function updateMenuHighlight(){
+
+  document.querySelectorAll("[data-tab]").forEach(btn=>{
+    btn.classList.remove("active-top-btn", "active-tab");
+
+    if(btn.dataset.tab === window.activeTab){
+      btn.classList.add("active-top-btn", "active-tab");
+    }
+  });
+
+}
+
+function buildRoleNavigation(isAdmin, isSuper){
+  if(!isAdmin && !isSuper){
+    return `
+      <button onclick="loadCreate('create')" class="nav-btn top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}" data-tab="create">
+        <i data-lucide="file-plus-2" class="w-4 h-4"></i> New Order
+      </button>
+      <button onclick="loadTrack('track')" class="nav-btn top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}" data-tab="track">
+        <i data-lucide="search-check" class="w-4 h-4"></i> Track Orders
+      </button>
+    `;
+  }
+
+  if(isSuper){
+    return `
+      <button onclick="loadSuper('PendingApproval')" class="nav-btn top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}" data-tab="PendingApproval">Pending Approvals</button>
+      <button onclick="loadSuper('Approved')" class="nav-btn top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}" data-tab="Approved">Approved</button>
+      <button onclick="loadSuper('Rejected')" class="nav-btn top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}" data-tab="Rejected">Rejected</button>
+      <button onclick="loadSuper('All')" class="nav-btn top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}" data-tab="All">All Orders</button>
+    `;
+  }
+
+  return `
+    <button onclick="loadAdmin('Pending')" class="nav-btn top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}" data-tab="Pending">
+      Pending <span id="pendingCount" class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full ml-auto"></span>
+    </button>
+    <button onclick="loadAdmin('Processed')" class="nav-btn top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}" data-tab="Processed">Processed</button>
+    <button onclick="loadUpload()" class="nav-btn top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}" data-tab="upload">Upload Center</button>
+  `;
+}
+
 const debouncedUniversalSearch = (() => {
   let timer = null;
   return (value) => {
@@ -404,14 +436,145 @@ if(isAdmin){
   window.activeTab = window.activeTab || "create";
 }
 document.getElementById("app").innerHTML = `
-<div class="pc-shell w-full px-4 md:px-6 lg:px-8 py-6">
-  <div class="pc-app-layout">
-    <aside class="pc-sidebar pc-glass">
-      <div class="px-2 pb-4 border-b" style="border-color: var(--pc-border);">
-        <img src="HDU4w-removebg-preview.png" class="h-10 w-auto object-contain mb-3" />
-        <p class="text-xs uppercase tracking-[0.2em]" style="color: var(--pc-text-muted);">Parts Connect</p>
-        <h2 class="text-lg font-semibold" style="color: var(--pc-text);">${user.Branch}</h2>
-      </div>
+<div class="pc-shell w-full px-4 md:px-6 lg:px-10 py-6 space-y-5">
+
+  <div class="space-y-4">
+
+<!-- HEADER WITH LOGOUT -->
+<div class="w-full rounded-2xl px-6 py-4 flex justify-between items-center pc-glass"
+     style="
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,0.75) 0%,
+    rgba(255,255,255,0.75) 22%,
+    #2f3e4d 40%,
+    #3f556b 100%
+  );
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+">
+
+<div class="relative flex items-center w-full">
+
+  <!-- LEFT: LOGO -->
+<div class="flex items-center gap-4">
+
+  <img 
+    src="HDU4w-removebg-preview.png"
+    class="h-12 w-auto object-contain"
+  />
+
+  <div class="h-6 w-px bg-gray-400 opacity-50"></div>
+
+  <span class="text-sm font-semibold tracking-widest uppercase"
+      style="color: var(--pc-text);">
+  ${user.Branch}
+</span>
+
+</div>
+
+</div>
+
+  <div class="flex items-center gap-3 w-full justify-end">
+
+<div class="relative">
+
+  <i data-lucide="search" 
+     class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">
+  </i>
+
+  <input 
+    id="universalSearch"
+    placeholder="Search Orders, Parts, Customers..."
+    class="pc-field search-bar"
+    oninput="handleUniversalSearch(this.value)"
+  />
+
+</div>
+
+  ${!isAdmin && !isSuper ? `
+      <button onclick="loadCreate('create')" 
+      class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
+      data-tab="create">
+    <span class="flex items-center gap-2">
+      <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+      New Order
+    </span>
+    </button>
+  
+    <button onclick="loadTrack('track')" 
+    class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
+    data-tab="track">
+<span class="flex items-center gap-2">
+  <i data-lucide="search-check" class="w-4 h-4"></i>
+  Track Orders
+</span>
+    </button>
+` : isSuper ? `
+
+    <button onclick="loadSuper('PendingApproval')" 
+    class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
+    data-tab="PendingApproval">
+      Pending Approvals
+    </button>
+
+    <button onclick="loadSuper('Approved')" 
+    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
+    data-tab="Approved">
+      Approved
+    </button>
+
+    <button onclick="loadSuper('Rejected')" 
+    class="top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}"
+    data-tab="Rejected">
+      Rejected
+    </button>
+
+    <button onclick="loadSuper('All')" 
+    class="top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}"
+    data-tab="All">
+      All Orders
+    </button>
+
+` : `
+    <button onclick="loadAdmin('Pending')" 
+    class="top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}"
+    data-tab="Pending">
+    
+      <span class="flex items-center gap-2">
+        Pending
+        <span id="pendingCount" 
+          class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full">
+        </span>
+      </span>
+    
+    </button>
+      
+    <button onclick="loadAdmin('Processed')" 
+    class="top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}"
+    data-tab="Processed">
+      Processed
+    </button>
+
+    <button onclick="loadUpload()" 
+    class="top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
+    data-tab="upload">
+      Upload
+    </button>
+
+    
+  `}
+
+
+    <button onclick="logout()" 
+    class="top-btn logout-btn">
+    <span class="flex items-center gap-2">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
+      Logout
+    </span>
+    </button>
+
+  </div>
 
       <div class="pt-4">
         <p class="text-[11px] px-2 mb-2 uppercase tracking-[0.18em]" style="color: var(--pc-text-muted);">Navigation</p>
@@ -1254,10 +1417,6 @@ let html = `
         <tbody>
 `;
 
-if(!paginatedOrders.length){
-  html += `<tr><td colspan="8" class="px-4 py-8 text-center" style="color: var(--pc-text-muted);">No orders found.</td></tr>`;
-}
-
 paginatedOrders.forEach((o,i)=>{
 
 const orderStatus = getOrderStatusFromItems(o.items);
@@ -1506,10 +1665,6 @@ let html = `
 
       <tbody>
 `;
-
-if(!paginatedOrders.length){
-  html += `<tr><td colspan="8" class="px-4 py-8 text-center" style="color: var(--pc-text-muted);">No orders available for this tab.</td></tr>`;
-}
 
 paginatedOrders.forEach((o,i)=>{
 
