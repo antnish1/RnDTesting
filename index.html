@@ -210,6 +210,22 @@ body {
   color: white;
   border-color: #6E95B8;
 }
+
+.order-action-btn{
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.order-action-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.26);
+  filter: brightness(1.03);
+}
+
+.order-action-btn:active{
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+}
     
 .logout-btn {
   background: #ef4444;
@@ -1884,7 +1900,7 @@ html += `
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
@@ -2228,7 +2244,7 @@ html += `
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
@@ -2698,7 +2714,7 @@ if(isSuper){
     <div class="flex gap-2 items-center flex-wrap justify-end">
       <div class="flex gap-2 items-center mr-3">
         <button onclick="sendToApprover('${orderNo}')"
-          class="px-3 py-2 rounded-lg font-semibold text-sm"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
           style="background:#2563eb;color:white;">
           Send
         </button>
@@ -2708,31 +2724,31 @@ if(isSuper){
       </div>
 
       <button onclick="approveOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#16a34a;color:white;">
         Approve
       </button>
 
       <button onclick="updateApproval('${orderNo}','Rejected')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#dc2626;color:white;">
         Reject
       </button>
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#475569;color:white;">
         Download
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#4b5563;color:white;">
         Comment
       </button>
 
       <button onclick="goBack()"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#e2e8f0;color:#0f172a;">
         Back
       </button>
@@ -2753,7 +2769,7 @@ else{
           />
 
           <button onclick="processOrder('${orderNo}')"
-            class="px-3 py-2 rounded-lg font-semibold text-sm"
+            class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
             style="background:#2563eb;color:white;">
             Process
           </button>
@@ -2761,19 +2777,19 @@ else{
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#4b5563;color:white;">
         Download
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#4b5563;color:white;">
         Comment
       </button>
 
       <button onclick="goBack()"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#f3f4f6;color:#111827;">
         Back
       </button>
@@ -2804,11 +2820,12 @@ document.getElementById("main").innerHTML = `
   <div class="flex justify-between items-center flex-wrap gap-4">
 
     <!-- ORDER DETAILS -->
-    <div>
+    <div class="px-3 py-2 rounded-lg"
+      style="background:linear-gradient(135deg, rgba(129,166,198,0.20), rgba(95,136,168,0.14)); border:1px solid var(--pc-border); box-shadow: 0 8px 18px rgba(15,23,42,0.12);">
       <p class="text-sm font-semibold" style="color: var(--pc-text);">
         Order Details
       </p>
-      <p class="text-xs" style="color: var(--pc-text-muted);">
+      <p class="text-sm font-bold" style="color: #1e3a8a;">
         ${orderNo} • ${formatDateTime(order.created_at)}
       </p>
     </div>
@@ -2832,33 +2849,33 @@ ${actionButtons}
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-sm mt-2">
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Order Type</div>
-        <div class="font-semibold mt-1">${order.OrderType || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Order Type :</span>
+        <span class="font-semibold whitespace-nowrap">${order.OrderType || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Order For</div>
-        <div class="font-semibold mt-1">${order.OrderFor || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Order For :</span>
+        <span class="font-semibold whitespace-nowrap">${order.OrderFor || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Branch</div>
-        <div class="font-semibold mt-1">${order.Branch || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Branch :</span>
+        <span class="font-semibold whitespace-nowrap">${order.Branch || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Employee Name</div>
-        <div class="font-semibold mt-1">${order.EmployeeName || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Employee Name :</span>
+        <span class="font-semibold whitespace-nowrap">${order.EmployeeName || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Call ID</div>
-        <div class="font-semibold mt-1">${order.CallID || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Call ID :</span>
+        <span class="font-semibold whitespace-nowrap">${order.CallID || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide mb-1" style="color: var(--pc-text-muted);">Status</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Status :</span>
         <span class="px-2 py-1 rounded text-xs font-semibold"
                 style="
                   background:${
@@ -2882,25 +2899,25 @@ ${actionButtons}
               </span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Machine No</div>
-        <div class="font-semibold mt-1">${order.MachineNo || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Machine No :</span>
+        <span class="font-semibold whitespace-nowrap">${order.MachineNo || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Customer</div>
-        <div class="font-semibold mt-1">${order.CustomerName || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Customer :</span>
+        <span class="font-semibold whitespace-nowrap">${order.CustomerName || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Machine Type</div>
-        <div class="font-semibold mt-1">${order.WarrantyStatus || "-"}</div>
+      <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Machine Type :</span>
+        <span class="font-semibold whitespace-nowrap">${order.WarrantyStatus || "-"}</span>
       </div>
 
-      <div class="rounded-lg px-3 py-2 md:col-span-2 xl:col-span-3"
+      <div class="rounded-lg px-3 py-2 md:col-span-2 xl:col-span-3 flex items-center justify-between gap-2"
         style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Approved By</div>
-        <div class="font-semibold mt-1">${order.ApprovedBy || "-"}</div>
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Approved By :</span>
+        <span class="font-semibold whitespace-nowrap">${order.ApprovedBy || "-"}</span>
       </div>
 
     </div>
@@ -3136,16 +3153,16 @@ const msg = document.getElementById("popupMsg");
 msg.innerHTML = `
 <div class="space-y-4 text-center">
 
-<p class="text-yellow-400 font-semibold">
+<p class="font-semibold" style="color:#b45309;">
 Machine not found ❗
 </p>
 
-<p class="text-sm text-gray-400">
+<p class="text-sm" style="color: var(--pc-text-muted);">
 Enter Customer Name
 </p>
 
 <input id="manualCustomer"
-  class="w-full bg-black border border-gray-600 px-3 py-2 rounded text-center"
+  class="pc-field w-full text-center"
   placeholder="Customer Name"/>
 
 </div>
@@ -3156,12 +3173,14 @@ document.getElementById("popupActions").innerHTML = `
 <div class="flex gap-3 justify-center w-full">
 
 <button onclick="saveNewMachine('${machineNo}')"
-  class="bg-yellow-400 px-5 py-2 text-black rounded min-w-[100px]">
+  class="order-action-btn px-5 py-2 rounded min-w-[100px]"
+  style="background:#16a34a;color:white;">
   Save
 </button>
 
 <button onclick="closePopup()"
-  class="bg-gray-700 px-5 py-2 rounded min-w-[100px]">
+  class="order-action-btn px-5 py-2 rounded min-w-[100px]"
+  style="background:#e2e8f0;color:#0f172a;">
   Cancel
 </button>
 
@@ -3917,7 +3936,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
