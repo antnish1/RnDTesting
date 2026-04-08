@@ -1497,6 +1497,11 @@ function triggerRowDelete(){
 
   closePopup();
 }
+
+function changePrevQtyDays(orderNo, days){
+  window.prevQtyDays = Number(days) || 30;
+  openOrderView(orderNo);
+}
 // ---------- CALC ----------
 function calc(tr){
 
@@ -1584,13 +1589,13 @@ if(orderFor === "Customer" && (!machineNo || !customerName)){
 }
 
 const rows = document.querySelectorAll("#tbody tr");
-    let hasError = false;
+let hasError = false;
 
 const orderNo = "T" + Math.floor(1000000 + Math.random()*9000000);
 
 const inserts = [];
 
-rows.forEach(r=>{
+for (const r of rows){
 
   if(hasError) return;
 
@@ -1626,6 +1631,8 @@ rows.forEach(r=>{
 
   if(!part) return;
 
+  const qty30 = await getLast30QtyByBranchPart(user.Branch, part);
+
   inserts.push({
     Branch: user.Branch,
 
@@ -1641,6 +1648,7 @@ rows.forEach(r=>{
 
     PartNo: part,
     Qty: qty,
+    ["30dQty"]: qty30,
     Description: desc,
     DNP: dnp,
     Value: dnp * qty,
@@ -1650,7 +1658,7 @@ rows.forEach(r=>{
     ApprovalStatus: "PendingApproval"
   });
 
-});
+}
 
 if(hasError){
   return;
@@ -2627,11 +2635,33 @@ else if(statuses.every(s => s === "PENDING APPROVAL")){
 else{
   orderStatus = "APPROVED";
 }
+  const prevDays = Number(window.prevQtyDays) || 30;
+  const partNosForPrev = [...new Set(data.map(r => normalizePartNo(r.PartNo)).filter(Boolean))];
+  const prevQtyMap = {};
+  if(partNosForPrev.length){
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - prevDays);
+    const { data: prevRows } = await db
+      .from("requests")
+      .select("PartNo, Qty, editedqty")
+      .eq("Branch", order.Branch)
+      .in("PartNo", partNosForPrev)
+      .gte("created_at", sinceDate.toISOString())
+      .neq("OrderNo", orderNo);
+
+    (prevRows || []).forEach(pr => {
+      const key = normalizePartNo(pr.PartNo);
+      prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
+    });
+  }
   const superEditState = getSuperEditState(orderNo);
   let partsHTML = data.map((r, idx)=>{
   const rowKey = `${r.PartNo || "PART"}__${idx}`;
   const rowEdit = superEditState[rowKey] || {};
-  const reviewQty = getEffectiveQty(r);
+  const prevQty = prevQtyMap[normalizePartNo(r.PartNo)] || 0;
+  const reviewQty = isSuper
+    ? Math.max(0, Number(r.Qty || 0) - prevQty)
+    : getEffectiveQty(r);
   const billedQty = Number(r.BilledQty || 0);
   const isRemoved = !!rowEdit.removed;
   const pendingQty = Math.max(0, reviewQty - billedQty);
@@ -2684,6 +2714,7 @@ else{
     <td>${formatDate(r.BillingDt)}</td>
     <td>${r.TransportName || "-"}</td>
     <td>${r.Docket || "-"}</td>
+    <td>${prevQty}</td>
     ${isSuper ? `
       <td>
         <input type="number" min="0"
@@ -2692,8 +2723,8 @@ else{
           class="text-center text-xs rounded-md"
           style="width:56px; padding:4px 4px; border:1px solid #BFAF9D; background:#fff; color:#1F2937;" />
       </td>
-      <td>
-        <button onclick="removeSuperRow('${orderNo}','${rowKey}')"
+      <td class="text-center">
+        <button onclick="confirmRemoveSuperRow('${orderNo}','${rowKey}')"
           class="w-7 h-7 rounded-full text-sm font-bold transition-all duration-200 hover:-translate-y-[1px] hover:rotate-90 active:scale-95 flex items-center justify-center"
           style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca; box-shadow:0 6px 12px rgba(185,28,28,0.18);"
           title="Remove row">
@@ -3038,7 +3069,20 @@ ${actionButtons}
             <th>Billing Dt</th>
             <th>Transport</th>
             <th>Docket</th>
-            ${isSuper ? "<th>Edit Qty</th><th>Remove Row</th>" : ""}
+            <th class="px-1 text-center">
+              PrevQty
+              <div class="mt-1">
+                <select onchange="changePrevQtyDays('${orderNo}', this.value)"
+                  class="text-[10px] px-1 py-[2px] rounded border"
+                  style="border-color: var(--pc-border); background:#fff;">
+                  <option value="7" ${prevDays === 7 ? "selected" : ""}>7d</option>
+                  <option value="15" ${prevDays === 15 ? "selected" : ""}>15d</option>
+                  <option value="30" ${prevDays === 30 ? "selected" : ""}>30d</option>
+                  <option value="60" ${prevDays === 60 ? "selected" : ""}>60d</option>
+                </select>
+              </div>
+            </th>
+            ${isSuper ? "<th class='w-16'>Edit Qty</th><th class='w-10 text-center'>Remove</th>" : ""}
           </tr>
 
         </thead>
@@ -4180,6 +4224,27 @@ function removeSuperRow(orderNo, rowKey){
   const state = getSuperEditState(orderNo);
   state[rowKey] = { ...(state[rowKey] || {}), removed: true };
   openOrderView(orderNo);
+}
+
+function confirmRemoveSuperRow(orderNo, rowKey){
+  showPopup(
+    "Remove this part row from review? ❗",
+    "warning",
+    `
+      <div class="flex gap-2">
+        <button onclick="removeSuperRow('${orderNo}','${rowKey}'); closePopup();"
+          class="px-4 py-2 rounded-lg font-semibold"
+          style="background:#dc2626;color:white;">
+          Yes, Remove
+        </button>
+        <button onclick="closePopup()"
+          class="px-4 py-2 rounded-lg font-semibold"
+          style="background:#e2e8f0;color:#0f172a;">
+          Cancel
+        </button>
+      </div>
+    `
+  );
 }
 
 async function addOrderComment(orderNo){
