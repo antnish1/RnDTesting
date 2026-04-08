@@ -2674,9 +2674,10 @@ else{
   }
   const billedQty = Number(r.BilledQty || 0);
   const isRemoved = !!rowEdit.removed;
+  const isPersistedRemoved = hasPersistedEdit && Number(r.editedqty) === 0;
   const pendingQty = Math.max(0, reviewQty - billedQty);
 
-  if(isSuper && isRemoved){
+  if((isSuper && isRemoved) || isPersistedRemoved){
     return "";
   }
 
@@ -4426,7 +4427,56 @@ async function approveWithOriginalQty(orderNo){
   await updateApproval(orderNo, "Approved");
 }
 
-function acceptEditedQty(orderNo){
+async function acceptEditedQty(orderNo){
+  showLoader();
+  const { data } = await db
+    .from("requests")
+    .select("id, OrderNo, PartNo, Branch, Qty, DNP, Value, editedqty")
+    .eq("OrderNo", orderNo);
+
+  const rows = data || [];
+  if(rows.length){
+    const prevDays = Number(window.prevQtyDays) || 30;
+    const partNos = [...new Set(rows.map(r => normalizePartNo(r.PartNo)).filter(Boolean))];
+    const prevQtyMap = {};
+
+    if(partNos.length){
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - prevDays);
+      const { data: prevRows } = await db
+        .from("requests")
+        .select("PartNo, Qty, editedqty")
+        .eq("Branch", rows[0].Branch)
+        .in("PartNo", partNos)
+        .gte("created_at", sinceDate.toISOString())
+        .neq("OrderNo", orderNo);
+
+      (prevRows || []).forEach(pr => {
+        const key = normalizePartNo(pr.PartNo);
+        prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
+      });
+    }
+
+    for(const r of rows){
+      const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
+      const prevQty = prevQtyMap[normalizePartNo(r.PartNo)] || 0;
+      const originalQty = Number(r.Qty || 0);
+      const targetEditedQty = hasPersistedEdit
+        ? Math.max(0, Number(r.editedqty || 0))
+        : Math.max(0, originalQty - prevQty);
+
+      const baseValue = Number(r.Value || 0);
+      const unitValue = originalQty > 0 ? (baseValue / originalQty) : Number(r.DNP || 0);
+      const targetEditedValue = Number((unitValue * targetEditedQty).toFixed(2));
+
+      await db
+        .from("requests")
+        .update({ editedqty: targetEditedQty, editedvalue: targetEditedValue })
+        .eq("id", r.id);
+    }
+  }
+  hideLoader();
+
   if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
   window.superAcceptedEdits[orderNo] = true;
   showPopup("Edited qty accepted for approval ✅");
