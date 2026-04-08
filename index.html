@@ -2913,6 +2913,31 @@ ${actionButtons}
   </div>
 
 
+  <div class="relative pc-section">
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+        COMMENTS (${orderComments.length})
+      </span>
+    </div>
+
+    <div class="space-y-2 mt-2">
+      <div id="commentComposer" class="hidden">
+        <div class="relative">
+          <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
+          <button type="button" onclick="document.getElementById('commentAttachment').click()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
+            style="background:#f1f5f9; border:1px solid var(--pc-border);">
+            📎
+          </button>
+          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
+        </div>
+        <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
+      </div>
+      <div class="space-y-2">${commentsHTML}</div>
+    </div>
+  </div>
+
+
   <!-- ================= PARTS TABLE ================= -->
   <div class="relative pc-section">
 
