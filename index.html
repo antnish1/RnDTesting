@@ -1633,9 +1633,7 @@ for (const r of rows){
 
   if(!part) continue;
 
-  const qty30 = await getLast30QtyByBranchPart(user.Branch, part);
-
-  const qty30 = await getLast30QtyByBranchPart(user.Branch, part);
+  const qtyLast30 = await getLast30QtyByBranchPart(user.Branch, part);
 
   inserts.push({
     Branch: user.Branch,
@@ -1652,7 +1650,7 @@ for (const r of rows){
 
     PartNo: part,
     Qty: qty,
-    ["30dQty"]: qty30,
+    ["30dQty"]: qtyLast30,
     Description: desc,
     DNP: dnp,
     Value: dnp * qty,
