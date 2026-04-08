@@ -3623,7 +3623,13 @@ function renderSearchResults(data){
   </div>
   `;
 
-document.getElementById("resultsContainer").innerHTML = html;
+ const targetContainer =
+   document.getElementById("resultsContainer") ||
+   document.getElementById("main");
+
+ if(targetContainer){
+   targetContainer.innerHTML = html;
+ }
 }
 
 
