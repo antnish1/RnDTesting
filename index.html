@@ -1855,7 +1855,7 @@ html += `
 
     </div>
 
-<div class="flex justify-between items-center mt-4">
+<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
@@ -2198,7 +2198,7 @@ html += `
 </div>
 
 
-<div class="flex justify-between items-center mt-4">
+<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
@@ -2574,17 +2574,19 @@ else{
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap">
 
-      <input
-        id="processOrderNo"
-        value="${orderNo}"
-        class="pc-field w-[160px]"
-      />
+      ${isAdmin ? `
+        <input
+          id="processOrderNo"
+          value="${orderNo}"
+          class="pc-field w-[160px]"
+        />
 
-      <button onclick="processOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#2563eb;color:white;">
-        Process
-      </button>
+        <button onclick="processOrder('${orderNo}')"
+          class="px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:#2563eb;color:white;">
+          Process
+        </button>
+      ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
         class="px-3 py-2 rounded-lg font-semibold text-sm"
@@ -3696,7 +3698,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
 
 
-<div class="flex justify-between items-center mt-4">
+<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
