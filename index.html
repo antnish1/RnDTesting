@@ -2796,7 +2796,7 @@ ${actionButtons}
       </span>
     </div>
 
-    <div class="grid grid-cols-4 gap-4 text-sm mt-2">
+    <div class="grid grid-cols-5 gap-4 text-sm mt-2">
 
         <div class="flex items-center gap-2">
           <span class="w-26" style="color: var(--pc-text-muted);">Order Type :</span>
@@ -2811,6 +2811,16 @@ ${actionButtons}
   <div class="flex items-center gap-2">
     <span class="w-26" style="color: var(--pc-text-muted);">Branch :</span>
     <span class="font-semibold">${order.Branch}</span>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="w-26" style="color: var(--pc-text-muted);">Employee Name :</span>
+    <span class="font-semibold">${order.EmployeeName || "-"}</span>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="w-26" style="color: var(--pc-text-muted);">Call ID :</span>
+    <span class="font-semibold">${order.CallID || "-"}</span>
   </div>
 
 <div class="flex items-center gap-2">
@@ -3613,7 +3623,13 @@ function renderSearchResults(data){
   </div>
   `;
 
-document.getElementById("resultsContainer").innerHTML = html;
+ const targetContainer =
+   document.getElementById("resultsContainer") ||
+   document.getElementById("main");
+
+ if(targetContainer){
+   targetContainer.innerHTML = html;
+ }
 }
 
 
