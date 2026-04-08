@@ -2676,7 +2676,7 @@ else{
   const autoSuggestedQty = Math.max(0, originalQty - prevQty);
   const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
   const editQtyForInput = hasPersistedEdit ? Math.max(0, Number(r.editedqty || 0)) : autoSuggestedQty;
-  const reviewQty = isSuper ? originalQty : getEffectiveQty(r);
+  const reviewQty = (isSuper && canSuperEditQty) ? originalQty : getEffectiveQty(r);
   if(canSuperEditQty && (editQtyForInput !== originalQty)){
     hasPendingEditedQty = true;
   }
@@ -2778,6 +2778,10 @@ const commentsHTML = orderComments.length
     `).join("")
   : `<div class="text-xs" style="color: var(--pc-text-muted);">No comments yet.</div>`;
 let superApproverOptions = `<option value="">Change Approver</option>`;
+const canSuperActions = isSuper && (
+  orderStatus === "PENDING APPROVAL" ||
+  orderStatus === "APPROVAL PENDING"
+);
 
 if(isSuper){
   const { data: superUsers } = await db
@@ -2799,28 +2803,30 @@ let actionButtons = "";
 if(isSuper){
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap justify-end">
-      <div class="flex gap-2 items-center mr-3">
-        <button onclick="sendToApprover('${orderNo}')"
+      ${canSuperActions ? `
+        <div class="flex gap-2 items-center mr-3">
+          <button onclick="sendToApprover('${orderNo}')"
+            class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+            style="background:#2563eb;color:white;">
+            Send
+          </button>
+          <select id="changeApprover" class="pc-field w-[190px] text-sm">
+            ${superApproverOptions}
+          </select>
+        </div>
+
+        <button onclick="approveOrder('${orderNo}')"
           class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#2563eb;color:white;">
-          Send
+          style="background:#16a34a;color:white;">
+          Approve
         </button>
-        <select id="changeApprover" class="pc-field w-[190px] text-sm">
-          ${superApproverOptions}
-        </select>
-      </div>
 
-      <button onclick="approveOrder('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#16a34a;color:white;">
-        Approve
-      </button>
-
-      <button onclick="updateApproval('${orderNo}','Rejected')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#dc2626;color:white;">
-        Reject
-      </button>
+        <button onclick="updateApproval('${orderNo}','Rejected')"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:#dc2626;color:white;">
+          Reject
+        </button>
+      ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
