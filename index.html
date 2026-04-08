@@ -1770,7 +1770,7 @@ else{
 }
   
 
-const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
@@ -2115,7 +2115,7 @@ else{
   orderStatus = "APPROVED";
 }
 
-const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
@@ -2336,6 +2336,14 @@ function getEffectiveQty(row){
   return Number(edited || 0);
 }
 
+function getEffectiveValue(row){
+  const edited = row?.editedvalue ?? row?.EditedValue;
+  if(edited === null || edited === undefined || edited === ""){
+    return Number(row?.Value || 0);
+  }
+  return Number(edited || 0);
+}
+
 function isPendingApprovalStatus(val){
   const s = (val || "").toString().trim().toUpperCase();
   return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
@@ -2415,7 +2423,7 @@ const isSuper = user.Role === "super";
 
   const order = data[0];
 
-  const total = data.reduce((s,x)=>s+Number(x.Value||0),0);
+  const total = data.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 let orderStatus = "APPROVED";
 
@@ -2513,7 +2521,7 @@ else{
           ${pendingQty}
         </td>
     <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
-  ₹ ${Number(r.Value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+  ₹ ${getEffectiveValue(r).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
 </td>
   
 <td>
@@ -2546,7 +2554,7 @@ else{
       <td>
         <input type="number" min="0"
           value="${reviewQty}"
-          onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value)"
+          onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value, '${r.Qty || 0}', '${r.Value || 0}')"
           class="pc-field w-[90px] text-center" />
       </td>
       <td>
@@ -2911,7 +2919,7 @@ let html = `
 
 data.forEach((o,i)=>{
 
-const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="toggleHQ(${i})" class="bg-gray-900 hover:bg-gray-800 transition rounded-lg shadow cursor-pointer">
@@ -3491,7 +3499,7 @@ function renderSearchResults(data){
 
   orders.forEach(o=>{
 
-    const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+    const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
     html += `
     <tr onclick="openOrderView('${o.OrderNo}')"
@@ -3702,7 +3710,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
           ? "Approved"
           : (o.items[0].Status || "Pending Approval");
       
-    const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+    const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
     html += `
             <tr onclick="openOrderView('${o.OrderNo}')"
@@ -3919,13 +3927,17 @@ function getSuperEditState(orderNo){
   return window.superReviewEdits[orderNo];
 }
 
-async function saveEditedQty(orderNo, rowId, partNo, createdAt, value){
+async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQty, originalValue){
   const parsed = value === "" ? null : Math.max(0, Number(value || 0));
+  const baseQty = Number(originalQty || 0);
+  const baseValue = Number(originalValue || 0);
+  const unitValue = baseQty > 0 ? (baseValue / baseQty) : 0;
+  const recalculatedValue = parsed === null ? null : Number((unitValue * parsed).toFixed(2));
 
   showLoader();
   let query = db
     .from("requests")
-    .update({ editedqty: parsed });
+    .update({ editedqty: parsed, editedvalue: recalculatedValue });
 
   if(rowId){
     query = query.eq("id", rowId);
@@ -4199,7 +4211,7 @@ async function downloadOrderExcel(orderNo){
     "Qty": getEffectiveQty(r),
     "Billed Qty": r.BilledQty || 0,
     "Pending Qty": getEffectiveQty(r) - (r.BilledQty || 0),
-    "Value": r.Value,
+    "Value": getEffectiveValue(r),
     "Status": r.Status,
     "Processed Date": r.ProcessedDate || "",
     "Bill No": r.BillNo || "",
