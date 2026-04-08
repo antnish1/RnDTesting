@@ -1896,21 +1896,21 @@ html += `
 
     </div>
 
-<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
+<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
 
   <button onclick="changePage(-1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
 
-  <span class="text-sm font-semibold">
+  <span class="font-semibold tracking-wide leading-none">
     Page ${CURRENT_PAGE} / ${totalPages}
   </span>
 
   <button onclick="changePage(1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-secondary); color:white;"
     ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
     Next ➡
@@ -2240,21 +2240,21 @@ html += `
 </div>
 
 
-<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
+<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
 
   <button onclick="changePage(-1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
 
-  <span class="text-sm font-semibold">
+  <span class="font-semibold tracking-wide leading-none">
     Page ${CURRENT_PAGE} / ${totalPages}
   </span>
 
   <button onclick="changePage(1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-secondary); color:white;"
     ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
     Next ➡
@@ -2840,8 +2840,11 @@ document.getElementById("main").innerHTML = `
       <p class="text-sm font-semibold" style="color: var(--pc-text);">
         Order Details
       </p>
-      <p class="text-sm font-bold" style="color: #1e3a8a;">
-        ${orderNo} • ${formatDateTime(order.created_at)}
+      <p class="flex items-center gap-2 leading-tight">
+        <span class="text-base font-extrabold" style="color: #1e3a8a;">${orderNo}</span>
+        <span class="text-[10px] font-normal opacity-75" style="color: var(--pc-text-muted);">
+          • ${formatDateTime(order.created_at)}
+        </span>
       </p>
     </div>
 
@@ -3954,21 +3957,21 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
 
 
-<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
+<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
 
   <button onclick="changePage(-1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
 
-  <span class="text-sm font-semibold">
+  <span class="font-semibold tracking-wide leading-none">
     Page ${CURRENT_PAGE} / ${totalPages}
   </span>
 
   <button onclick="changePage(1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-secondary); color:white;"
     ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
     Next ➡
