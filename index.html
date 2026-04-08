@@ -2343,9 +2343,18 @@ function parseOrderComments(raw){
   }
 }
 
+function getOrderComments(orderObj){
+  if(Array.isArray(orderObj?.items)){
+    for(const row of orderObj.items){
+      const parsed = parseOrderComments(row?.OrderComments);
+      if(parsed.length) return parsed;
+    }
+  }
+  return parseOrderComments(orderObj?.OrderComments);
+}
+
 function getOrderCommentCount(orderObj){
-  const raw = orderObj?.items?.[0]?.OrderComments || orderObj?.OrderComments;
-  return parseOrderComments(raw).length;
+  return getOrderComments(orderObj).length;
 }
 
 function getCommentUserBg(by){
@@ -2517,7 +2526,7 @@ else{
 
 
 const isAdmin = user.Branch === "HQ";
-const orderComments = parseOrderComments(order.OrderComments);
+const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments });
 const commentsHTML = orderComments.length
   ? orderComments.map(c => `
       <div class="px-3 py-2 rounded-lg text-xs" style="background:${getCommentUserBg(c.by)}; border:1px solid var(--pc-border);">
@@ -3886,6 +3895,11 @@ async function addOrderComment(orderNo){
   }
 
   const user = getUser();
+  const allRowsForComments = await db
+    .from("requests")
+    .select("OrderComments")
+    .eq("OrderNo", orderNo);
+
   let targetRow = null;
   const firstById = await db
     .from("requests")
@@ -3919,7 +3933,7 @@ async function addOrderComment(orderNo){
     return showPopup("Failed to add comment ❌ (Order row not found)");
   }
 
-  const existing = parseOrderComments(targetRow.OrderComments);
+    const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
   existing.push({
     by: user.Name || user.Role || "User",
     text,
