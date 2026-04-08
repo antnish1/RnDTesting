@@ -1819,6 +1819,9 @@ o.OrderType === 'VOR'
 
 <td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">
   ${o.OrderNo}
+  ${getOrderCommentCount(o) > 0
+    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+    : ""}
 </td>
 
 <td class="px-4 py-3 text-center">
@@ -2354,6 +2357,26 @@ function getCommentUserBg(by){
   }
   return palettes[hash];
 }
+
+const commentAttachmentHrefCache = {};
+function getCommentAttachmentHref(url){
+  if(!url) return "";
+  if(!url.startsWith("data:")) return url;
+  if(commentAttachmentHrefCache[url]) return commentAttachmentHrefCache[url];
+  try{
+    const [meta, base64] = url.split(",");
+    const mime = (meta.match(/data:(.*?);base64/) || [])[1] || "application/octet-stream";
+    const binary = atob(base64 || "");
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for(let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+    commentAttachmentHrefCache[url] = blobUrl;
+    return blobUrl;
+  }catch{
+    return url;
+  }
+}
   
 async function openOrderView(orderNo){
 
@@ -2504,7 +2527,7 @@ const commentsHTML = orderComments.length
           <span>"${c.text || ""}"</span>
           <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</span>
           ${c.attachmentName
-            ? `<a href="${c.attachmentUrl}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${c.attachmentName}</a>`
+            ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${c.attachmentName}</a>`
             : ""}
         </div>
       </div>
@@ -3863,13 +3886,40 @@ async function addOrderComment(orderNo){
   }
 
   const user = getUser();
-  const { data } = await db
+  let targetRow = null;
+  const firstById = await db
     .from("requests")
-    .select("OrderComments")
+    .select("id, OrderComments")
     .eq("OrderNo", orderNo)
+    .order("id", { ascending: true })
     .limit(1);
 
-  const existing = parseOrderComments(data?.[0]?.OrderComments);
+  if(!firstById.error && firstById.data?.length){
+    targetRow = {
+      id: firstById.data[0].id,
+      OrderComments: firstById.data[0].OrderComments
+    };
+  }else{
+    const firstFallback = await db
+      .from("requests")
+      .select("OrderComments, created_at, PartNo")
+      .eq("OrderNo", orderNo)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if(firstFallback.data?.length){
+      targetRow = {
+        created_at: firstFallback.data[0].created_at,
+        PartNo: firstFallback.data[0].PartNo,
+        OrderComments: firstFallback.data[0].OrderComments
+      };
+    }
+  }
+
+  if(!targetRow){
+    return showPopup("Failed to add comment ❌ (Order row not found)");
+  }
+
+  const existing = parseOrderComments(targetRow.OrderComments);
   existing.push({
     by: user.Name || user.Role || "User",
     text,
@@ -3879,10 +3929,20 @@ async function addOrderComment(orderNo){
   });
 
   showLoader();
-  const { error } = await db
+  let updateQuery = db
     .from("requests")
-    .update({ OrderComments: JSON.stringify(existing) })
-    .eq("OrderNo", orderNo);
+    .update({ OrderComments: JSON.stringify(existing) });
+
+  if(targetRow.id !== undefined){
+    updateQuery = updateQuery.eq("id", targetRow.id);
+  }else{
+    updateQuery = updateQuery
+      .eq("OrderNo", orderNo)
+      .eq("created_at", targetRow.created_at)
+      .eq("PartNo", targetRow.PartNo);
+  }
+
+  const { error } = await updateQuery;
   hideLoader();
 
   if(error){
