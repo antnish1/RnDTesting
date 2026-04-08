@@ -625,6 +625,8 @@ async function getLast30QtyByBranchPart(branch, partNo){
     .select("Qty, editedqty")
     .eq("Branch", branch)
     .eq("PartNo", normalizedPartNo)
+    .neq("Status", "REJECTED")
+    .neq("ApprovalStatus", "Rejected")
     .gte("created_at", last30.toISOString());
 
   let total30 = 0;
@@ -2648,6 +2650,8 @@ else{
       .select("PartNo, Qty, editedqty")
       .eq("Branch", order.Branch)
       .in("PartNo", partNosForPrev)
+      .neq("Status", "REJECTED")
+      .neq("ApprovalStatus", "Rejected")
       .gte("created_at", sinceDate.toISOString())
       .neq("OrderNo", orderNo);
 
@@ -2656,6 +2660,10 @@ else{
       prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
     });
   }
+  const canSuperEditQty = isSuper && (
+    orderStatus === "PENDING APPROVAL" ||
+    orderStatus === "APPROVAL PENDING"
+  );
   const superEditState = getSuperEditState(orderNo);
   if(!window.superPendingEditState) window.superPendingEditState = {};
   if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
@@ -2669,7 +2677,7 @@ else{
   const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
   const editQtyForInput = hasPersistedEdit ? Math.max(0, Number(r.editedqty || 0)) : autoSuggestedQty;
   const reviewQty = isSuper ? originalQty : getEffectiveQty(r);
-  if(isSuper && (editQtyForInput !== originalQty)){
+  if(canSuperEditQty && (editQtyForInput !== originalQty)){
     hasPendingEditedQty = true;
   }
   const billedQty = Number(r.BilledQty || 0);
@@ -2677,7 +2685,7 @@ else{
   const isPersistedRemoved = hasPersistedEdit && Number(r.editedqty) === 0;
   const pendingQty = Math.max(0, reviewQty - billedQty);
 
-  if((isSuper && isRemoved) || isPersistedRemoved){
+  if((canSuperEditQty && isRemoved) || isPersistedRemoved){
     return "";
   }
 
@@ -2726,7 +2734,7 @@ else{
     <td>${r.TransportName || "-"}</td>
     <td>${r.Docket || "-"}</td>
     <td>${prevQty}</td>
-    ${isSuper ? `
+    ${canSuperEditQty ? `
       <td>
         <input type="number" min="0"
           value="${editQtyForInput}"
@@ -2746,7 +2754,7 @@ else{
     </tr>
     `;
   }).join("");
-  window.superPendingEditState[orderNo] = hasPendingEditedQty;
+  window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
 const isAdmin = user.Branch === "HQ";
@@ -3060,7 +3068,7 @@ ${actionButtons}
       </span>
     </div>
 
-    ${isSuper ? `
+    ${canSuperEditQty ? `
       <div class="flex justify-end mt-1 mb-2">
         <button onclick="acceptEditedQty('${orderNo}')"
           class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
@@ -3104,7 +3112,7 @@ ${actionButtons}
                 </select>
               </div>
             </th>
-            ${isSuper ? "<th class='w-16'>Edit Qty</th><th class='w-10 text-center'>Remove</th>" : ""}
+            ${canSuperEditQty ? "<th class='w-16'>Edit Qty</th><th class='w-10 text-center'>Remove</th>" : ""}
           </tr>
 
         </thead>
@@ -4448,6 +4456,8 @@ async function acceptEditedQty(orderNo){
         .select("PartNo, Qty, editedqty")
         .eq("Branch", rows[0].Branch)
         .in("PartNo", partNos)
+        .neq("Status", "REJECTED")
+        .neq("ApprovalStatus", "Rejected")
         .gte("created_at", sinceDate.toISOString())
         .neq("OrderNo", orderNo);
 
