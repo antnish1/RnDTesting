@@ -477,6 +477,7 @@ table thead th.sort-desc::after {
   
 <script>
  let GLOBAL_DATA = []; // stores current table data
+let TABLE_SORT_STATE = null;
     let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
 const { createClient } = supabase;
@@ -1661,8 +1662,9 @@ grouped[r.OrderNo] = { ...r, items:[] };
 grouped[r.OrderNo].items.push(r);
 });
 
-const orders = Object.values(grouped)
-  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+const orders = applyOrderSort(
+  Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+);
 
 
 const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
@@ -1981,8 +1983,9 @@ grouped[r.OrderNo] = { ...r, items:[] };
 grouped[r.OrderNo].items.push(r);
 });
 
-const orders = Object.values(grouped)
-  .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+const orders = applyOrderSort(
+  Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+);
 
 // FILTER
 let filtered;
@@ -2360,6 +2363,52 @@ function getEffectiveValue(row){
     return Number(row?.Value || 0);
   }
   return Number(edited || 0);
+}
+
+function getOrderStatusLabel(order){
+  const statuses = (order?.items || []).map(x => (x.Status || "").toString().trim().toUpperCase());
+  if(statuses.every(s => s === "REJECTED")) return "REJECTED";
+  if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
+  if(statuses.includes("DISPATCHED")) return "PARTIALLY DISPATCHED";
+  if(statuses.every(s => s === "NOT DESPATCHED")) return "NOT DESPATCHED";
+  if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
+  if(statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING")) return "PENDING APPROVAL";
+  if(statuses.some(s => s === "APPROVED" || s === "PENDING")) return "APPROVED";
+  return statuses[0] || "";
+}
+
+function applyOrderSort(orders){
+  if(!TABLE_SORT_STATE?.key || !TABLE_SORT_STATE?.dir) return orders;
+  const key = TABLE_SORT_STATE.key;
+  const dir = TABLE_SORT_STATE.dir === "asc" ? 1 : -1;
+  const sorted = [...orders];
+
+  sorted.sort((a, b) => {
+    const qtyA = (a.items || []).reduce((s,x)=>s+getEffectiveQty(x),0);
+    const qtyB = (b.items || []).reduce((s,x)=>s+getEffectiveQty(x),0);
+    const valA = (a.items || []).reduce((s,x)=>s+getEffectiveValue(x),0);
+    const valB = (b.items || []).reduce((s,x)=>s+getEffectiveValue(x),0);
+
+    const map = {
+      "DATE": [new Date(a.created_at).getTime() || 0, new Date(b.created_at).getTime() || 0],
+      "ORDER TYPE": [(a.OrderType || "").toLowerCase(), (b.OrderType || "").toLowerCase()],
+      "ORDER FOR": [((a.OrderFor === "Customer" ? a.CustomerName : "Stock") || "").toLowerCase(), ((b.OrderFor === "Customer" ? b.CustomerName : "Stock") || "").toLowerCase()],
+      "CUSTOMER": [((a.CustomerName || "Stock") || "").toLowerCase(), ((b.CustomerName || "Stock") || "").toLowerCase()],
+      "BRANCH": [(a.Branch || "").toLowerCase(), (b.Branch || "").toLowerCase()],
+      "QTY": [qtyA, qtyB],
+      "VALUE": [valA, valB],
+      "ORDER NO": [(a.OrderNo || "").toLowerCase(), (b.OrderNo || "").toLowerCase()],
+      "STATUS": [getOrderStatusLabel(a).toLowerCase(), getOrderStatusLabel(b).toLowerCase()]
+    };
+
+    const pair = map[key] || [new Date(a.created_at).getTime() || 0, new Date(b.created_at).getTime() || 0];
+    if(typeof pair[0] === "number" && typeof pair[1] === "number"){
+      return (pair[0] - pair[1]) * dir;
+    }
+    return pair[0].localeCompare(pair[1]) * dir;
+  });
+
+  return sorted;
 }
 
 function isPendingApprovalStatus(val){
@@ -3635,8 +3684,9 @@ const grouped = {};
   grouped[r.OrderNo].items.push(r);
 });
 
-  const orders = Object.values(grouped)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const orders = applyOrderSort(
+    Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  );
 
   // FILTER TABS
   let filtered;
@@ -4281,9 +4331,17 @@ document.addEventListener("click", function(evt){
     : th.classList.contains("sort-desc") ? "desc"
     : "";
   const next = current === "asc" ? "desc" : "asc";
+  const headerKey = (th.innerText || "").replace(/[▲▼]/g, "").trim().toUpperCase();
 
   headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
   th.classList.add(next === "asc" ? "sort-asc" : "sort-desc");
+
+  if(table.classList.contains("track-table")){
+    TABLE_SORT_STATE = { key: headerKey, dir: next };
+    CURRENT_PAGE = 1;
+    refreshCurrentView();
+    return;
+  }
 
   const rows = Array.from(tbody.querySelectorAll("tr"));
   rows.sort((a, b) => {
