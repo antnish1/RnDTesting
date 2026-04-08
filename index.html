@@ -585,6 +585,57 @@ function getUser(){
   catch { return null; }
 }
 
+const PART_MASTER_CACHE = new Map();
+const PART_USAGE_30D_CACHE = new Map();
+
+function normalizePartNo(partNo){
+  return (partNo || "").toString().replace(/\s/g, "").toUpperCase();
+}
+
+async function getPartMasterByPartNo(partNo){
+  const normalizedPartNo = normalizePartNo(partNo);
+  if(!normalizedPartNo) return null;
+
+  if(PART_MASTER_CACHE.has(normalizedPartNo)){
+    return PART_MASTER_CACHE.get(normalizedPartNo);
+  }
+
+  const { data } = await db
+    .from("part_master")
+    .select("PartNo, Description, DNP, Cat1")
+    .eq("PartNo", normalizedPartNo)
+    .maybeSingle();
+
+  PART_MASTER_CACHE.set(normalizedPartNo, data || null);
+  return data || null;
+}
+
+async function getLast30QtyByBranchPart(branch, partNo){
+  const normalizedPartNo = normalizePartNo(partNo);
+  const key = `${branch || ""}__${normalizedPartNo}`;
+  if(PART_USAGE_30D_CACHE.has(key)){
+    return PART_USAGE_30D_CACHE.get(key);
+  }
+
+  const last30 = new Date();
+  last30.setDate(last30.getDate() - 30);
+
+  const { data: history } = await db
+    .from("requests")
+    .select("Qty, editedqty")
+    .eq("Branch", branch)
+    .eq("PartNo", normalizedPartNo)
+    .gte("created_at", last30.toISOString());
+
+  let total30 = 0;
+  (history || []).forEach(r => {
+    total30 += getEffectiveQty(r);
+  });
+
+  PART_USAGE_30D_CACHE.set(key, total30);
+  return total30;
+}
+
 function renderIcons(){
   if (window.lucide && typeof window.lucide.createIcons === "function") {
     window.lucide.createIcons();
@@ -1316,11 +1367,7 @@ if(!partNo){
 }
 
 // FETCH
-const { data } = await db
-.from("part_master")
-.select("*")
-.eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
-.single();
+const data = await getPartMasterByPartNo(partNo);
 
 // ✅ FIX 2: show error only if user typed something wrong
 if(!data){
@@ -1337,23 +1384,7 @@ tr.querySelector(".cat").innerText = data.Cat1;
 // ===== 30 DAY QTY LOGIC =====
 const user = getUser();
 
-const last30 = new Date();
-last30.setDate(last30.getDate() - 30);
-
-const { data: history } = await db
-  .from("requests")
-  .select("Qty")
-  .eq("Branch", user.Branch)
-  .eq("PartNo", partNo)
-  .gte("created_at", last30.toISOString());
-
-let total30 = 0;
-
-if(history){
-  history.forEach(r => {
-    total30 += getEffectiveQty(r);
-  });
-}
+const total30 = await getLast30QtyByBranchPart(user.Branch, partNo);
 
 // SET VALUE
 tr.querySelector(".qty30").innerText = total30;
@@ -3456,11 +3487,7 @@ async function processPartsUploadFlexible(rows){
       break;
     }
 
-    const { data } = await db
-      .from("part_master")
-      .select("*")
-      .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
-      .maybeSingle();
+    const data = await getPartMasterByPartNo(partNo);
 
     if(!data){
       failed++;
