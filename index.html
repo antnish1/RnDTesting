@@ -2734,7 +2734,7 @@ else{
           style="width:56px; padding:4px 4px; border:1px solid #BFAF9D; background:#fff; color:#1F2937;" />
       </td>
       <td class="text-center">
-        <button onclick="confirmRemoveSuperRow('${orderNo}','${rowKey}')"
+        <button onclick="confirmRemoveSuperRow('${orderNo}','${rowKey}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}','${r.Qty || 0}','${r.Value || 0}')"
           class="w-7 h-7 rounded-full text-sm font-bold transition-all duration-200 hover:-translate-y-[1px] hover:rotate-90 active:scale-95 flex items-center justify-center"
           style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca; box-shadow:0 6px 12px rgba(185,28,28,0.18);"
           title="Remove row">
@@ -4244,19 +4244,36 @@ async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQ
   openOrderView(orderNo);
 }
 
-function removeSuperRow(orderNo, rowKey){
+async function removeSuperRow(orderNo, rowKey, rowId, partNo, createdAt, originalQty, originalValue){
+  showLoader();
+  let query = db
+    .from("requests")
+    .update({ editedqty: 0, editedvalue: 0 });
+
+  if(rowId){
+    query = query.eq("id", rowId);
+  }else{
+    query = query.eq("OrderNo", orderNo).eq("PartNo", partNo);
+    if(createdAt) query = query.eq("created_at", createdAt);
+  }
+
+  await query;
+  hideLoader();
+
   const state = getSuperEditState(orderNo);
   state[rowKey] = { ...(state[rowKey] || {}), removed: true };
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = false;
   openOrderView(orderNo);
 }
 
-function confirmRemoveSuperRow(orderNo, rowKey){
+function confirmRemoveSuperRow(orderNo, rowKey, rowId, partNo, createdAt, originalQty, originalValue){
   showPopup(
     "Remove this part row from review? ❗",
     "warning",
     `
       <div class="flex gap-2">
-        <button onclick="removeSuperRow('${orderNo}','${rowKey}'); closePopup();"
+        <button onclick="removeSuperRow('${orderNo}','${rowKey}','${rowId}','${partNo}','${createdAt}','${originalQty}','${originalValue}'); closePopup();"
           class="px-4 py-2 rounded-lg font-semibold"
           style="background:#dc2626;color:white;">
           Yes, Remove
