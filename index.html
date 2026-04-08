@@ -2429,13 +2429,29 @@ function parseOrderComments(raw){
 }
 
 function getOrderComments(orderObj){
+  const uniqueComments = (items) => {
+    const seen = new Set();
+    return items.filter(c => {
+      const key = [
+        c?.by || "",
+        c?.text || "",
+        c?.at || "",
+        c?.attachmentName || "",
+        c?.attachmentUrl || ""
+      ].join("|");
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   if(Array.isArray(orderObj?.items)){
     for(const row of orderObj.items){
       const parsed = parseOrderComments(row?.OrderComments);
-      if(parsed.length) return parsed;
+      if(parsed.length) return uniqueComments(parsed);
     }
   }
-  return parseOrderComments(orderObj?.OrderComments);
+  return uniqueComments(parseOrderComments(orderObj?.OrderComments));
 }
 
 function getOrderCommentCount(orderObj){
@@ -2482,7 +2498,9 @@ const isSuper = user.Role === "super";
   const { data } = await db
     .from("requests")
     .select("*")
-    .eq("OrderNo", orderNo);
+    .eq("OrderNo", orderNo)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   hideLoader();
 
@@ -2579,7 +2597,7 @@ else{
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
   
     <td class="p-2">${r.PartNo}</td>
-    <td>${r.Description}</td>
+    <td class="text-left px-2">${r.Description || "-"}</td>
     <td>${reviewQty}</td>
     <td>${r.BilledQty || 0}</td>
         <td style="color:${
@@ -2624,12 +2642,12 @@ else{
         <input type="number" min="0"
           value="${reviewQty}"
           onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value, '${r.Qty || 0}', '${r.Value || 0}')"
-          class="pc-field w-[90px] text-center" />
+          class="pc-field w-[40px] text-center text-xs px-1" />
       </td>
       <td>
         <button onclick="removeSuperRow('${orderNo}','${rowKey}')"
-          class="px-2 py-1 rounded text-xs font-semibold"
-          style="background:#fee2e2;color:#7f1d1d;">
+          class="px-2 py-1 rounded-md text-xs font-semibold transition-all duration-150 hover:-translate-y-[1px] active:translate-y-0"
+          style="background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca; box-shadow:0 4px 10px rgba(127,29,29,0.16);">
           Remove
         </button>
       </td>
@@ -2933,7 +2951,7 @@ ${actionButtons}
 
           <tr>
             <th class="py-2">Part</th>
-            <th>Description</th>
+            <th class="text-left px-2">Description</th>
             <th>Qty</th>
             <th>Billed</th>
             <th>Pending</th>
