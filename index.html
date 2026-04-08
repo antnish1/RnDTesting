@@ -1500,6 +1500,8 @@ function triggerRowDelete(){
 
 function changePrevQtyDays(orderNo, days){
   window.prevQtyDays = Number(days) || 30;
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = false;
   openOrderView(orderNo);
 }
 // ---------- CALC ----------
@@ -1629,7 +1631,9 @@ for (const r of rows){
     }
   }
 
-  if(!part) return;
+  if(!part) continue;
+
+  const qty30 = await getLast30QtyByBranchPart(user.Branch, part);
 
   const qty30 = await getLast30QtyByBranchPart(user.Branch, part);
 
@@ -2655,13 +2659,21 @@ else{
     });
   }
   const superEditState = getSuperEditState(orderNo);
+  if(!window.superPendingEditState) window.superPendingEditState = {};
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  let hasPendingEditedQty = false;
   let partsHTML = data.map((r, idx)=>{
   const rowKey = `${r.PartNo || "PART"}__${idx}`;
   const rowEdit = superEditState[rowKey] || {};
   const prevQty = prevQtyMap[normalizePartNo(r.PartNo)] || 0;
-  const reviewQty = isSuper
-    ? Math.max(0, Number(r.Qty || 0) - prevQty)
-    : getEffectiveQty(r);
+  const originalQty = Number(r.Qty || 0);
+  const autoSuggestedQty = Math.max(0, originalQty - prevQty);
+  const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
+  const editQtyForInput = hasPersistedEdit ? Math.max(0, Number(r.editedqty || 0)) : autoSuggestedQty;
+  const reviewQty = isSuper ? originalQty : getEffectiveQty(r);
+  if(isSuper && (editQtyForInput !== originalQty)){
+    hasPendingEditedQty = true;
+  }
   const billedQty = Number(r.BilledQty || 0);
   const isRemoved = !!rowEdit.removed;
   const pendingQty = Math.max(0, reviewQty - billedQty);
@@ -2718,7 +2730,7 @@ else{
     ${isSuper ? `
       <td>
         <input type="number" min="0"
-          value="${reviewQty}"
+          value="${editQtyForInput}"
           onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value, '${r.Qty || 0}', '${r.Value || 0}')"
           class="text-center text-xs rounded-md"
           style="width:56px; padding:4px 4px; border:1px solid #BFAF9D; background:#fff; color:#1F2937;" />
@@ -2735,6 +2747,7 @@ else{
     </tr>
     `;
   }).join("");
+  window.superPendingEditState[orderNo] = hasPendingEditedQty;
 
 
 const isAdmin = user.Branch === "HQ";
@@ -3047,6 +3060,16 @@ ${actionButtons}
         PART DETAILS
       </span>
     </div>
+
+    ${isSuper ? `
+      <div class="flex justify-end mt-1 mb-2">
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#0f766e'}; color:white;">
+          ${window.superAcceptedEdits?.[orderNo] ? "Edited Qty Accepted" : "Accept Edited Qty"}
+        </button>
+      </div>
+    ` : ""}
 
     <div class="overflow-x-auto mt-2">
 
@@ -4217,6 +4240,9 @@ async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQ
     return showPopup("Failed to save edited qty ❌");
   }
 
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = false;
+
   openOrderView(orderNo);
 }
 
@@ -4345,7 +4371,51 @@ async function addOrderComment(orderNo){
 }
 
 async function approveOrder(orderNo){
+  const user = getUser();
+  const isSuper = user?.Role === "super";
+  const hasPendingEdited = !!window.superPendingEditState?.[orderNo];
+  const accepted = !!window.superAcceptedEdits?.[orderNo];
+
+  if(isSuper && hasPendingEdited && !accepted){
+    return showPopup(
+      "You have not accepted the edited qty. The order will be placed with the original qty.",
+      "warning",
+      `
+        <div class="flex gap-2">
+          <button onclick="approveWithOriginalQty('${orderNo}')"
+            class="px-4 py-2 rounded-lg font-semibold"
+            style="background:#2563eb;color:white;">
+            Approve with Original Qty
+          </button>
+          <button onclick="closePopup()"
+            class="px-4 py-2 rounded-lg font-semibold"
+            style="background:#e2e8f0;color:#0f172a;">
+            Cancel
+          </button>
+        </div>
+      `
+    );
+  }
+
   await updateApproval(orderNo, "Approved");
+}
+
+async function approveWithOriginalQty(orderNo){
+  closePopup();
+  showLoader();
+  await db
+    .from("requests")
+    .update({ editedqty: null, editedvalue: null })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+  await updateApproval(orderNo, "Approved");
+}
+
+function acceptEditedQty(orderNo){
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = true;
+  showPopup("Edited qty accepted for approval ✅");
+  openOrderView(orderNo);
 }
 
 function goBack(){
