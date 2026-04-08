@@ -2741,6 +2741,12 @@ if(isSuper){
         Download
       </button>
 
+      <button onclick="printOrderDetails('${orderNo}')"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#0f766e;color:white;">
+        Print
+      </button>
+
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#4b5563;color:white;">
@@ -2780,6 +2786,12 @@ else{
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#4b5563;color:white;">
         Download
+      </button>
+
+      <button onclick="printOrderDetails('${orderNo}')"
+        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#0f766e;color:white;">
+        Print
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
@@ -4239,6 +4251,223 @@ function goBack(){
 
 function downloadOrder(orderNo){
   downloadOrderExcel(orderNo);
+}
+
+function escapeHtml(value){
+  return (value ?? "")
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getPrintableStatusLabel(status){
+  const s = (status || "").toString().trim().toUpperCase();
+  if(s.includes("REJECT")) return "Rejected";
+  if(s.includes("PENDING APPROVAL") || s === "PENDINGAPPROVAL" || s === "APPROVAL PENDING") return "Pending Approval";
+  if(s === "APPROVED" || s === "PENDING") return "Approved";
+  if(s.includes("DISPATCH")) return s.includes("NOT") ? "Not Dispatched" : "Dispatched";
+  if(s === "PROCESSED") return "Processed";
+  return s || "Pending";
+}
+
+async function printOrderDetails(orderNo){
+  showLoader();
+  const { data, error } = await db
+    .from("requests")
+    .select("*")
+    .eq("OrderNo", orderNo)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  hideLoader();
+
+  if(error || !data || !data.length){
+    return showPopup("Unable to generate print preview ❗");
+  }
+
+  const order = data[0];
+  const comments = getOrderComments({ items: data, OrderComments: order.OrderComments });
+  const totalQty = data.reduce((sum, r) => sum + getEffectiveQty(r), 0);
+  const totalPending = data.reduce((sum, r) => {
+    const pending = Math.max(0, getEffectiveQty(r) - Number(r.BilledQty || 0));
+    return sum + pending;
+  }, 0);
+  const totalValue = data.reduce((sum, r) => sum + getEffectiveValue(r), 0);
+  const overallStatus = getPrintableStatusLabel(order.Status || order.ApprovalStatus);
+
+  const summaryRows = [
+    ["Order Type", order.OrderType || "-"],
+    ["Order For", order.OrderFor || "-"],
+    ["Branch", order.Branch || "-"],
+    ["Employee Name", order.EmployeeName || "-"],
+    ["Call ID", order.CallID || "-"],
+    ["Status", overallStatus],
+    ["Machine No", order.MachineNo || "-"],
+    ["Customer", order.CustomerName || "-"],
+    ["Machine Type", order.WarrantyStatus || "-"],
+    ["Approved By", order.ApprovedBy || "-"]
+  ];
+
+  const partsRowsHtml = data.map(r => {
+    const qty = getEffectiveQty(r);
+    const billed = Number(r.BilledQty || 0);
+    const pending = Math.max(0, qty - billed);
+    return `
+      <tr>
+        <td>${escapeHtml(r.PartNo || "-")}</td>
+        <td class="left">${escapeHtml(r.Description || "-")}</td>
+        <td>${qty}</td>
+        <td>${billed}</td>
+        <td>${pending}</td>
+        <td class="right">₹ ${Number(getEffectiveValue(r) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        <td>${escapeHtml(getPrintableStatusLabel(r.Status))}</td>
+        <td>${escapeHtml(formatDate(r.ProcessedDate))}</td>
+        <td>${escapeHtml(formatDate(r.OrderRegDt))}</td>
+        <td>${escapeHtml(r.BillNo || "-")}</td>
+        <td>${escapeHtml(formatDate(r.BillingDt))}</td>
+        <td>${escapeHtml(r.TransportName || "-")}</td>
+        <td>${escapeHtml(r.Docket || "-")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const commentsHtml = comments.length
+    ? comments.map(c => `
+        <div class="comment-item">
+          <div><strong>${escapeHtml(c.by || "-")}</strong> — ${escapeHtml(c.text || "")}</div>
+          <div class="meta">${escapeHtml(formatDateTime(c.at || ""))}${c.attachmentName ? ` • Attachment: ${escapeHtml(c.attachmentName)}` : ""}</div>
+        </div>
+      `).join("")
+    : `<div class="comment-item">No comments available</div>`;
+
+  const summaryHtml = summaryRows.map(([label, val]) => `
+    <div class="summary-item"><span class="label">${escapeHtml(label)}:</span><span class="value">${escapeHtml(val)}</span></div>
+  `).join("");
+  const logoUrl = new URL("HDU4w-removebg-preview.png", window.location.href).href;
+
+  const printWindow = window.open("", "_blank", "width=900,height=1100");
+  if(!printWindow){
+    return showPopup("Popup blocked. Please allow popups to print/download PDF ❗");
+  }
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Parts Order Details - ${escapeHtml(orderNo)}</title>
+        <style>
+          @page { size: A4 portrait; margin: 14mm; }
+          body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 12px; line-height: 1.35; }
+          .doc { width: 100%; }
+          .head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+          .brand { display:flex; gap:12px; align-items:center; }
+          .brand img { width: 54px; height: auto; object-fit: contain; }
+          .brand h1 { font-size: 18px; margin:0; font-weight: 700; }
+          .brand p { margin:2px 0 0 0; color:#4b5563; font-size:11px; }
+          .title { text-align:right; }
+          .title h2 { margin:0; font-size:18px; letter-spacing:.4px; }
+          .title p { margin:4px 0 0 0; color:#4b5563; }
+          .divider { border-top:1px solid #9ca3af; margin:10px 0 12px; }
+          .meta-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:6px 18px; margin-bottom:10px; }
+          .meta-grid div { display:flex; gap:6px; white-space:nowrap; }
+          .meta-grid .k { color:#374151; font-weight:600; min-width:110px; }
+          .section-title { margin:10px 0 6px; font-size:13px; font-weight:700; border-bottom:1px solid #d1d5db; padding-bottom:4px; }
+          .summary { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:6px 14px; margin-bottom:8px; }
+          .summary-item { display:flex; justify-content:space-between; gap:8px; border:1px solid #e5e7eb; padding:4px 6px; }
+          .summary-item .label { color:#374151; font-weight:600; white-space:nowrap; }
+          .summary-item .value { font-weight:600; text-align:right; width:100%; }
+          table { width:100%; border-collapse:collapse; font-size:10px; }
+          th, td { border:1px solid #d1d5db; padding:4px 5px; text-align:center; vertical-align:middle; }
+          th { font-weight:700; background:#f9fafb; }
+          td.left, th.left { text-align:left; }
+          td.right { text-align:right; }
+          .totals { margin-top:8px; border:1px solid #d1d5db; }
+          .totals div { display:flex; justify-content:space-between; padding:4px 8px; border-bottom:1px solid #e5e7eb; }
+          .totals div:last-child { border-bottom:none; font-weight:700; }
+          .comment-item { border:1px solid #e5e7eb; padding:6px 8px; margin-bottom:5px; }
+          .meta { color:#6b7280; font-size:10px; margin-top:2px; }
+          .sign-grid { margin-top:14px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+          .sign-box { border-top:1px solid #6b7280; padding-top:6px; font-size:11px; min-height:44px; }
+          .sign-box .muted { color:#6b7280; font-size:10px; }
+          @media print { .no-print { display:none !important; } }
+        </style>
+      </head>
+      <body>
+        <div class="doc">
+          <div class="head">
+            <div class="brand">
+              <img src="${logoUrl}" alt="Company Logo" />
+              <div>
+                <h1>Parts Connect Portal</h1>
+                <p>Internal Parts Order & Approval Document</p>
+              </div>
+            </div>
+            <div class="title">
+              <h2>Parts Order Details</h2>
+              <p>Order ID: <strong>${escapeHtml(orderNo)}</strong></p>
+            </div>
+          </div>
+          <div class="divider"></div>
+
+          <div class="meta-grid">
+            <div><span class="k">Order Date & Time</span><span>${escapeHtml(formatDateTime(order.created_at))}</span></div>
+            <div><span class="k">Branch</span><span>${escapeHtml(order.Branch || "-")}</span></div>
+            <div><span class="k">Current Status</span><span>${escapeHtml(overallStatus)}</span></div>
+            <div><span class="k">Line Items</span><span>${data.length}</span></div>
+          </div>
+
+          <div class="section-title">Order Summary</div>
+          <div class="summary">${summaryHtml}</div>
+
+          <div class="section-title">Parts Details</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th class="left">Description</th>
+                <th>Qty</th>
+                <th>Billed</th>
+                <th>Pending</th>
+                <th>Value</th>
+                <th>Status</th>
+                <th>Processed</th>
+                <th>Reg Dt</th>
+                <th>Bill No</th>
+                <th>Billing Dt</th>
+                <th>Transport</th>
+                <th>Docket</th>
+              </tr>
+            </thead>
+            <tbody>${partsRowsHtml}</tbody>
+          </table>
+
+          <div class="totals">
+            <div><span>Total Qty</span><span>${totalQty}</span></div>
+            <div><span>Total Pending Qty</span><span>${totalPending}</span></div>
+            <div><span>Total Value</span><span>₹ ${Number(totalValue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
+            <div><span>Number of line items</span><span>${data.length}</span></div>
+          </div>
+
+          <div class="section-title">Comments</div>
+          ${commentsHtml}
+
+          <div class="section-title">Approval / Signature</div>
+          <div class="sign-grid">
+            <div class="sign-box"><div>Prepared By</div><div class="muted">Signature: __________________</div><div class="muted">Date: __________________</div></div>
+            <div class="sign-box"><div>Checked By</div><div class="muted">Signature: __________________</div><div class="muted">Date: __________________</div></div>
+            <div class="sign-box"><div>Approved By</div><div class="muted">Signature: __________________</div><div class="muted">Date: __________________</div></div>
+          </div>
+
+          <div class="no-print" style="margin-top:14px; text-align:right;">
+            <button onclick="window.print()" style="padding:8px 12px; border:1px solid #9ca3af; border-radius:6px; background:#f8fafc; cursor:pointer;">Print / Save as PDF</button>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
 }
 
     
