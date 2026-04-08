@@ -417,18 +417,18 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: 420px;               /* 🔥 DOUBLE SIZE */
-  height: 44px;
+  width: clamp(180px, 28vw, 320px);
+  height: 40px;
 
-  padding: 0 16px 0 42px;    /* space for icon */
+  padding: 0 12px 0 36px;    /* space for icon */
 
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(0,0,0,0.1);
 
   background: rgba(255,255,255,0.9);
   backdrop-filter: blur(8px);
 
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 
   box-shadow: 
@@ -740,7 +740,7 @@ const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isAdmin){
-  window.activeTab = "Pending";
+  window.activeTab = "Approved";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -846,12 +846,12 @@ document.getElementById("app").innerHTML = `
     </button>
 
 ` : `
-    <button onclick="loadAdmin('Pending')" 
-    class="top-btn ${window.activeTab==='Pending' ? 'active-top-btn' : ''}"
-    data-tab="Pending">
+    <button onclick="loadAdmin('Approved')" 
+    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
+    data-tab="Approved">
     
       <span class="flex items-center gap-2">
-        Pending
+        Approved
         <span id="pendingCount" 
           class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full">
         </span>
@@ -901,7 +901,7 @@ renderIcons();
     
 // ✅ Load correct screen
 if(isAdmin){
-  loadAdmin(window.activeTab || "Pending");
+  loadAdmin(window.activeTab || "Approved");
 
   // ✅ ADD THIS LINE (VERY IMPORTANT)
   setTimeout(loadPendingCount, 200);
@@ -1314,7 +1314,7 @@ let total30 = 0;
 
 if(history){
   history.forEach(r => {
-    total30 += Number(r.Qty || 0);
+    total30 += getEffectiveQty(r);
   });
 }
 
@@ -1578,7 +1578,7 @@ rows.forEach(r=>{
     Value: dnp * qty,
 
     OrderNo: orderNo,
-    Status: "Pending",
+    Status: "PENDING APPROVAL",
     ApprovalStatus: "PendingApproval"
   });
 
@@ -1718,14 +1718,18 @@ if(s.includes("REJECT")){
     return "PROCESSED";
   }
 
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
+    return "PENDING APPROVAL";
+  }
+
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
   return s;
 });;
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 // ✅ PRIORITY BASED (TOP → DOWN)
 
@@ -1756,14 +1760,17 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
 }
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
+}
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
   
 
-const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
@@ -1803,7 +1810,7 @@ o.OrderType === 'VOR'
 </td>
 <td class="px-4 py-3 text-left">${o.Branch || "-"}</td>
 <td class="px-4 py-3 text-right">
-  ${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}
+  ${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}
 </td>
 
 <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
@@ -1812,6 +1819,9 @@ o.OrderType === 'VOR'
 
 <td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">
   ${o.OrderNo}
+  ${getOrderCommentCount(o) > 0
+    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+    : ""}
 </td>
 
 <td class="px-4 py-3 text-center">
@@ -1848,7 +1858,7 @@ html += `
 
     </div>
 
-<div class="flex justify-between items-center mt-4">
+<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
@@ -1894,13 +1904,23 @@ async function loadPendingCount(){
 
   const { data, error } = await db
     .from("requests")
-    .select("OrderNo, Status")
-    .eq("Status", "Pending");
+    .select("OrderNo, Status, ApprovalStatus");
 
   if(error) return;
 
   // ✅ GET UNIQUE ORDER COUNT
-  const uniqueOrders = [...new Set(data.map(d => d.OrderNo))];
+  const uniqueOrders = [...new Set(
+    data
+      .filter(d => {
+        const status = (d.Status || "").toString().trim().toUpperCase();
+        const approval = (d.ApprovalStatus || "").toString().trim().toUpperCase();
+        return (status === "APPROVED" || status === "PENDING")
+          && !isPendingApprovalStatus(d.ApprovalStatus)
+          && approval !== "REJECTED"
+          && (approval === "APPROVED" || approval === "");
+      })
+      .map(d => d.OrderNo)
+  )];
   const count = uniqueOrders.length;
 
   const el = document.getElementById("pendingCount");
@@ -1916,7 +1936,7 @@ async function loadPendingCount(){
 }
   
 // ---------- ADMIN ----------
-async function loadAdmin(activeTab = "Pending", skipReset = false){
+async function loadAdmin(activeTab = "Approved", skipReset = false){
 
 if(!skipReset){
   CURRENT_PAGE = 1;
@@ -1949,15 +1969,32 @@ const orders = Object.values(grouped)
 // FILTER
 let filtered;
 
-if(activeTab === "Pending"){
+if(activeTab === "Approved"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.Status === "Pending")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+      return (status === "APPROVED" || status === "PENDING")
+        && !pendingApproval
+        && approval !== "REJECTED"
+        && (approval === "APPROVED" || approval === "");
+    })
   );
 }
 else{
-  // ✅ ALL NON-PENDING (Processed + Dispatched + Partial)
+  // ✅ ALL NON-APPROVED/NON-PENDING-APPROVAL (exclude super-rejected)
   filtered = orders.filter(o => 
-    o.items.some(x => x.Status !== "Pending")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+      return status !== "APPROVED"
+        && status !== "PENDING"
+        && status !== "PENDING APPROVAL"
+        && !pendingApproval
+        && approval !== "REJECTED";
+    })
   );
 }
 
@@ -2028,14 +2065,17 @@ const statuses = o.items.map(x => {
 if(s.includes("REJECT")){
   return "REJECTED";
 }
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
+    return "PENDING APPROVAL";
+  }
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
   return s;
 });
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 // ✅ PRIORITY BASED (TOP → DOWN)
 
@@ -2066,13 +2106,16 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
 }
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
+}
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
 
-const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
@@ -2112,12 +2155,17 @@ style="${
 </td>
 <td class="px-4 py-3 text-left">${o.Branch || "-"}</td>
 <td class="px-4 py-3 text-right">
-  ${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}
+  ${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}
 </td>
 <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
   ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
 </td>
-<td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">${o.OrderNo}</td>
+<td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">
+  ${o.OrderNo}
+  ${getOrderCommentCount(o) > 0
+    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+    : ""}
+</td>
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
     style="
@@ -2153,7 +2201,7 @@ html += `
 </div>
 
 
-<div class="flex justify-between items-center mt-4">
+<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
@@ -2279,6 +2327,81 @@ function formatDateTime(val){
 
   return `${day}-${month}-${year} ${hours}:${mins} ${ampm}`;
 }
+
+function getEffectiveQty(row){
+  const edited = row?.editedqty ?? row?.EditedQty;
+  if(edited === null || edited === undefined || edited === ""){
+    return Number(row?.Qty || 0);
+  }
+  return Number(edited || 0);
+}
+
+function getEffectiveValue(row){
+  const edited = row?.editedvalue ?? row?.EditedValue;
+  if(edited === null || edited === undefined || edited === ""){
+    return Number(row?.Value || 0);
+  }
+  return Number(edited || 0);
+}
+
+function isPendingApprovalStatus(val){
+  const s = (val || "").toString().trim().toUpperCase();
+  return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
+}
+
+function parseOrderComments(raw){
+  if(!raw) return [];
+  try{
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  }catch{
+    return [];
+  }
+}
+
+function getOrderComments(orderObj){
+  if(Array.isArray(orderObj?.items)){
+    for(const row of orderObj.items){
+      const parsed = parseOrderComments(row?.OrderComments);
+      if(parsed.length) return parsed;
+    }
+  }
+  return parseOrderComments(orderObj?.OrderComments);
+}
+
+function getOrderCommentCount(orderObj){
+  return getOrderComments(orderObj).length;
+}
+
+function getCommentUserBg(by){
+  const palettes = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9"];
+  const name = (by || "").toString();
+  let hash = 0;
+  for(let i = 0; i < name.length; i++){
+    hash = (hash + name.charCodeAt(i)) % palettes.length;
+  }
+  return palettes[hash];
+}
+
+const commentAttachmentHrefCache = {};
+function getCommentAttachmentHref(url){
+  if(!url) return "";
+  if(!url.startsWith("data:")) return url;
+  if(commentAttachmentHrefCache[url]) return commentAttachmentHrefCache[url];
+  try{
+    const [meta, base64] = url.split(",");
+    const mime = (meta.match(/data:(.*?);base64/) || [])[1] || "application/octet-stream";
+    const binary = atob(base64 || "");
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for(let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+    commentAttachmentHrefCache[url] = blobUrl;
+    return blobUrl;
+  }catch{
+    return url;
+  }
+}
   
 async function openOrderView(orderNo){
 
@@ -2300,9 +2423,9 @@ const isSuper = user.Role === "super";
 
   const order = data[0];
 
-  const total = data.reduce((s,x)=>s+Number(x.Value||0),0);
+  const total = data.reduce((s,x)=>s+getEffectiveValue(x),0);
 
-let orderStatus = "PENDING";
+let orderStatus = "APPROVED";
 
 const statuses = data.map(x => {
   let s = (x.Status || "").toString().trim().toUpperCase();
@@ -2320,9 +2443,12 @@ if(s.includes("REJECT")){
   if(s.includes("PROCESS")){
     return "PROCESSED";
   }
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
+    return "PENDING APPROVAL";
+  }
 
   if(s.includes("PEND")){
-    return "PENDING";
+    return "APPROVED";
   }
 
 
@@ -2359,27 +2485,43 @@ else if(statuses.every(s => s === "NOT DESPATCHED")){
 else if(statuses.every(s => s === "PROCESSED")){
   orderStatus = "PROCESSED";
 }
+else if(statuses.every(s => s === "PENDING APPROVAL")){
+  orderStatus = "PENDING APPROVAL";
+}
 
 // ⚪ DEFAULT
 else{
-  orderStatus = "PENDING";
+  orderStatus = "APPROVED";
 }
-  let partsHTML = data.map(r=>`
+  const superEditState = getSuperEditState(orderNo);
+  let partsHTML = data.map((r, idx)=>{
+  const rowKey = `${r.PartNo || "PART"}__${idx}`;
+  const rowEdit = superEditState[rowKey] || {};
+  const reviewQty = getEffectiveQty(r);
+  const billedQty = Number(r.BilledQty || 0);
+  const isRemoved = !!rowEdit.removed;
+  const pendingQty = Math.max(0, reviewQty - billedQty);
+
+  if(isSuper && isRemoved){
+    return "";
+  }
+
+  return `
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
   
     <td class="p-2">${r.PartNo}</td>
     <td>${r.Description}</td>
-    <td>${r.Qty}</td>
+    <td>${reviewQty}</td>
     <td>${r.BilledQty || 0}</td>
         <td style="color:${
-          (Number(r.Qty || 0) - Number(r.BilledQty || 0)) > 0 
+          pendingQty > 0 
             ? '#92400e'   /* pending → amber */
             : '#065f46'   /* completed → green */
         }; font-weight:600;">
-          ${(Number(r.Qty || 0) - Number(r.BilledQty || 0))}
+          ${pendingQty}
         </td>
     <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
-  ₹ ${Number(r.Value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+  ₹ ${getEffectiveValue(r).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
 </td>
   
 <td>
@@ -2408,11 +2550,57 @@ else{
     <td>${formatDate(r.BillingDt)}</td>
     <td>${r.TransportName || "-"}</td>
     <td>${r.Docket || "-"}</td>
+    ${isSuper ? `
+      <td>
+        <input type="number" min="0"
+          value="${reviewQty}"
+          onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value, '${r.Qty || 0}', '${r.Value || 0}')"
+          class="pc-field w-[90px] text-center" />
+      </td>
+      <td>
+        <button onclick="removeSuperRow('${orderNo}','${rowKey}')"
+          class="px-2 py-1 rounded text-xs font-semibold"
+          style="background:#fee2e2;color:#7f1d1d;">
+          Remove
+        </button>
+      </td>
+    ` : ""}
     </tr>
-    `).join("");
+    `;
+  }).join("");
 
 
 const isAdmin = user.Branch === "HQ";
+const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments });
+const commentsHTML = orderComments.length
+  ? orderComments.map(c => `
+      <div class="px-3 py-2 rounded-lg text-xs" style="background:${getCommentUserBg(c.by)}; border:1px solid var(--pc-border);">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-semibold">${c.by || "-"}</span>
+          <span style="color: var(--pc-text-muted);">=&gt;</span>
+          <span>"${c.text || ""}"</span>
+          <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</span>
+          ${c.attachmentName
+            ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${c.attachmentName}</a>`
+            : ""}
+        </div>
+      </div>
+    `).join("")
+  : `<div class="text-xs" style="color: var(--pc-text-muted);">No comments yet.</div>`;
+let superApproverOptions = `<option value="">Change Approver</option>`;
+
+if(isSuper){
+  const { data: superUsers } = await db
+    .from("users")
+    .select("Name")
+    .eq("Role", "super");
+
+  if(superUsers && superUsers.length){
+    superApproverOptions += superUsers
+      .map(u => `<option value="${u.Name}" ${u.Name === order.ApprovedBy ? "selected" : ""}>${u.Name}</option>`)
+      .join("");
+  }
+}
 
 
 
@@ -2420,29 +2608,39 @@ let actionButtons = "";
 
 if(isSuper){
   actionButtons = `
-    <div class="flex gap-3">
+    <div class="flex gap-2 items-center flex-wrap justify-end">
+      <div class="flex gap-2 items-center mr-3">
+        <button onclick="sendToApprover('${orderNo}')"
+          class="px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:#2563eb;color:white;">
+          Send
+        </button>
+        <select id="changeApprover" class="pc-field w-[190px] text-sm">
+          ${superApproverOptions}
+        </select>
+      </div>
 
       <button onclick="approveOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#10b981;color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#16a34a;color:white;">
         Approve
       </button>
 
-      <button onclick="rejectOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#ef4444;color:white;">
+      <button onclick="updateApproval('${orderNo}','Rejected')"
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#dc2626;color:white;">
         Reject
       </button>
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:var(--pc-secondary);color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#475569;color:white;">
         Download
       </button>
 
       <button onclick="goBack()"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#e5e7eb;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#e2e8f0;color:#0f172a;">
         Back
       </button>
 
@@ -2451,31 +2649,31 @@ if(isSuper){
 }
 else{
   actionButtons = `
-    <div class="flex gap-3">
+    <div class="flex gap-2 items-center flex-wrap">
 
-      <input value="${orderNo}" readonly class="pc-field w-[140px]" />
+      ${isAdmin ? `
+        <input
+          id="processOrderNo"
+          value="${orderNo}"
+          class="pc-field w-[160px]"
+        />
 
-      <button onclick="processOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#f59e0b;color:white;">
-        Process
-      </button>
-
-      <button onclick="rejectOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#ef4444;color:white;">
-        Reject
-      </button>
+        <button onclick="processOrder('${orderNo}')"
+          class="px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:#2563eb;color:white;">
+          Process
+        </button>
+      ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:var(--pc-secondary);color:white;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#4b5563;color:white;">
         Download
       </button>
 
       <button onclick="goBack()"
-        class="px-4 py-2 rounded-lg font-semibold"
-        style="background:#e5e7eb;">
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#f3f4f6;color:#111827;">
         Back
       </button>
 
@@ -2630,6 +2828,7 @@ ${actionButtons}
             <th>Billing Dt</th>
             <th>Transport</th>
             <th>Docket</th>
+            ${isSuper ? "<th>Edit Qty</th><th>Remove Row</th>" : ""}
           </tr>
 
         </thead>
@@ -2640,6 +2839,8 @@ ${actionButtons}
 
       </table>
 
+      ${isSuper ? `<div class="mt-2 text-[11px]" style="color: var(--pc-text-muted);">Super edits are review-only. Original order Qty in DB remains unchanged.</div>` : ""}
+
       <div class="text-right mt-4 font-bold"
            style="color: var(--pc-secondary);">
         Total: ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
@@ -2647,6 +2848,42 @@ ${actionButtons}
 
     </div>
 
+  </div>
+
+  <div class="relative pc-section">
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+        COMMENTS (${orderComments.length})
+      </span>
+    </div>
+
+    <div class="space-y-2 mt-2">
+      <div class="flex items-center gap-2">
+        <button onclick="toggleCommentBox()"
+          class="px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:#334155; color:white;">
+          Add Comment
+        </button>
+        <button id="postCommentBtn" onclick="addOrderComment('${orderNo}')"
+          class="px-3 py-2 rounded-lg font-semibold text-sm hidden"
+          style="background:#2563eb; color:white;">
+          Post Comment
+        </button>
+      </div>
+      <div id="commentComposer" class="hidden">
+        <div class="relative">
+          <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
+          <button type="button" onclick="document.getElementById('commentAttachment').click()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
+            style="background:#f1f5f9; border:1px solid var(--pc-border);">
+            📎
+          </button>
+          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
+        </div>
+        <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
+      </div>
+      <div class="space-y-2">${commentsHTML}</div>
+    </div>
   </div>
 
 </div>
@@ -2682,7 +2919,7 @@ let html = `
 
 data.forEach((o,i)=>{
 
-const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="toggleHQ(${i})" class="bg-gray-900 hover:bg-gray-800 transition rounded-lg shadow cursor-pointer">
@@ -3211,7 +3448,9 @@ function handleUniversalSearch(value){
       (r.PartNo || "").toLowerCase().includes(search) ||
       (r.CustomerName || "").toLowerCase().includes(search) ||
       (r.MachineNo || "").toLowerCase().includes(search) ||
-      (r.Branch || "").toLowerCase().includes(search)
+      (r.Branch || "").toLowerCase().includes(search) ||
+      (r.OrderType || "").toLowerCase().includes(search) ||
+      (r.Status || "").toLowerCase().includes(search)
     );
 
   });
@@ -3260,7 +3499,7 @@ function renderSearchResults(data){
 
   orders.forEach(o=>{
 
-    const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+    const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
     html += `
     <tr onclick="openOrderView('${o.OrderNo}')"
@@ -3287,9 +3526,14 @@ function renderSearchResults(data){
   </span>
 </td>
       <td>${o.Branch || "-"}</td>
-      <td class="px-4 py-3 text-center">${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
+      <td class="px-4 py-3 text-center">${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toFixed(2)}</td>
-      <td class="font-semibold">${o.OrderNo}</td>
+      <td class="font-semibold">
+        ${o.OrderNo}
+        ${getOrderCommentCount(o) > 0
+          ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+          : ""}
+      </td>
 
     </tr>
     `;
@@ -3331,16 +3575,40 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
     .order("created_at",{ascending:false});
 
-  GLOBAL_DATA = data;
+  // ✅ FORCE STATUS ALIGNMENT FOR NOT-YET-APPROVED ORDERS
+  const pendingApprovalOrderNos = [...new Set(
+    (data || [])
+      .filter(r => isPendingApprovalStatus(r.ApprovalStatus))
+      .map(r => r.OrderNo)
+  )];
+
+  for (const orderNo of pendingApprovalOrderNos){
+    await db
+      .from("requests")
+      .update({ Status: "PENDING APPROVAL", ApprovalStatus: "PendingApproval" })
+      .eq("OrderNo", orderNo);
+  }
+
+  if(pendingApprovalOrderNos.length){
+    const { data: refreshed } = await db
+      .from("requests")
+      .select("*")
+      .eq("ApprovedBy", user.Name)
+      .order("created_at",{ascending:false});
+    GLOBAL_DATA = refreshed || [];
+  } else {
+    GLOBAL_DATA = data || [];
+  }
   hideLoader();
 
   // GROUP
 const grouped = {};
-data.forEach(r=>{
+(GLOBAL_DATA || []).forEach(r=>{
 
   // ✅ ADD THIS LINE (MANDATORY FIX)
-  if(!r.ApprovalStatus){
+  if(!r.ApprovalStatus || isPendingApprovalStatus(r.ApprovalStatus)){
     r.ApprovalStatus = "PendingApproval";
+    r.Status = "PENDING APPROVAL";
   }
 
   if(!grouped[r.OrderNo]){
@@ -3357,17 +3625,27 @@ data.forEach(r=>{
 
 if(activeTab === "PendingApproval"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "PendingApproval")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status === "PENDING APPROVAL" || status === "APPROVAL PENDING" || isPendingApprovalStatus(x.ApprovalStatus);
+    })
   );
 }
 else if(activeTab === "Approved"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "Approved")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      return status === "APPROVED" || status === "PENDING";
+    })
   );
 }
 else if(activeTab === "Rejected"){
   filtered = orders.filter(o => 
-    o.items.some(x => x.ApprovalStatus === "Rejected")
+    o.items.some(x => {
+      const status = (x.Status || "").toString().trim().toUpperCase();
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      return status === "REJECTED" || approval === "REJECTED";
+    })
   );
 }
 else if(activeTab === "All"){
@@ -3412,7 +3690,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
               <th>Qty</th>
               <th>Value</th>
               <th>Order No</th>
-              <th class="px-4 py-3 text-center">Approval</th>
+              <th class="px-4 py-3 text-center">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -3420,12 +3698,22 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   paginatedOrders.forEach(o=>{
 
-    const approvalStatus = o.items[0].ApprovalStatus || "PendingApproval";
+    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
+    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
+    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
+    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
+    const tableStatus = isRejected
+      ? "Rejected"
+      : isPendingApproval
+        ? "Pending Approval"
+        : isApproved
+          ? "Approved"
+          : (o.items[0].Status || "Pending Approval");
       
-    const total = o.items.reduce((s,x)=>s+Number(x.Value||0),0);
+    const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
     html += `
-            <tr onclick="openSuperOrder('${o.OrderNo}')"
+            <tr onclick="openOrderView('${o.OrderNo}')"
             class="cursor-pointer transition hover:scale-[1.01]"
             style="${
               o.OrderType === 'VOR'
@@ -3433,27 +3721,50 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
                 : ''
             }">
       <td>${formatDateTime(o.created_at)}</td>
-      <td>${o.OrderType}</td>
+      <td>
+        <span class="px-2 py-1 rounded-full text-xs font-semibold"
+          style="
+            background:${
+              o.OrderType === 'VOR' ? '#fef3c7' :
+              o.OrderType === 'SOP' ? '#dbeafe' :
+              o.OrderType === 'ZMAC' ? '#e0e7ff' :
+              '#ede9fe'
+            };
+            color:${
+              o.OrderType === 'VOR' ? '#92400e' :
+              o.OrderType === 'SOP' ? '#1e3a8a' :
+              o.OrderType === 'ZMAC' ? '#3730a3' :
+              '#5b21b6'
+            };
+          ">
+          ${o.OrderType || "-"}
+        </span>
+      </td>
       <td>${o.CustomerName || "Stock"}</td>
       <td>${o.Branch}</td>
-      <td>${o.items.reduce((s,x)=>s+Number(x.Qty||0),0)}</td>
+      <td>${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toLocaleString("en-IN")}</td>
-      <td>${o.OrderNo}</td>
+      <td>
+        ${o.OrderNo}
+        ${getOrderCommentCount(o) > 0
+          ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+          : ""}
+      </td>
       <td class="px-4 py-3 text-center">
       <span class="px-2 py-1 rounded text-xs font-semibold"
         style="
           background:${
-            approvalStatus === "Approved" ? "#d1fae5" :
-            approvalStatus === "Rejected" ? "#fde2e2" :
+            tableStatus === "Approved" ? "#d1fae5" :
+            tableStatus === "Rejected" ? "#fde2e2" :
             "#fef3c7"
           };
           color:${
-            approvalStatus === "Approved" ? "#065f46" :
-            approvalStatus === "Rejected" ? "#7f1d1d" :
+            tableStatus === "Approved" ? "#065f46" :
+            tableStatus === "Rejected" ? "#7f1d1d" :
             "#92400e"
           };
         ">
-        ${approvalStatus}
+        ${tableStatus}
       </span>
     </td>
     </tr>`;
@@ -3467,7 +3778,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
 
 
-<div class="flex justify-between items-center mt-4">
+<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
 
   <button onclick="changePage(-1)"
     class="px-4 py-2 rounded-lg font-semibold"
@@ -3549,10 +3860,20 @@ async function openSuperOrder(orderNo){
 async function updateApproval(orderNo, status){
 
   showLoader();
+  const user = getUser();
+
+  const approvalUpdateData = { ApprovalStatus: status };
+  if(status === "Approved"){
+    approvalUpdateData.Status = "Approved";
+    approvalUpdateData.ApprovedBySuper = user.Name || "";
+    approvalUpdateData.ApprovedAt = new Date().toISOString();
+  } else if(status === "Rejected"){
+    approvalUpdateData.Status = "Rejected";
+  }
 
   const { error } = await db
     .from("requests")
-    .update({ ApprovalStatus: status })
+    .update(approvalUpdateData)
     .eq("OrderNo", orderNo);
 
   hideLoader();
@@ -3564,6 +3885,191 @@ async function updateApproval(orderNo, status){
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
+}
+
+async function sendToApprover(orderNo){
+  const approver = document.getElementById("changeApprover")?.value;
+  if(!approver){
+    return showPopup("Please select approver ❗");
+  }
+
+  showLoader();
+  const { error } = await db
+    .from("requests")
+    .update({ ApprovedBy: approver })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+
+  if(error){
+    return showPopup("Failed to update approver ❌");
+  }
+
+  showPopup("Approver updated ✅");
+  openOrderView(orderNo);
+}
+
+function toggleCommentBox(){
+  const composer = document.getElementById("commentComposer");
+  const postBtn = document.getElementById("postCommentBtn");
+  composer?.classList.toggle("hidden");
+  postBtn?.classList.toggle("hidden");
+}
+
+function updateCommentFileName(input){
+  const fileName = input?.files?.[0]?.name || "No file selected";
+  const label = document.getElementById("commentFileName");
+  if(label) label.textContent = fileName;
+}
+
+function getSuperEditState(orderNo){
+  if(!window.superReviewEdits) window.superReviewEdits = {};
+  if(!window.superReviewEdits[orderNo]) window.superReviewEdits[orderNo] = {};
+  return window.superReviewEdits[orderNo];
+}
+
+async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQty, originalValue){
+  const parsed = value === "" ? null : Math.max(0, Number(value || 0));
+  const baseQty = Number(originalQty || 0);
+  const baseValue = Number(originalValue || 0);
+  const unitValue = baseQty > 0 ? (baseValue / baseQty) : 0;
+  const recalculatedValue = parsed === null ? null : Number((unitValue * parsed).toFixed(2));
+
+  showLoader();
+  let query = db
+    .from("requests")
+    .update({ editedqty: parsed, editedvalue: recalculatedValue });
+
+  if(rowId){
+    query = query.eq("id", rowId);
+  }else{
+    query = query.eq("OrderNo", orderNo).eq("PartNo", partNo);
+    if(createdAt) query = query.eq("created_at", createdAt);
+  }
+
+  const { error } = await query;
+  hideLoader();
+
+  if(error){
+    return showPopup("Failed to save edited qty ❌");
+  }
+
+  openOrderView(orderNo);
+}
+
+function removeSuperRow(orderNo, rowKey){
+  const state = getSuperEditState(orderNo);
+  state[rowKey] = { ...(state[rowKey] || {}), removed: true };
+  openOrderView(orderNo);
+}
+
+async function addOrderComment(orderNo){
+  const input = document.getElementById("orderCommentInput");
+  const fileInput = document.getElementById("commentAttachment");
+  const text = (input?.value || "").trim();
+  if(!text){
+    return showPopup("Please enter comment ❗");
+  }
+
+  let attachmentUrl = "";
+  let attachmentName = "";
+  const file = fileInput?.files?.[0];
+  if(file){
+    attachmentName = file.name;
+    attachmentUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || "");
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const user = getUser();
+  const allRowsForComments = await db
+    .from("requests")
+    .select("OrderComments")
+    .eq("OrderNo", orderNo);
+
+  let targetRow = null;
+  const firstById = await db
+    .from("requests")
+    .select("id, OrderComments")
+    .eq("OrderNo", orderNo)
+    .order("id", { ascending: true })
+    .limit(1);
+
+  if(!firstById.error && firstById.data?.length){
+    targetRow = {
+      id: firstById.data[0].id,
+      OrderComments: firstById.data[0].OrderComments
+    };
+  }else{
+    const firstFallback = await db
+      .from("requests")
+      .select("OrderComments, created_at, PartNo")
+      .eq("OrderNo", orderNo)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if(firstFallback.data?.length){
+      targetRow = {
+        created_at: firstFallback.data[0].created_at,
+        PartNo: firstFallback.data[0].PartNo,
+        OrderComments: firstFallback.data[0].OrderComments
+      };
+    }
+  }
+
+  if(!targetRow){
+    return showPopup("Failed to add comment ❌ (Order row not found)");
+  }
+
+    const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
+  existing.push({
+    by: user.Name || user.Role || "User",
+    text,
+    at: new Date().toISOString(),
+    attachmentName,
+    attachmentUrl
+  });
+
+  showLoader();
+  let updateQuery = db
+    .from("requests")
+    .update({ OrderComments: JSON.stringify(existing) });
+
+  if(targetRow.id !== undefined){
+    updateQuery = updateQuery.eq("id", targetRow.id);
+  }else{
+    updateQuery = updateQuery
+      .eq("OrderNo", orderNo)
+      .eq("created_at", targetRow.created_at)
+      .eq("PartNo", targetRow.PartNo);
+  }
+
+  const { error } = await updateQuery;
+  hideLoader();
+
+  if(error){
+    return showPopup("Failed to add comment ❌ (Please ensure OrderComments column exists in requests table)");
+  }
+  showPopup("Comment added ✅");
+  openOrderView(orderNo);
+}
+
+async function approveOrder(orderNo){
+  await updateApproval(orderNo, "Approved");
+}
+
+function goBack(){
+  const user = getUser();
+  if(user.Role === "super"){
+    loadSuper(window.activeTab || "PendingApproval", true);
+  } else {
+    loadAdmin(window.activeTab || "Approved", true);
+  }
+}
+
+function downloadOrder(orderNo){
+  downloadOrderExcel(orderNo);
 }
 
     
@@ -3600,13 +4106,30 @@ function changePage(direction){
 
   if(user.Role === "admin" || user.Branch === "HQ"){
 
-    if(window.activeTab === "Pending"){
+    if(window.activeTab === "Approved"){
       orders = orders.filter(o => 
-        o.some(x => x.Status === "Pending")
+        o.some(x => {
+          const status = (x.Status || "").toString().trim().toUpperCase();
+          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+          return (status === "APPROVED" || status === "PENDING")
+            && !pendingApproval
+            && approval !== "REJECTED"
+            && (approval === "APPROVED" || approval === "");
+        })
       );
     } else {
       orders = orders.filter(o => 
-        o.some(x => x.Status !== "Pending")
+        o.some(x => {
+          const status = (x.Status || "").toString().trim().toUpperCase();
+          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
+          return status !== "APPROVED"
+            && status !== "PENDING"
+            && status !== "PENDING APPROVAL"
+            && !pendingApproval
+            && approval !== "REJECTED";
+        })
       );
     }
 
@@ -3685,10 +4208,10 @@ async function downloadOrderExcel(orderNo){
     "Customer": r.CustomerName,
     "Part No": r.PartNo,
     "Description": r.Description,
-    "Qty": r.Qty,
+    "Qty": getEffectiveQty(r),
     "Billed Qty": r.BilledQty || 0,
-    "Pending Qty": (r.Qty || 0) - (r.BilledQty || 0),
-    "Value": r.Value,
+    "Pending Qty": getEffectiveQty(r) - (r.BilledQty || 0),
+    "Value": getEffectiveValue(r),
     "Status": r.Status,
     "Processed Date": r.ProcessedDate || "",
     "Bill No": r.BillNo || "",
