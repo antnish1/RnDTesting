@@ -2654,8 +2654,8 @@ else{
         }; font-weight:600;">
           ${pendingQty}
         </td>
-    <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
-  ₹ ${getEffectiveValue(r).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+    <td class="px-4 py-3 text-right whitespace-nowrap" style="color: var(--pc-secondary); font-weight:600;">
+  ₹ ${Math.round(Number(getEffectiveValue(r) || 0)).toLocaleString("en-IN")}
 </td>
   
 <td>
@@ -2689,13 +2689,15 @@ else{
         <input type="number" min="0"
           value="${reviewQty}"
           onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value, '${r.Qty || 0}', '${r.Value || 0}')"
-          class="pc-field w-[20px] text-center text-xs px-1" />
+          class="text-center text-xs rounded-md"
+          style="width:56px; padding:4px 4px; border:1px solid #BFAF9D; background:#fff; color:#1F2937;" />
       </td>
       <td>
         <button onclick="removeSuperRow('${orderNo}','${rowKey}')"
-          class="px-2 py-1 rounded-md text-xs font-semibold transition-all duration-150 hover:-translate-y-[1px] active:translate-y-0"
-          style="background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca; box-shadow:0 4px 10px rgba(127,29,29,0.16);">
-          Remove
+          class="w-7 h-7 rounded-full text-sm font-bold transition-all duration-200 hover:-translate-y-[1px] hover:rotate-90 active:scale-95 flex items-center justify-center"
+          style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca; box-shadow:0 6px 12px rgba(185,28,28,0.18);"
+          title="Remove row">
+          ✕
         </button>
       </td>
     ` : ""}
@@ -3050,8 +3052,11 @@ ${actionButtons}
       ${isSuper ? `<div class="mt-2 text-[11px]" style="color: var(--pc-text-muted);">Super edits are review-only. Original order Qty in DB remains unchanged.</div>` : ""}
 
       <div class="text-right mt-4 font-bold"
-           style="color: var(--pc-secondary);">
-        Total: ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+           style="color: #0f172a;">
+        <span class="inline-block px-4 py-2 rounded-lg"
+          style="background:linear-gradient(135deg, rgba(129,166,198,0.32), rgba(95,136,168,0.24)); border:1px solid var(--pc-border); box-shadow:0 6px 16px rgba(15,23,42,0.15);">
+          Total Value: ₹ ${Math.round(Number(total || 0)).toLocaleString("en-IN")}
+        </span>
       </div>
 
     </div>
