@@ -4397,9 +4397,6 @@ async function printOrderDetails(orderNo){
           .totals div:last-child { border-bottom:none; font-weight:700; }
           .comment-item { border:1px solid #e5e7eb; padding:6px 8px; margin-bottom:5px; }
           .meta { color:#6b7280; font-size:10px; margin-top:2px; }
-          .sign-grid { margin-top:14px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
-          .sign-box { border-top:1px solid #6b7280; padding-top:6px; font-size:11px; min-height:44px; }
-          .sign-box .muted { color:#6b7280; font-size:10px; }
           @media print { .no-print { display:none !important; } }
         </style>
       </head>
@@ -4461,13 +4458,6 @@ async function printOrderDetails(orderNo){
 
           <div class="section-title">Comments</div>
           ${commentsHtml}
-
-          <div class="section-title">Approval / Signature</div>
-          <div class="sign-grid">
-            <div class="sign-box"><div>Prepared By</div><div class="muted">Signature: __________________</div><div class="muted">Date: __________________</div></div>
-            <div class="sign-box"><div>Checked By</div><div class="muted">Signature: __________________</div><div class="muted">Date: __________________</div></div>
-            <div class="sign-box"><div>Approved By</div><div class="muted">Signature: __________________</div><div class="muted">Date: __________________</div></div>
-          </div>
 
           <div class="no-print" style="margin-top:14px; text-align:right;">
             <button onclick="window.print()" style="padding:8px 12px; border:1px solid #9ca3af; border-radius:6px; background:#f8fafc; cursor:pointer;">Print / Save as PDF</button>
