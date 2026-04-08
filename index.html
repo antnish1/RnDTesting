@@ -2705,6 +2705,12 @@ if(isSuper){
         Download
       </button>
 
+      <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#334155;color:white;">
+        Comment
+      </button>
+
       <button onclick="goBack()"
         class="px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#e2e8f0;color:#0f172a;">
@@ -2736,6 +2742,12 @@ else{
         class="px-3 py-2 rounded-lg font-semibold text-sm"
         style="background:#4b5563;color:white;">
         Download
+      </button>
+
+      <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
+        class="px-3 py-2 rounded-lg font-semibold text-sm"
+        style="background:#334155;color:white;">
+        Comment
       </button>
 
       <button onclick="goBack()"
@@ -2796,7 +2808,7 @@ ${actionButtons}
       </span>
     </div>
 
-    <div class="grid grid-cols-4 gap-4 text-sm mt-2">
+    <div class="grid grid-cols-5 gap-4 text-sm mt-2">
 
         <div class="flex items-center gap-2">
           <span class="w-26" style="color: var(--pc-text-muted);">Order Type :</span>
@@ -2811,6 +2823,16 @@ ${actionButtons}
   <div class="flex items-center gap-2">
     <span class="w-26" style="color: var(--pc-text-muted);">Branch :</span>
     <span class="font-semibold">${order.Branch}</span>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="w-26" style="color: var(--pc-text-muted);">Employee Name :</span>
+    <span class="font-semibold">${order.EmployeeName || "-"}</span>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="w-26" style="color: var(--pc-text-muted);">Call ID :</span>
+    <span class="font-semibold">${order.CallID || "-"}</span>
   </div>
 
 <div class="flex items-center gap-2">
@@ -2865,6 +2887,31 @@ ${actionButtons}
   </div>
 
 
+  <div class="relative pc-section">
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+        COMMENTS (${orderComments.length})
+      </span>
+    </div>
+
+    <div class="space-y-2 mt-2">
+      <div id="commentComposer" class="hidden">
+        <div class="relative">
+          <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
+          <button type="button" onclick="document.getElementById('commentAttachment').click()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
+            style="background:#f1f5f9; border:1px solid var(--pc-border);">
+            📎
+          </button>
+          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
+        </div>
+        <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
+      </div>
+      <div class="space-y-2">${commentsHTML}</div>
+    </div>
+  </div>
+
+
   <!-- ================= PARTS TABLE ================= -->
   <div class="relative pc-section">
 
@@ -2915,42 +2962,6 @@ ${actionButtons}
 
     </div>
 
-  </div>
-
-  <div class="relative pc-section">
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        COMMENTS (${orderComments.length})
-      </span>
-    </div>
-
-    <div class="space-y-2 mt-2">
-      <div class="flex items-center gap-2">
-        <button onclick="toggleCommentBox()"
-          class="px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#334155; color:white;">
-          Add Comment
-        </button>
-        <button id="postCommentBtn" onclick="addOrderComment('${orderNo}')"
-          class="px-3 py-2 rounded-lg font-semibold text-sm hidden"
-          style="background:#2563eb; color:white;">
-          Post Comment
-        </button>
-      </div>
-      <div id="commentComposer" class="hidden">
-        <div class="relative">
-          <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
-          <button type="button" onclick="document.getElementById('commentAttachment').click()"
-            class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
-            style="background:#f1f5f9; border:1px solid var(--pc-border);">
-            📎
-          </button>
-          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
-        </div>
-        <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
-      </div>
-      <div class="space-y-2">${commentsHTML}</div>
-    </div>
   </div>
 
 </div>
@@ -3613,7 +3624,13 @@ function renderSearchResults(data){
   </div>
   `;
 
-document.getElementById("resultsContainer").innerHTML = html;
+ const targetContainer =
+   document.getElementById("resultsContainer") ||
+   document.getElementById("main");
+
+ if(targetContainer){
+   targetContainer.innerHTML = html;
+ }
 }
 
 
@@ -3976,11 +3993,20 @@ async function sendToApprover(orderNo){
   openOrderView(orderNo);
 }
 
-function toggleCommentBox(){
+function handleCommentAction(orderNo){
   const composer = document.getElementById("commentComposer");
-  const postBtn = document.getElementById("postCommentBtn");
-  composer?.classList.toggle("hidden");
-  postBtn?.classList.toggle("hidden");
+  const actionBtn = document.getElementById("commentActionBtn");
+
+  if(!composer || !actionBtn) return;
+
+  if(composer.classList.contains("hidden")){
+    composer.classList.remove("hidden");
+    actionBtn.textContent = "Post Comment";
+    document.getElementById("orderCommentInput")?.focus();
+    return;
+  }
+
+  addOrderComment(orderNo);
 }
 
 function updateCommentFileName(input){
@@ -4119,6 +4145,10 @@ async function addOrderComment(orderNo){
   if(error){
     return showPopup("Failed to add comment ❌ (Please ensure OrderComments column exists in requests table)");
   }
+  const composer = document.getElementById("commentComposer");
+  const actionBtn = document.getElementById("commentActionBtn");
+  composer?.classList.add("hidden");
+  if(actionBtn) actionBtn.textContent = "Comment";
   showPopup("Comment added ✅");
   openOrderView(orderNo);
 }
