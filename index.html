@@ -459,6 +459,16 @@ table thead th::after {
   color: #64748b;
   margin-left: 4px;
 }
+table thead th {
+  cursor: pointer;
+  user-select: none;
+}
+table thead th.sort-asc::after {
+  content: " ▲";
+}
+table thead th.sort-desc::after {
+  content: " ▼";
+}
     
     
 </style>
@@ -4244,6 +4254,55 @@ async function downloadOrderExcel(orderNo){
   // DOWNLOAD
   XLSX.writeFile(wb, `Order_${orderNo}.xlsx`);
 }
+
+function getSortableCellValue(text){
+  const raw = (text || "").trim();
+  const numeric = Number(raw.replace(/[^0-9.-]/g, ""));
+  if(raw && !Number.isNaN(numeric) && /[0-9]/.test(raw)){
+    return { type: "number", value: numeric };
+  }
+  return { type: "string", value: raw.toLowerCase() };
+}
+
+document.addEventListener("click", function(evt){
+  const th = evt.target.closest("th");
+  if(!th || !th.closest("thead")) return;
+
+  const table = th.closest("table");
+  const tbody = table?.querySelector("tbody");
+  if(!tbody) return;
+
+  const headerRow = th.parentElement;
+  const headers = Array.from(headerRow.children);
+  const colIndex = headers.indexOf(th);
+  if(colIndex < 0) return;
+
+  const current = th.classList.contains("sort-asc") ? "asc"
+    : th.classList.contains("sort-desc") ? "desc"
+    : "";
+  const next = current === "asc" ? "desc" : "asc";
+
+  headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
+  th.classList.add(next === "asc" ? "sort-asc" : "sort-desc");
+
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+  rows.sort((a, b) => {
+    const aText = a.children[colIndex]?.innerText || "";
+    const bText = b.children[colIndex]?.innerText || "";
+    const av = getSortableCellValue(aText);
+    const bv = getSortableCellValue(bText);
+
+    let result = 0;
+    if(av.type === "number" && bv.type === "number"){
+      result = av.value - bv.value;
+    }else{
+      result = av.value.localeCompare(bv.value);
+    }
+    return next === "asc" ? result : -result;
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+});
     
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
