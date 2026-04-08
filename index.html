@@ -760,6 +760,8 @@ const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isAdmin){
   window.activeTab = "Approved";
+}else if(isSuper){
+  window.activeTab = "PendingApproval";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -2808,82 +2810,106 @@ ${actionButtons}
       </span>
     </div>
 
-    <div class="grid grid-cols-5 gap-4 text-sm mt-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-sm mt-2">
 
-        <div class="flex items-center gap-2">
-          <span class="w-26" style="color: var(--pc-text-muted);">Order Type :</span>
-          <span class="font-semibold">${order.OrderType || "-"}</span>
-        </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Order For :</span>
-    <span class="font-semibold">${order.OrderFor || "-"}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Branch :</span>
-    <span class="font-semibold">${order.Branch}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Employee Name :</span>
-    <span class="font-semibold">${order.EmployeeName || "-"}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Call ID :</span>
-    <span class="font-semibold">${order.CallID || "-"}</span>
-  </div>
-
-<div class="flex items-center gap-2">
-  <span class="w-26" style="color: var(--pc-text-muted);">Status :</span>
-
-  <span class="px-2 py-1 rounded text-xs font-semibold"
-          style="
-            background:${
-              orderStatus === "DISPATCHED" ? "#d1fae5" :
-                orderStatus === "REJECTED" ? "#fde2e2" :
-              orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-              orderStatus === "PROCESSED" ? "#fef3c7" :
-              orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-              "#fde2e2"
-            };
-            color:${
-              orderStatus === "DISPATCHED" ? "#065f46" :
-                orderStatus === "REJECTED" ? "#7f1d1d" :
-              orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-              orderStatus === "PROCESSED" ? "#92400e" :
-              orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-              "#7f1d1d"
-            };
-          ">
-          ${orderStatus}
-        </span>
-
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Order Type</div>
+        <div class="font-semibold mt-1">${order.OrderType || "-"}</div>
       </div>
 
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Machine No :</span>
-    <span class="font-semibold">${order.MachineNo || "-"}</span>
-  </div>
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Order For</div>
+        <div class="font-semibold mt-1">${order.OrderFor || "-"}</div>
+      </div>
 
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Customer :</span>
-    <span class="font-semibold">${order.CustomerName || "-"}</span>
-  </div>
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Branch</div>
+        <div class="font-semibold mt-1">${order.Branch || "-"}</div>
+      </div>
 
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Machine Type :</span>
-    <span class="font-semibold">${order.WarrantyStatus || "-"}</span>
-  </div>
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Employee Name</div>
+        <div class="font-semibold mt-1">${order.EmployeeName || "-"}</div>
+      </div>
 
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Approved By :</span>
-    <span class="font-semibold">${order.ApprovedBy || "-"}</span>
-  </div>
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Call ID</div>
+        <div class="font-semibold mt-1">${order.CallID || "-"}</div>
+      </div>
+
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide mb-1" style="color: var(--pc-text-muted);">Status</div>
+        <span class="px-2 py-1 rounded text-xs font-semibold"
+                style="
+                  background:${
+                    orderStatus === "DISPATCHED" ? "#d1fae5" :
+                      orderStatus === "REJECTED" ? "#fde2e2" :
+                    orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
+                    orderStatus === "PROCESSED" ? "#fef3c7" :
+                    orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
+                    "#fde2e2"
+                  };
+                  color:${
+                    orderStatus === "DISPATCHED" ? "#065f46" :
+                      orderStatus === "REJECTED" ? "#7f1d1d" :
+                    orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
+                    orderStatus === "PROCESSED" ? "#92400e" :
+                    orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
+                    "#7f1d1d"
+                  };
+                ">
+                ${orderStatus}
+              </span>
+      </div>
+
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Machine No</div>
+        <div class="font-semibold mt-1">${order.MachineNo || "-"}</div>
+      </div>
+
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Customer</div>
+        <div class="font-semibold mt-1">${order.CustomerName || "-"}</div>
+      </div>
+
+      <div class="rounded-lg px-3 py-2" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Machine Type</div>
+        <div class="font-semibold mt-1">${order.WarrantyStatus || "-"}</div>
+      </div>
+
+      <div class="rounded-lg px-3 py-2 md:col-span-2 xl:col-span-3"
+        style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <div class="text-[11px] uppercase tracking-wide" style="color: var(--pc-text-muted);">Approved By</div>
+        <div class="font-semibold mt-1">${order.ApprovedBy || "-"}</div>
+      </div>
 
     </div>
 
+  </div>
+
+
+  <div class="relative pc-section">
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+        COMMENTS (${orderComments.length})
+      </span>
+    </div>
+
+    <div class="space-y-2 mt-2">
+      <div id="commentComposer" class="hidden">
+        <div class="relative">
+          <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
+          <button type="button" onclick="document.getElementById('commentAttachment').click()"
+            class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
+            style="background:#f1f5f9; border:1px solid var(--pc-border);">
+            📎
+          </button>
+          <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
+        </div>
+        <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
+      </div>
+      <div class="space-y-2">${commentsHTML}</div>
+    </div>
   </div>
 
 
@@ -3569,6 +3595,7 @@ function renderSearchResults(data){
             <th>Qty</th>
             <th>Value</th>
             <th>Order No</th>
+            <th>Status</th>
           </tr>
         </thead>
 
@@ -3576,6 +3603,17 @@ function renderSearchResults(data){
   `;
 
   orders.forEach(o=>{
+    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
+    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
+    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
+    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
+    const tableStatus = isRejected
+      ? "Rejected"
+      : isPendingApproval
+        ? "Pending Approval"
+        : isApproved
+          ? "Approved"
+          : (o.items[0].Status || "Pending");
 
     const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
@@ -3611,6 +3649,23 @@ function renderSearchResults(data){
         ${getOrderCommentCount(o) > 0
           ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
           : ""}
+      </td>
+      <td>
+        <span class="px-2 py-1 rounded text-xs font-semibold"
+          style="
+            background:${
+              tableStatus === "Approved" ? "#d1fae5" :
+              tableStatus === "Rejected" ? "#fde2e2" :
+              "#fef3c7"
+            };
+            color:${
+              tableStatus === "Approved" ? "#065f46" :
+              tableStatus === "Rejected" ? "#7f1d1d" :
+              "#92400e"
+            };
+          ">
+          ${tableStatus}
+        </span>
       </td>
 
     </tr>
