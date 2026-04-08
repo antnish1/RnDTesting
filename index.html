@@ -451,6 +451,14 @@ tr[style*="f59e0b"]:hover {
   color: #6b7280;
   font-weight: 400;
 }
+
+/* filter arrow indicator on all table headers */
+table thead th::after {
+  content: " ▼";
+  font-size: 10px;
+  color: #64748b;
+  margin-left: 4px;
+}
     
     
 </style>
@@ -4083,6 +4091,8 @@ function refreshCurrentView(){
 
 if(user.Role === "admin" || user.Branch === "HQ"){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
+} else if(user.Role === "super"){
+  loadSuper(window.activeTab || "PendingApproval", true);
 } else {
   loadTrack("track", true);            // ✅ PASS TRUE
 }
