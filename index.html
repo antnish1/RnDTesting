@@ -1836,11 +1836,7 @@ const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
 class="cursor-pointer transition hover:scale-[1.01]"
-style="${
-o.OrderType === 'VOR'
-  ? 'background: rgba(245, 158, 11, 0.12); border-left: 4px solid #f59e0b;'
-    : ''
-}">
+style="${getOrderTypeRowStyle(o.OrderType)}">
 
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 <td class="px-4 py-3 text-center">
@@ -1887,24 +1883,7 @@ o.OrderType === 'VOR'
 
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="
-      background:${
-        orderStatus === "DISPATCHED" ? "#d1fae5" :
-          orderStatus === "REJECTED" ? "#fde2e2" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-        orderStatus === "PROCESSED" ? "#fef3c7" :
-        orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        orderStatus === "DISPATCHED" ? "#065f46" :
-          orderStatus === "REJECTED" ? "#7f1d1d" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-        orderStatus === "PROCESSED" ? "#92400e" :
-        orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
-    ">
+    style="${getStatusChipStyle(orderStatus)}">
     ${orderStatus}
   </span>
 </td>
@@ -2096,11 +2075,7 @@ const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
 class="cursor-pointer transition hover:scale-[1.01]"
-style="${
-  o.OrderType === 'VOR'
-    ? 'background: rgba(255, 235, 150, 0.35); border-left: 4px solid #f59e0b;'
-    : ''
-}">
+style="${getOrderTypeRowStyle(o.OrderType)}">
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 
 <td class="px-4 py-3 text-center">
@@ -2144,24 +2119,7 @@ style="${
 </td>
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="
-      background:${
-        orderStatus === "DISPATCHED" ? "#d1fae5" :
-          orderStatus === "REJECTED" ? "#fde2e2" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-        orderStatus === "PROCESSED" ? "#fef3c7" :
-        orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        orderStatus === "DISPATCHED" ? "#065f46" :
-          orderStatus === "REJECTED" ? "#7f1d1d" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-        orderStatus === "PROCESSED" ? "#92400e" :
-        orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
-    ">
+    style="${getStatusChipStyle(orderStatus)}">
     ${orderStatus}
   </span>
 </td>
@@ -2358,6 +2316,29 @@ function getOrderStatusLabel(order){
   if(statuses.some(s => s === "APPROVED")) return "APPROVED";
 
   return statuses[0] || "PENDING APPROVAL";
+}
+
+function getStatusChipStyle(status){
+  const s = normalizeRowStatus(status);
+  const palette = {
+    "PENDING APPROVAL": { bg:"#fff7ed", text:"#9a3412", border:"#fdba74" },
+    "APPROVED": { bg:"#ecfdf5", text:"#065f46", border:"#86efac" },
+    "PROCESSED": { bg:"#eff6ff", text:"#1e3a8a", border:"#93c5fd" },
+    "DISPATCHED": { bg:"#dcfce7", text:"#166534", border:"#86efac" },
+    "PARTIALLY DISPATCHED": { bg:"#fef3c7", text:"#92400e", border:"#fcd34d" },
+    "NOT DESPATCHED": { bg:"#eef2ff", text:"#3730a3", border:"#c4b5fd" },
+    "REJECTED": { bg:"#fef2f2", text:"#991b1b", border:"#fca5a5" }
+  };
+  const p = palette[s] || { bg:"#f8fafc", text:"#334155", border:"#cbd5e1" };
+  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border};`;
+}
+
+function getOrderTypeRowStyle(orderType){
+  const type = (orderType || "").toString().trim().toUpperCase();
+  if(type === "VOR"){
+    return "background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04)); border-left: 4px solid #f59e0b;";
+  }
+  return "background: rgba(15,23,42,0.03); border-left: 4px solid transparent;";
 }
 
 function applyOrderSort(orders){
@@ -2571,20 +2552,7 @@ const orderStatus = getOrderStatusLabel(data);
   
 <td>
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="
-      background:${
-        r.Status === "DISPATCHED" ? "#d1fae5" :
-        r.Status === "PROCESSED" ? "#fef3c7" :
-        r.Status === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        r.Status === "DISPATCHED" ? "#065f46" :
-        r.Status === "PROCESSED" ? "#92400e" :
-        r.Status === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
-    ">
+    style="${getStatusChipStyle(r.Status)}">
     ${(r.Status || "").toUpperCase()}
   </span>
 </td>
@@ -2847,24 +2815,7 @@ ${actionButtons}
       <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
         <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Status :</span>
         <span class="px-2 py-1 rounded text-xs font-semibold"
-                style="
-                  background:${
-                    orderStatus === "DISPATCHED" ? "#d1fae5" :
-                      orderStatus === "REJECTED" ? "#fde2e2" :
-                    orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-                    orderStatus === "PROCESSED" ? "#fef3c7" :
-                    orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-                    "#fde2e2"
-                  };
-                  color:${
-                    orderStatus === "DISPATCHED" ? "#065f46" :
-                      orderStatus === "REJECTED" ? "#7f1d1d" :
-                    orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-                    orderStatus === "PROCESSED" ? "#92400e" :
-                    orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-                    "#7f1d1d"
-                  };
-                ">
+                style="${getStatusChipStyle(orderStatus)}">
                 ${orderStatus}
               </span>
       </div>
@@ -3047,15 +2998,7 @@ html += `
 <td class="text-center">${o.MachineNo}</td>
 <td>${o.items.length}</td>
 <td>₹ ${total}</td>
-<td class="${
-  orderStatus === "DISPATCHED" ? "text-green-400" :
-  orderStatus === "PARTIALLY DISPATCHED" ? "text-yellow-400" :
-  orderStatus === "PROCESSED" ? "text-yellow-400" :
-  orderStatus === "NOT DESPATCHED" ? "text-blue-400" :
-  "text-pink-400"
-}">
-  ${orderStatus}
-</td>
+<td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(orderStatus)}">${orderStatus}</span></td>
 </tr>
 
 
@@ -3626,7 +3569,7 @@ function renderSearchResults(data){
 
     html += `
     <tr onclick="openOrderView('${o.OrderNo}')"
-    class="cursor-pointer hover:bg-gray-100">
+    class="cursor-pointer transition hover:scale-[1.01]" style="${getOrderTypeRowStyle(o.OrderType)}">
 
       <td>${formatDateTime(o.created_at)}</td>
       <td>
@@ -3659,18 +3602,7 @@ function renderSearchResults(data){
       </td>
       <td>
         <span class="px-2 py-1 rounded text-xs font-semibold"
-          style="
-            background:${
-              tableStatus === "Approved" ? "#d1fae5" :
-              tableStatus === "Rejected" ? "#fde2e2" :
-              "#fef3c7"
-            };
-            color:${
-              tableStatus === "Approved" ? "#065f46" :
-              tableStatus === "Rejected" ? "#7f1d1d" :
-              "#92400e"
-            };
-          ">
+          style="${getStatusChipStyle(tableStatusRaw)}">
           ${tableStatus}
         </span>
       </td>
@@ -3815,11 +3747,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     html += `
             <tr onclick="openOrderView('${o.OrderNo}')"
             class="cursor-pointer transition hover:scale-[1.01]"
-            style="${
-              o.OrderType === 'VOR'
-                ? 'background: rgba(245, 158, 11, 0.12); border-left: 4px solid #f59e0b;'
-                : ''
-            }">
+            style="${getOrderTypeRowStyle(o.OrderType)}">
       <td>${formatDateTime(o.created_at)}</td>
       <td>
         <span class="px-2 py-1 rounded-full text-xs font-semibold"
@@ -3852,18 +3780,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
       </td>
       <td class="px-4 py-3 text-center">
       <span class="px-2 py-1 rounded text-xs font-semibold"
-        style="
-          background:${
-            tableStatus === "Approved" ? "#d1fae5" :
-            tableStatus === "Rejected" ? "#fde2e2" :
-            "#fef3c7"
-          };
-          color:${
-            tableStatus === "Approved" ? "#065f46" :
-            tableStatus === "Rejected" ? "#7f1d1d" :
-            "#92400e"
-          };
-        ">
+        style="${getStatusChipStyle(tableStatusRaw)}">
         ${tableStatus}
       </span>
     </td>
