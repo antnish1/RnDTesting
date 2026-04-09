@@ -545,7 +545,7 @@ table thead th.sort-desc::after {
 let TABLE_SORT_STATE = null;
     let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
-const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy";
+const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -2478,19 +2478,19 @@ function formatDateTimeIST(dateValue){
 
 function getActionEventTitle(action, fallbackText = ""){
   const map = {
-    ORDER_CREATED: "Order placed",
-    ADMIN_PROCESSED: "Order processed",
-    ADMIN_REJECTED: "Order rejected",
-    SUPER_APPROVED: "Order approved",
-    SUPER_FORWARDED_MANAGER: "Order sent for manager approval",
-    SUPER_REJECTED: "Order rejected",
-    MANAGER_APPROVED: "Order approved",
-    MANAGER_REJECTED: "Order rejected",
-    APPROVER_CHANGED: "Approver changed",
-    SUPER_REMOVED_ROW: "Part removed for review",
-    SUPER_RESET_TO_ORIGINAL: "Edited quantities reset",
-    SUPER_ACCEPTED_EDITS: "Edited quantities accepted",
-    STATUS_UPDATED: "Status updated"
+    ORDER_CREATED: "ORDER WAS PLACED",
+    ADMIN_PROCESSED: "ORDER WAS PROCESSED",
+    ADMIN_REJECTED: "ORDER WAS REJECTED",
+    SUPER_APPROVED: "ORDER WAS APPROVED",
+    SUPER_FORWARDED_MANAGER: "ORDER WAS SENT FOR MANAGER APPROVAL",
+    SUPER_REJECTED: "ORDER WAS REJECTED",
+    MANAGER_APPROVED: "ORDER WAS APPROVED",
+    MANAGER_REJECTED: "ORDER WAS REJECTED",
+    APPROVER_CHANGED: "APPROVER WAS CHANGED",
+    SUPER_REMOVED_ROW: "PART WAS REMOVED FOR REVIEW",
+    SUPER_RESET_TO_ORIGINAL: "EDITED QUANTITIES WERE RESET",
+    SUPER_ACCEPTED_EDITS: "EDITED QUANTITIES WERE ACCEPTED",
+    STATUS_UPDATED: "STATUS WAS UPDATED"
   };
   if(map[action]) return map[action];
   return fallbackText || "Action updated";
@@ -2679,9 +2679,11 @@ const commentsHTML = visibleOrderComments.length
         ? `
           <div class="system-action-row py-0.5 text-[12px] border-b border-slate-200/60">
             <div class="flex items-center gap-2 flex-wrap uppercase tracking-[0.02em]">
-              <span class="font-semibold" style="color:${getActionEventColor(c.action)};">${escapeHtml(getActionEventTitle(c.action, c.text).toUpperCase())}</span>
-              <span class="font-semibold" style="color:#0f172a;">BY ${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
-              <span class="font-semibold" style="color:#334155;">AT ${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
+              <span class="font-semibold" style="color:${getActionEventColor(c.action)};">${escapeHtml(getActionEventTitle(c.action, c.text))}</span>
+              <span class="text-[11px] font-medium" style="color:#64748b;">BY</span>
+              <span class="font-semibold" style="color:#1e3a8a;">${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
+              <span class="text-[11px] font-medium" style="color:#64748b;">AT</span>
+              <span style="color:#334155;">${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
             </div>
           </div>
         `
@@ -3754,12 +3756,20 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   showLoader();
 
   const user = getUser();
+  const isManager = isManagerRole(user);
 
-  const { data } = await db
+  let query = db
     .from("requests")
     .select(REQUEST_LIST_SELECT)
-    .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
     .order("created_at",{ascending:false});
+
+  if(isManager){
+    query = query.eq("ApprovedBy", user.Name);
+  } else {
+    query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
+  }
+
+  const { data } = await query;
   GLOBAL_DATA = data || [];
   hideLoader();
 
@@ -3798,7 +3808,7 @@ else if(activeTab === "Rejected"){
 else if(activeTab === "All"){
   filtered = orders.filter(o => 
     o.items.some(x => 
-      x.ApprovedBy === getUser().Name
+      x.ApprovedBy === getUser().Name || x.ApprovedBySuper === getUser().Name
     )
   );
 }
