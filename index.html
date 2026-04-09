@@ -2459,7 +2459,7 @@ function formatDateTimeIST(dateValue){
     minute: "2-digit",
     second: "2-digit",
     hour12: true
-  }).format(date) + " IST";
+  }).format(date);
 }
 
 function getActionEventTitle(action, fallbackText = ""){
@@ -2477,6 +2477,22 @@ function getActionEventTitle(action, fallbackText = ""){
   };
   if(map[action]) return map[action];
   return fallbackText || "Action updated";
+}
+
+function getActionEventColor(action){
+  const palette = {
+    ORDER_CREATED: "#1d4ed8",
+    ADMIN_PROCESSED: "#0f766e",
+    STATUS_UPDATED: "#0f766e",
+    SUPER_APPROVED: "#166534",
+    ADMIN_REJECTED: "#b91c1c",
+    SUPER_REJECTED: "#b91c1c",
+    APPROVER_CHANGED: "#6d28d9",
+    SUPER_ACCEPTED_EDITS: "#92400e",
+    SUPER_RESET_TO_ORIGINAL: "#92400e",
+    SUPER_REMOVED_ROW: "#9f1239"
+  };
+  return palette[action] || "#334155";
 }
 
 const commentAttachmentHrefCache = {};
@@ -2642,10 +2658,10 @@ const commentsHTML = visibleOrderComments.length
       ${isSystemActionComment(c)
         ? `
           <div class="system-action-row py-0.5 text-[12px] border-b border-slate-200/60">
-            <div class="flex items-center gap-3 flex-wrap">
-              <span class="font-semibold" style="color:#0f172a;">${escapeHtml(getActionEventTitle(c.action, c.text))}</span>
-              <span style="color:#475569;">by ${escapeHtml(c.by || "System")}</span>
-              <span class="ml-auto text-[11px]" style="color:#64748b;">${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
+            <div class="flex items-center gap-2 flex-wrap uppercase tracking-[0.02em]">
+              <span class="font-semibold" style="color:${getActionEventColor(c.action)};">${escapeHtml(getActionEventTitle(c.action, c.text).toUpperCase())}</span>
+              <span class="font-semibold" style="color:#0f172a;">BY ${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
+              <span class="font-semibold" style="color:#334155;">AT ${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
             </div>
           </div>
         `
@@ -2904,20 +2920,16 @@ ${actionButtons}
 
 
   <div class="relative pc-section">
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        COMMENTS (${userCommentsCount})
-      </span>
+    <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">COMMENTS (${userCommentsCount})</span>
+      <button id="toggleLogsBtn" onclick="toggleActionLogs()"
+        class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+        style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;">
+        HIDE LOGS
+      </button>
     </div>
 
     <div class="space-y-1.5 mt-2">
-      <div class="flex justify-end">
-        <button id="toggleLogsBtn" onclick="toggleActionLogs()"
-          class="px-3 py-1 rounded-md text-[11px] font-semibold"
-          style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;">
-          Hide Logs
-        </button>
-      </div>
       <div id="commentComposer" class="hidden">
         <div class="relative">
           <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
@@ -4032,7 +4044,7 @@ function toggleActionLogs(){
 
   const btn = document.getElementById("toggleLogsBtn");
   if(btn){
-    btn.textContent = shouldShow ? "Hide Logs" : "Show Logs";
+    btn.textContent = shouldShow ? "HIDE LOGS" : "SHOW LOGS";
   }
 }
 
