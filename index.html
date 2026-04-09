@@ -1729,7 +1729,7 @@ hideLoader();
 
 if(error) return showPopup("Submit failed");
 
-await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "User"}.`);
+await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
 showPopup("Submitted ✅ Order No: "+orderNo);
 
 loadCreate();
@@ -3121,7 +3121,7 @@ async function processOrder(orderNo){
     return showPopup("Error updating Order ❗");
   }
 
-  await appendOrderActionLog(inputOrderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Admin"}.`);
+  await appendOrderActionLog(inputOrderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Unknown User"}.`);
   showPopup("Order Updated & Processed ✅");
 
   loadAdmin("Processed");
@@ -3146,7 +3146,7 @@ async function rejectOrder(orderNo){
     return showPopup("Error rejecting order ❗");
   }
 
-  await appendOrderActionLog(orderNo, "ADMIN_REJECTED", `Order rejected by ${getUser()?.Name || "Admin"}.`);
+  await appendOrderActionLog(orderNo, "ADMIN_REJECTED", `Order rejected by ${getUser()?.Name || "Unknown User"}.`);
   closePopup();
   showPopup("Order Rejected ❌");
 
@@ -3391,7 +3391,7 @@ async function processExcelData(rows){
         await appendOrderActionLog(
           orderNo,
           "STATUS_UPDATED",
-          `Status updated to ${(status || "Processed")} via upload by ${getUser()?.Name || "Admin"}.`,
+          `Status updated to ${(status || "Processed")} via upload by ${getUser()?.Name || "Unknown User"}.`,
           { status: status || "Processed" }
         );
         statusLoggedOrders.add(orderNo);
@@ -3978,7 +3978,7 @@ async function updateApproval(orderNo, status){
   await appendOrderActionLog(
     orderNo,
     status === "Approved" ? "SUPER_APPROVED" : "SUPER_REJECTED",
-    `Order ${status === "Approved" ? "approved" : "rejected"} by ${user.Name || "Super Approver"}.`
+    `Order ${status === "Approved" ? "approved" : "rejected"} by ${user.Name || "Unknown User"}.`
   );
   showPopup("Updated successfully ✅");
 
@@ -4002,7 +4002,7 @@ async function sendToApprover(orderNo){
     return showPopup("Failed to update approver ❌");
   }
 
-  await appendOrderActionLog(orderNo, "APPROVER_CHANGED", `Approver changed to ${approver} by ${getUser()?.Name || "Super Approver"}.`, { approver });
+  await appendOrderActionLog(orderNo, "APPROVER_CHANGED", `Approver changed to ${approver} by ${getUser()?.Name || "Unknown User"}.`, { approver });
   showPopup("Approver updated ✅");
   openOrderView(orderNo);
 }
@@ -4099,7 +4099,7 @@ async function removeSuperRow(orderNo, rowKey, rowId, partNo, createdAt, origina
   await appendOrderActionLog(
     orderNo,
     "SUPER_REMOVED_ROW",
-    `Part ${partNo || "-"} removed from review by ${getUser()?.Name || "Super Approver"}.`,
+    `Part ${partNo || "-"} removed from review by ${getUser()?.Name || "Unknown User"}.`,
     { partNo, editedqty: 0, editedvalue: 0 }
   );
 
@@ -4134,7 +4134,7 @@ function confirmRemoveSuperRow(orderNo, rowKey, rowId, partNo, createdAt, origin
 async function appendOrderActionLog(orderNo, action, text, meta = {}){
   try{
     const user = getUser() || {};
-    const actor = user.Name || user.Role || "System";
+    const actor = user.Name || "Unknown User";
     const nowIso = new Date().toISOString();
 
     const { data: firstRow, error: rowError } = await db
@@ -4301,7 +4301,7 @@ async function approveWithOriginalQty(orderNo){
     .update({ editedqty: null, editedvalue: null })
     .eq("OrderNo", orderNo);
   hideLoader();
-  await appendOrderActionLog(orderNo, "SUPER_RESET_TO_ORIGINAL", `Edited quantities reset to original by ${getUser()?.Name || "Super Approver"} before approval.`);
+  await appendOrderActionLog(orderNo, "SUPER_RESET_TO_ORIGINAL", `Edited quantities reset to original by ${getUser()?.Name || "Unknown User"} before approval.`);
   await updateApproval(orderNo, "Approved");
 }
 
@@ -4359,7 +4359,7 @@ async function acceptEditedQty(orderNo){
 
   if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
   window.superAcceptedEdits[orderNo] = true;
-  await appendOrderActionLog(orderNo, "SUPER_ACCEPTED_EDITS", `Edited quantities accepted for approval by ${getUser()?.Name || "Super Approver"}.`);
+  await appendOrderActionLog(orderNo, "SUPER_ACCEPTED_EDITS", `Edited quantities accepted for approval by ${getUser()?.Name || "Unknown User"}.`);
   showPopup("Edited qty accepted for approval ✅");
   openOrderView(orderNo);
 }
