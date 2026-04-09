@@ -1729,6 +1729,7 @@ hideLoader();
 
 if(error) return showPopup("Submit failed");
 
+await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "User"}.`);
 showPopup("Submitted ✅ Order No: "+orderNo);
 
 loadCreate();
@@ -2390,6 +2391,10 @@ function parseOrderComments(raw){
   }
 }
 
+function isSystemActionComment(comment){
+  return (comment?.type || "").toString().trim().toLowerCase() === "system_action";
+}
+
 function getOrderComments(orderObj){
   const uniqueComments = (items) => {
     const seen = new Set();
@@ -2416,8 +2421,19 @@ function getOrderComments(orderObj){
   return uniqueComments(parseOrderComments(orderObj?.OrderComments));
 }
 
+function getUserComments(orderObj){
+  return getOrderComments(orderObj).filter(c => !isSystemActionComment(c));
+}
+
 function getOrderCommentCount(orderObj){
-  return getOrderComments(orderObj).length;
+  return getUserComments(orderObj).length;
+}
+
+function shouldShowOrder(orderObj){
+  const items = Array.isArray(orderObj?.items) ? orderObj.items : [];
+  const totalQty = items.reduce((sum, x) => sum + getEffectiveQty(x), 0);
+  const totalValue = items.reduce((sum, x) => sum + getEffectiveValue(x), 0);
+  return !(totalQty === 0 && totalValue === 0);
 }
 
 function shouldShowOrder(orderObj){
@@ -2435,6 +2451,22 @@ function getCommentUserBg(by){
     hash = (hash + name.charCodeAt(i)) % palettes.length;
   }
   return palettes[hash];
+}
+
+function formatDateTimeIST(dateValue){
+  if(!dateValue) return "-";
+  const date = new Date(dateValue);
+  if(Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  }).format(date) + " IST";
 }
 
 const commentAttachmentHrefCache = {};
@@ -2588,23 +2620,34 @@ const orderStatus = getOrderStatusLabel(data);
 
 
 const isAdmin = user.Branch === "HQ";
-const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments });
+const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
+  .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const commentPalette = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9", "#fee2e2"];
 const commentByColor = {};
 let commentColorIndex = 0;
 const commentsHTML = orderComments.length
   ? orderComments.map(c => `
-      <div class="px-3 py-2 rounded-lg text-xs" style="background:${commentByColor[c.by || ""] || (commentByColor[c.by || ""] = commentPalette[(commentColorIndex++) % commentPalette.length])}; border:1px solid var(--pc-border);">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-semibold">${c.by || "-"}</span>
-          <span style="color: var(--pc-text-muted);">=&gt;</span>
-          <span>"${c.text || ""}"</span>
-          <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</span>
-          ${c.attachmentName
-            ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${c.attachmentName}</a>`
-            : ""}
-        </div>
-      </div>
+      ${isSystemActionComment(c)
+        ? `
+          <div class="py-1.5 text-[12px] leading-relaxed border-b border-slate-200/70">
+            <span class="font-medium" style="color:#0f172a;">${escapeHtml(c.by || "System")}</span>
+            <span style="color:#64748b;"> • ${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
+            <div style="color:#334155;">${escapeHtml(c.text || "")}</div>
+          </div>
+        `
+        : `
+          <div class="px-3 py-2 rounded-lg text-xs" style="background:${commentByColor[c.by || ""] || (commentByColor[c.by || ""] = commentPalette[(commentColorIndex++) % commentPalette.length])}; border:1px solid var(--pc-border);">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold">${escapeHtml(c.by || "-")}</span>
+              <span style="color: var(--pc-text-muted);">=&gt;</span>
+              <span>"${escapeHtml(c.text || "")}"</span>
+              <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
+              ${c.attachmentName
+                ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${escapeHtml(c.attachmentName)}</a>`
+                : ""}
+            </div>
+          </div>
+        `}
     `).join("")
   : `<div class="text-xs" style="color: var(--pc-text-muted);">No comments yet.</div>`;
 let superApproverOptions = `<option value="">Change Approver</option>`;
@@ -3057,6 +3100,7 @@ async function processOrder(orderNo){
     return showPopup("Error updating Order ❗");
   }
 
+  await appendOrderActionLog(orderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Admin"}.`);
   showPopup("Order Updated & Processed ✅");
 
   loadAdmin("Processed");
@@ -3081,6 +3125,7 @@ async function rejectOrder(orderNo){
     return showPopup("Error rejecting order ❗");
   }
 
+  await appendOrderActionLog(orderNo, "ADMIN_REJECTED", `Order rejected by ${getUser()?.Name || "Admin"}.`);
   closePopup();
   showPopup("Order Rejected ❌");
 
@@ -3899,6 +3944,11 @@ async function updateApproval(orderNo, status){
     return showPopup("Update failed ❌");
   }
 
+  await appendOrderActionLog(
+    orderNo,
+    status === "Approved" ? "SUPER_APPROVED" : "SUPER_REJECTED",
+    `Order ${status === "Approved" ? "approved" : "rejected"} by ${user.Name || "Super Approver"}.`
+  );
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
@@ -3921,6 +3971,7 @@ async function sendToApprover(orderNo){
     return showPopup("Failed to update approver ❌");
   }
 
+  await appendOrderActionLog(orderNo, "APPROVER_CHANGED", `Approver changed to ${approver} by ${getUser()?.Name || "Super Approver"}.`, { approver });
   showPopup("Approver updated ✅");
   openOrderView(orderNo);
 }
@@ -3979,6 +4030,13 @@ async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQ
     return showPopup("Failed to save edited qty ❌");
   }
 
+  await appendOrderActionLog(
+    orderNo,
+    "SUPER_EDITED_QTY",
+    `Edited quantity updated for part ${partNo || "-"} by ${getUser()?.Name || "Super Approver"}.`,
+    { partNo, editedqty: parsed, editedvalue: recalculatedValue }
+  );
+
   if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
   window.superAcceptedEdits[orderNo] = false;
 
@@ -4000,6 +4058,13 @@ async function removeSuperRow(orderNo, rowKey, rowId, partNo, createdAt, origina
 
   await query;
   hideLoader();
+
+  await appendOrderActionLog(
+    orderNo,
+    "SUPER_REMOVED_ROW",
+    `Part ${partNo || "-"} removed from review by ${getUser()?.Name || "Super Approver"}.`,
+    { partNo, editedqty: 0, editedvalue: 0 }
+  );
 
   const state = getSuperEditState(orderNo);
   state[rowKey] = { ...(state[rowKey] || {}), removed: true };
@@ -4027,6 +4092,40 @@ function confirmRemoveSuperRow(orderNo, rowKey, rowId, partNo, createdAt, origin
       </div>
     `
   );
+}
+
+async function appendOrderActionLog(orderNo, action, text, meta = {}){
+  try{
+    const user = getUser() || {};
+    const actor = user.Name || user.Role || "System";
+    const nowIso = new Date().toISOString();
+
+    const { data: firstRow, error: rowError } = await db
+      .from("requests")
+      .select("id, OrderComments")
+      .eq("OrderNo", orderNo)
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if(rowError || !firstRow?.length) return;
+
+    const existing = getOrderComments({ OrderComments: firstRow[0].OrderComments });
+    existing.push({
+      type: "system_action",
+      action,
+      by: actor,
+      text,
+      at: nowIso,
+      meta
+    });
+
+    await db
+      .from("requests")
+      .update({ OrderComments: JSON.stringify(existing) })
+      .eq("id", firstRow[0].id);
+  }catch(err){
+    console.warn("appendOrderActionLog failed", err);
+  }
 }
 
 async function addOrderComment(orderNo){
@@ -4091,6 +4190,7 @@ async function addOrderComment(orderNo){
 
     const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
   existing.push({
+    type: "user",
     by: user.Name || user.Role || "User",
     text,
     at: new Date().toISOString(),
@@ -4164,6 +4264,7 @@ async function approveWithOriginalQty(orderNo){
     .update({ editedqty: null, editedvalue: null })
     .eq("OrderNo", orderNo);
   hideLoader();
+  await appendOrderActionLog(orderNo, "SUPER_RESET_TO_ORIGINAL", `Edited quantities reset to original by ${getUser()?.Name || "Super Approver"} before approval.`);
   await updateApproval(orderNo, "Approved");
 }
 
@@ -4221,6 +4322,7 @@ async function acceptEditedQty(orderNo){
 
   if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
   window.superAcceptedEdits[orderNo] = true;
+  await appendOrderActionLog(orderNo, "SUPER_ACCEPTED_EDITS", `Edited quantities accepted for approval by ${getUser()?.Name || "Super Approver"}.`);
   showPopup("Edited qty accepted for approval ✅");
   openOrderView(orderNo);
 }
