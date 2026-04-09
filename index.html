@@ -2677,13 +2677,12 @@ const commentsHTML = visibleOrderComments.length
   ? visibleOrderComments.map(c => `
       ${isSystemActionComment(c)
         ? `
-          <div class="system-action-row py-0.5 text-[12px] border-b border-slate-200/60">
+          <div class="system-action-row hidden py-0.5 text-[12px] border-b border-slate-200/60">
             <div class="flex items-center gap-2 flex-wrap uppercase tracking-[0.02em]">
               <span class="font-semibold" style="color:${getActionEventColor(c.action)};">${escapeHtml(getActionEventTitle(c.action, c.text))}</span>
               <span class="text-[11px] font-medium" style="color:#64748b;">BY</span>
               <span class="font-semibold" style="color:#1e3a8a;">${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
-              <span class="text-[11px] font-medium" style="color:#64748b;">AT</span>
-              <span style="color:#334155;">${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
+              <span class="ml-auto" style="color:#334155;">${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
             </div>
           </div>
         `
@@ -2954,8 +2953,8 @@ ${actionButtons}
       <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">COMMENTS (${userCommentsCount})</span>
       <button id="toggleLogsBtn" onclick="toggleActionLogs()"
         class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
-        style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;">
-        HIDE LOGS
+        style="background:#1e3a8a;color:#ffffff;border:1px solid #93c5fd; box-shadow:0 4px 10px rgba(30,58,138,0.25);">
+        SHOW LOGS
       </button>
     </div>
 
@@ -4136,6 +4135,17 @@ function toggleActionLogs(){
   const btn = document.getElementById("toggleLogsBtn");
   if(btn){
     btn.textContent = shouldShow ? "HIDE LOGS" : "SHOW LOGS";
+    if(shouldShow){
+      btn.style.background = "#fef3c7";
+      btn.style.color = "#92400e";
+      btn.style.border = "1px solid #f59e0b";
+      btn.style.boxShadow = "0 4px 10px rgba(180,83,9,0.22)";
+    }else{
+      btn.style.background = "#1e3a8a";
+      btn.style.color = "#ffffff";
+      btn.style.border = "1px solid #93c5fd";
+      btn.style.boxShadow = "0 4px 10px rgba(30,58,138,0.25)";
+    }
   }
 }
 
