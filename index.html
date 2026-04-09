@@ -545,6 +545,7 @@ table thead th.sort-desc::after {
 let TABLE_SORT_STATE = null;
     let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
+const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -1321,7 +1322,7 @@ if(!machineNo) return;
 
 const { data } = await db
 .from("machine_master")
-.select("*")
+.select("CustomerName")
 .eq("MachineNo", machineNo);
 
 if(data && data.length > 0){
@@ -1751,7 +1752,7 @@ showLoader();
 
 let query = db
   .from("requests")
-  .select("*")
+  .select(REQUEST_LIST_SELECT)
   .order("created_at", { ascending:false });
 
 // ✅ ONLY FILTER FOR NORMAL USERS
@@ -2079,7 +2080,7 @@ showLoader();
 const { data } = await db
     
 .from("requests")
-.select("*")
+.select(REQUEST_LIST_SELECT)
 .order("created_at",{ascending:false});
 GLOBAL_DATA = data;
 hideLoader();
@@ -3530,7 +3531,7 @@ async function processExcelData(rows){
     // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
     const { data: existing } = await db
       .from("requests")
-      .select("*")
+      .select("id")
       .eq("OrderNo", orderNo)
       .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
       .maybeSingle();
@@ -3917,34 +3918,10 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   const { data } = await db
     .from("requests")
-    .select("*")
+    .select(REQUEST_LIST_SELECT)
     .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
     .order("created_at",{ascending:false});
-
-  // ✅ FORCE STATUS ALIGNMENT FOR NOT-YET-APPROVED ORDERS
-  const pendingApprovalOrderNos = [...new Set(
-    (data || [])
-      .filter(r => isPendingApprovalStatus(r.ApprovalStatus))
-      .map(r => r.OrderNo)
-  )];
-
-  for (const orderNo of pendingApprovalOrderNos){
-    await db
-      .from("requests")
-      .update({ Status: "PENDING APPROVAL", ApprovalStatus: "PendingApproval" })
-      .eq("OrderNo", orderNo);
-  }
-
-  if(pendingApprovalOrderNos.length){
-    const { data: refreshed } = await db
-      .from("requests")
-      .select("*")
-      .eq("ApprovedBy", user.Name)
-      .order("created_at",{ascending:false});
-    GLOBAL_DATA = refreshed || [];
-  } else {
-    GLOBAL_DATA = data || [];
-  }
+  GLOBAL_DATA = data || [];
   hideLoader();
 
   // GROUP
