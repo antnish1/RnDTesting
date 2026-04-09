@@ -2436,6 +2436,13 @@ function shouldShowOrder(orderObj){
   return !(totalQty === 0 && totalValue === 0);
 }
 
+function shouldShowOrder(orderObj){
+  const items = Array.isArray(orderObj?.items) ? orderObj.items : [];
+  const totalQty = items.reduce((sum, x) => sum + getEffectiveQty(x), 0);
+  const totalValue = items.reduce((sum, x) => sum + getEffectiveValue(x), 0);
+  return !(totalQty === 0 && totalValue === 0);
+}
+
 function getCommentUserBg(by){
   const palettes = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9"];
   const name = (by || "").toString();
