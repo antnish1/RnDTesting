@@ -2331,7 +2331,7 @@ function getStatusChipStyle(status){
     "REJECTED": { bg:"#fef2f2", text:"#991b1b", border:"#fca5a5" }
   };
   const p = palette[s] || { bg:"#f8fafc", text:"#334155", border:"#cbd5e1" };
-  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border};`;
+  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border}; white-space:nowrap; display:inline-flex; align-items:center; line-height:1.05;`;
 }
 
 function getOrderTypeRowStyle(orderType){
@@ -2436,13 +2436,6 @@ function shouldShowOrder(orderObj){
   return !(totalQty === 0 && totalValue === 0);
 }
 
-function shouldShowOrder(orderObj){
-  const items = Array.isArray(orderObj?.items) ? orderObj.items : [];
-  const totalQty = items.reduce((sum, x) => sum + getEffectiveQty(x), 0);
-  const totalValue = items.reduce((sum, x) => sum + getEffectiveValue(x), 0);
-  return !(totalQty === 0 && totalValue === 0);
-}
-
 function getCommentUserBg(by){
   const palettes = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9"];
   const name = (by || "").toString();
@@ -2467,6 +2460,23 @@ function formatDateTimeIST(dateValue){
     second: "2-digit",
     hour12: true
   }).format(date) + " IST";
+}
+
+function getActionEventTitle(action, fallbackText = ""){
+  const map = {
+    ORDER_CREATED: "Order placed",
+    ADMIN_PROCESSED: "Order processed",
+    ADMIN_REJECTED: "Order rejected",
+    SUPER_APPROVED: "Order approved",
+    SUPER_REJECTED: "Order rejected",
+    APPROVER_CHANGED: "Approver changed",
+    SUPER_REMOVED_ROW: "Part removed for review",
+    SUPER_RESET_TO_ORIGINAL: "Edited quantities reset",
+    SUPER_ACCEPTED_EDITS: "Edited quantities accepted",
+    STATUS_UPDATED: "Status updated"
+  };
+  if(map[action]) return map[action];
+  return fallbackText || "Action updated";
 }
 
 const commentAttachmentHrefCache = {};
@@ -2622,17 +2632,21 @@ const orderStatus = getOrderStatusLabel(data);
 const isAdmin = user.Branch === "HQ";
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
+const visibleOrderComments = orderComments.filter(c => c?.action !== "SUPER_EDITED_QTY");
+const userCommentsCount = getOrderCommentCount({ items: data, OrderComments: order.OrderComments });
 const commentPalette = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9", "#fee2e2"];
 const commentByColor = {};
 let commentColorIndex = 0;
-const commentsHTML = orderComments.length
-  ? orderComments.map(c => `
+const commentsHTML = visibleOrderComments.length
+  ? visibleOrderComments.map(c => `
       ${isSystemActionComment(c)
         ? `
-          <div class="py-1.5 text-[12px] leading-relaxed border-b border-slate-200/70">
-            <span class="font-medium" style="color:#0f172a;">${escapeHtml(c.by || "System")}</span>
-            <span style="color:#64748b;"> • ${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
-            <div style="color:#334155;">${escapeHtml(c.text || "")}</div>
+          <div class="system-action-row py-0.5 text-[12px] border-b border-slate-200/60">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="font-semibold" style="color:#0f172a;">${escapeHtml(getActionEventTitle(c.action, c.text))}</span>
+              <span style="color:#475569;">by ${escapeHtml(c.by || "System")}</span>
+              <span class="ml-auto text-[11px]" style="color:#64748b;">${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
+            </div>
           </div>
         `
         : `
@@ -2892,11 +2906,18 @@ ${actionButtons}
   <div class="relative pc-section">
     <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
       <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        COMMENTS (${orderComments.length})
+        COMMENTS (${userCommentsCount})
       </span>
     </div>
 
-    <div class="space-y-2 mt-2">
+    <div class="space-y-1.5 mt-2">
+      <div class="flex justify-end">
+        <button id="toggleLogsBtn" onclick="toggleActionLogs()"
+          class="px-3 py-1 rounded-md text-[11px] font-semibold"
+          style="background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;">
+          Hide Logs
+        </button>
+      </div>
       <div id="commentComposer" class="hidden">
         <div class="relative">
           <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
@@ -2916,7 +2937,7 @@ ${actionButtons}
           </button>
         </div>
       </div>
-      <div class="space-y-2">${commentsHTML}</div>
+      <div id="orderCommentsList" class="space-y-1">${commentsHTML}</div>
     </div>
   </div>
 
@@ -3100,7 +3121,7 @@ async function processOrder(orderNo){
     return showPopup("Error updating Order ❗");
   }
 
-  await appendOrderActionLog(orderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Admin"}.`);
+  await appendOrderActionLog(inputOrderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Admin"}.`);
   showPopup("Order Updated & Processed ✅");
 
   loadAdmin("Processed");
@@ -3305,6 +3326,7 @@ async function processExcelData(rows){
 
   let updated = 0;
   let skipped = 0;
+  const statusLoggedOrders = new Set();
 
   for(const r of rows){
     console.log("🟡 RAW EXCEL ROW:", r);
@@ -3365,6 +3387,15 @@ async function processExcelData(rows){
 
     if(!error){
       updated++;
+      if(!statusLoggedOrders.has(orderNo)){
+        await appendOrderActionLog(
+          orderNo,
+          "STATUS_UPDATED",
+          `Status updated to ${(status || "Processed")} via upload by ${getUser()?.Name || "Admin"}.`,
+          { status: status || "Processed" }
+        );
+        statusLoggedOrders.add(orderNo);
+      }
     } else {
       console.error(error);
       skipped++;
@@ -3992,6 +4023,19 @@ function handleCommentAction(orderNo){
   postBtn?.classList.add("hidden");
 }
 
+function toggleActionLogs(){
+  const rows = Array.from(document.querySelectorAll(".system-action-row"));
+  if(!rows.length) return;
+
+  const shouldShow = rows.every(r => r.classList.contains("hidden"));
+  rows.forEach(r => r.classList.toggle("hidden", !shouldShow));
+
+  const btn = document.getElementById("toggleLogsBtn");
+  if(btn){
+    btn.textContent = shouldShow ? "Hide Logs" : "Show Logs";
+  }
+}
+
 function updateCommentFileName(input){
   const fileName = input?.files?.[0]?.name || "No file selected";
   const label = document.getElementById("commentFileName");
@@ -4029,13 +4073,6 @@ async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQ
   if(error){
     return showPopup("Failed to save edited qty ❌");
   }
-
-  await appendOrderActionLog(
-    orderNo,
-    "SUPER_EDITED_QTY",
-    `Edited quantity updated for part ${partNo || "-"} by ${getUser()?.Name || "Super Approver"}.`,
-    { partNo, editedqty: parsed, editedvalue: recalculatedValue }
-  );
 
   if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
   window.superAcceptedEdits[orderNo] = false;
