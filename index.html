@@ -4013,8 +4013,7 @@ async function updateApproval(orderNo, status){
     if(isManager){
       approvalUpdateData.Status = "Approved";
       approvalUpdateData.ApprovalStatus = "Approved";
-      approvalUpdateData.ManagerApprovedBy = user.Name || "";
-      approvalUpdateData.ManagerApprovedAt = new Date().toISOString();
+      approvalUpdateData.ApprovedAt = new Date().toISOString();
     } else {
       const managerName = await getDefaultManagerApprover(user?.Name || "");
       if(managerName){
