@@ -635,6 +635,16 @@ function getUser(){
   catch { return null; }
 }
 
+function isSuperLikeRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "super" || role === "manager";
+}
+
+function isManagerRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "manager";
+}
+
 const PART_MASTER_CACHE = new Map();
 const PART_USAGE_30D_CACHE = new Map();
 
@@ -873,7 +883,7 @@ function loadBranch(){
 
 const user = getUser();
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
-    const isSuper = user.Role === "super";
+    const isSuper = isSuperLikeRole(user);
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
@@ -1252,7 +1262,7 @@ document.getElementById("employeeName").value = user.Name || "";
   const { data, error } = await db
     .from("users")
     .select("Name")
-    .eq("Role", "super");
+    .in("Role", ["super", "manager"]);
 
   if(error){
     console.error("Error loading super users", error);
@@ -2378,7 +2388,11 @@ function applyOrderSort(orders){
 
 function isPendingApprovalStatus(val){
   const s = (val || "").toString().trim().toUpperCase();
-  return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
+  return s === "PENDINGAPPROVAL" ||
+    s === "PENDING APPROVAL" ||
+    s === "APPROVAL PENDING" ||
+    s === "PENDINGMANAGERAPPROVAL" ||
+    s === "PENDING MANAGER APPROVAL";
 }
 
 function parseOrderComments(raw){
@@ -2468,7 +2482,10 @@ function getActionEventTitle(action, fallbackText = ""){
     ADMIN_PROCESSED: "Order processed",
     ADMIN_REJECTED: "Order rejected",
     SUPER_APPROVED: "Order approved",
+    SUPER_FORWARDED_MANAGER: "Order sent for manager approval",
     SUPER_REJECTED: "Order rejected",
+    MANAGER_APPROVED: "Order approved",
+    MANAGER_REJECTED: "Order rejected",
     APPROVER_CHANGED: "Approver changed",
     SUPER_REMOVED_ROW: "Part removed for review",
     SUPER_RESET_TO_ORIGINAL: "Edited quantities reset",
@@ -2485,8 +2502,11 @@ function getActionEventColor(action){
     ADMIN_PROCESSED: "#0f766e",
     STATUS_UPDATED: "#0f766e",
     SUPER_APPROVED: "#166534",
+    SUPER_FORWARDED_MANAGER: "#1d4ed8",
     ADMIN_REJECTED: "#b91c1c",
     SUPER_REJECTED: "#b91c1c",
+    MANAGER_APPROVED: "#166534",
+    MANAGER_REJECTED: "#b91c1c",
     APPROVER_CHANGED: "#6d28d9",
     SUPER_ACCEPTED_EDITS: "#92400e",
     SUPER_RESET_TO_ORIGINAL: "#92400e",
@@ -2518,7 +2538,7 @@ function getCommentAttachmentHref(url){
 async function openOrderView(orderNo){
 
 const user = getUser();
-const isSuper = user.Role === "super";
+const isSuper = isSuperLikeRole(user);
 
   showLoader();
 
@@ -2690,7 +2710,7 @@ if(isSuper){
   const { data: superUsers } = await db
     .from("users")
     .select("Name")
-    .eq("Role", "super");
+    .in("Role", ["super", "manager"]);
 
   if(superUsers && superUsers.length){
     superApproverOptions += superUsers
@@ -3961,17 +3981,46 @@ async function openSuperOrder(orderNo){
 }
 
 
+async function getDefaultManagerApprover(excludeName = ""){
+  const query = db
+    .from("users")
+    .select("Name")
+    .eq("Role", "manager");
+
+  const { data, error } = await (excludeName ? query.neq("Name", excludeName) : query);
+  if(error || !data?.length) return "";
+  return data[0].Name || "";
+}
 
 async function updateApproval(orderNo, status){
 
   showLoader();
   const user = getUser();
+  const isManager = isManagerRole(user);
 
   const approvalUpdateData = { ApprovalStatus: status };
   if(status === "Approved"){
-    approvalUpdateData.Status = "Approved";
-    approvalUpdateData.ApprovedBySuper = user.Name || "";
-    approvalUpdateData.ApprovedAt = new Date().toISOString();
+    if(isManager){
+      approvalUpdateData.Status = "Approved";
+      approvalUpdateData.ApprovalStatus = "Approved";
+      approvalUpdateData.ManagerApprovedBy = user.Name || "";
+      approvalUpdateData.ManagerApprovedAt = new Date().toISOString();
+    } else {
+      const managerName = await getDefaultManagerApprover(user?.Name || "");
+      if(managerName){
+        approvalUpdateData.Status = "PENDING APPROVAL";
+        approvalUpdateData.ApprovalStatus = "PendingManagerApproval";
+        approvalUpdateData.ApprovedBy = managerName;
+        approvalUpdateData.ApprovedBySuper = user.Name || "";
+        approvalUpdateData.ApprovedAt = new Date().toISOString();
+      } else {
+        // Fallback: if no manager configured, keep existing single-step behavior.
+        approvalUpdateData.Status = "Approved";
+        approvalUpdateData.ApprovalStatus = "Approved";
+        approvalUpdateData.ApprovedBySuper = user.Name || "";
+        approvalUpdateData.ApprovedAt = new Date().toISOString();
+      }
+    }
   } else if(status === "Rejected"){
     approvalUpdateData.Status = "Rejected";
   }
@@ -3989,8 +4038,14 @@ async function updateApproval(orderNo, status){
 
   await appendOrderActionLog(
     orderNo,
-    status === "Approved" ? "SUPER_APPROVED" : "SUPER_REJECTED",
-    `Order ${status === "Approved" ? "approved" : "rejected"} by ${user.Name || "Unknown User"}.`
+    status === "Approved"
+      ? (isManager ? "MANAGER_APPROVED" : "SUPER_FORWARDED_MANAGER")
+      : (isManager ? "MANAGER_REJECTED" : "SUPER_REJECTED"),
+    status === "Approved"
+      ? (isManager
+          ? `Order approved by ${user.Name || "Unknown User"}.`
+          : `Order approved by ${user.Name || "Unknown User"} and forwarded to manager.`)
+      : `Order rejected by ${user.Name || "Unknown User"}.`
   );
   showPopup("Updated successfully ✅");
 
@@ -4277,7 +4332,7 @@ async function addOrderComment(orderNo){
 
 async function approveOrder(orderNo){
   const user = getUser();
-  const isSuper = user?.Role === "super";
+  const isSuper = isSuperLikeRole(user);
   const hasPendingEdited = !!window.superPendingEditState?.[orderNo];
   const accepted = !!window.superAcceptedEdits?.[orderNo];
 
@@ -4378,7 +4433,7 @@ async function acceptEditedQty(orderNo){
 
 function goBack(){
   const user = getUser();
-  if(user.Role === "super"){
+  if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
   } else if(user.Role === "admin" || user.Branch === "HQ"){
     loadAdmin(window.activeTab || "Approved", true);
@@ -4607,7 +4662,7 @@ function refreshCurrentView(){
 
 if(user.Role === "admin" || user.Branch === "HQ"){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
-} else if(user.Role === "super"){
+} else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
 } else {
   loadTrack("track", true);            // ✅ PASS TRUE
@@ -4672,7 +4727,7 @@ function changePage(step){
 
   const user = getUser();
   const isAdmin = user.Role === "admin" || user.Branch === "HQ";
-  const isSuper = user.Role === "super";
+  const isSuper = isSuperLikeRole(user);
 
   if(isAdmin){
     loadAdmin(window.activeTab, true);
