@@ -1829,77 +1829,7 @@ let html = `
 `;
 
 paginatedOrders.forEach((o,i)=>{
-
-const statuses = o.items.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-
-    
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-
-  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
-    return "PENDING APPROVAL";
-  }
-
-  if(s.includes("PEND")){
-    return "APPROVED";
-  }
-
-  return s;
-});;
-
-let orderStatus = "APPROVED";
-
-// ✅ PRIORITY BASED (TOP → DOWN)
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-else if(statuses.every(s => s === "PENDING APPROVAL")){
-  orderStatus = "PENDING APPROVAL";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "APPROVED";
-}
-  
+const orderStatus = getOrderStatusLabel(o);
 
 const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
@@ -2039,19 +1969,16 @@ async function loadPendingCount(){
 
   if(error) return;
 
-  // ✅ GET UNIQUE ORDER COUNT
-  const uniqueOrders = [...new Set(
-    data
-      .filter(d => {
-        const status = (d.Status || "").toString().trim().toUpperCase();
-        const approval = (d.ApprovalStatus || "").toString().trim().toUpperCase();
-        return (status === "APPROVED" || status === "PENDING")
-          && !isPendingApprovalStatus(d.ApprovalStatus)
-          && approval !== "REJECTED"
-          && (approval === "APPROVED" || approval === "");
-      })
-      .map(d => d.OrderNo)
-  )];
+  const grouped = {};
+  (data || []).forEach(r => {
+    if(!grouped[r.OrderNo]) grouped[r.OrderNo] = [];
+    grouped[r.OrderNo].push(r);
+  });
+
+  // ✅ GET UNIQUE APPROVED ORDER COUNT
+  const uniqueOrders = Object.entries(grouped)
+    .filter(([, items]) => getOrderStatusLabel(items) === "APPROVED")
+    .map(([orderNo]) => orderNo);
   const count = uniqueOrders.length;
 
   const el = document.getElementById("pendingCount");
@@ -2102,32 +2029,14 @@ const orders = applyOrderSort(
 let filtered;
 
 if(activeTab === "Approved"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-      return (status === "APPROVED" || status === "PENDING")
-        && !pendingApproval
-        && approval !== "REJECTED"
-        && (approval === "APPROVED" || approval === "");
-    })
-  );
+  filtered = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
 }
 else{
-  // ✅ ALL NON-APPROVED/NON-PENDING-APPROVAL (exclude super-rejected)
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-      return status !== "APPROVED"
-        && status !== "PENDING"
-        && status !== "PENDING APPROVAL"
-        && !pendingApproval
-        && approval !== "REJECTED";
-    })
-  );
+  // ✅ Processed tab = non-approved workflow states, excluding rejected/pending-approval.
+  filtered = orders.filter(o => {
+    const status = getOrderStatusLabel(o);
+    return status !== "APPROVED" && status !== "PENDING APPROVAL" && status !== "REJECTED";
+  });
 }
 
 
@@ -2180,72 +2089,7 @@ let html = `
 `;
 
 paginatedOrders.forEach((o,i)=>{
-
-const statuses = o.items.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
-    return "PENDING APPROVAL";
-  }
-  if(s.includes("PEND")){
-    return "APPROVED";
-  }
-
-  return s;
-});
-
-let orderStatus = "APPROVED";
-
-// ✅ PRIORITY BASED (TOP → DOWN)
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-else if(statuses.every(s => s === "PENDING APPROVAL")){
-  orderStatus = "PENDING APPROVAL";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "APPROVED";
-}
+const orderStatus = getOrderStatusLabel(o);
 
 const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
@@ -2476,16 +2320,44 @@ function getEffectiveValue(row){
   return Number(edited || 0);
 }
 
+function normalizeRowStatus(status){
+  const s = (status || "").toString().trim().toUpperCase();
+
+  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
+    return s.includes("NOT") ? "NOT DESPATCHED" : "DISPATCHED";
+  }
+  if(s.includes("REJECT")) return "REJECTED";
+  if(s.includes("PROCESS")) return "PROCESSED";
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING") || s === "PENDINGAPPROVAL"){
+    return "PENDING APPROVAL";
+  }
+  if(s.includes("PEND")) return "APPROVED";
+
+  return s || "PENDING APPROVAL";
+}
+
 function getOrderStatusLabel(order){
-  const statuses = (order?.items || []).map(x => (x.Status || "").toString().trim().toUpperCase());
-  if(statuses.every(s => s === "REJECTED")) return "REJECTED";
+  const items = Array.isArray(order?.items) ? order.items : (Array.isArray(order) ? order : []);
+  if(!items.length) return "PENDING APPROVAL";
+
+  const statuses = items.map(x => normalizeRowStatus(x?.Status));
+  const hasRejected = items.some(x => {
+    const approval = (x?.ApprovalStatus || "").toString().trim().toUpperCase();
+    return normalizeRowStatus(x?.Status) === "REJECTED" || approval === "REJECTED";
+  });
+  const hasPendingApproval = items.some(x =>
+    normalizeRowStatus(x?.Status) === "PENDING APPROVAL" || isPendingApprovalStatus(x?.ApprovalStatus)
+  );
+
+  if(hasRejected) return "REJECTED";
   if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
   if(statuses.includes("DISPATCHED")) return "PARTIALLY DISPATCHED";
   if(statuses.every(s => s === "NOT DESPATCHED")) return "NOT DESPATCHED";
   if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
-  if(statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING")) return "PENDING APPROVAL";
-  if(statuses.some(s => s === "APPROVED" || s === "PENDING")) return "APPROVED";
-  return statuses[0] || "";
+  if(statuses.every(s => s === "PENDING APPROVAL") || hasPendingApproval) return "PENDING APPROVAL";
+  if(statuses.some(s => s === "APPROVED")) return "APPROVED";
+
+  return statuses[0] || "PENDING APPROVAL";
 }
 
 function applyOrderSort(orders){
@@ -2628,74 +2500,7 @@ const isSuper = user.Role === "super";
 
   const total = data.reduce((s,x)=>s+getEffectiveValue(x),0);
 
-let orderStatus = "APPROVED";
-
-const statuses = data.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  // 🔥 NORMALIZE ALL POSSIBLE VALUES
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
-    return "PENDING APPROVAL";
-  }
-
-  if(s.includes("PEND")){
-    return "APPROVED";
-  }
-
-
-    
-  return s;
-});
-
-// ✅ ALL DISPATCHED
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-else if(statuses.every(s => s === "PENDING APPROVAL")){
-  orderStatus = "PENDING APPROVAL";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "APPROVED";
-}
+const orderStatus = getOrderStatusLabel(data);
   const prevDays = Number(window.prevQtyDays) || 30;
   const partNosForPrev = [...new Set(data.map(r => normalizePartNo(r.PartNo)).filter(Boolean))];
   const prevQtyMap = {};
@@ -3811,17 +3616,11 @@ function renderSearchResults(data){
   `;
 
   orders.forEach(o=>{
-    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
-    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
-    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
-    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
-    const tableStatus = isRejected
-      ? "Rejected"
-      : isPendingApproval
-        ? "Pending Approval"
-        : isApproved
-          ? "Approved"
-          : (o.items[0].Status || "Pending");
+    const tableStatusRaw = getOrderStatusLabel(o);
+    const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
+      tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
+      tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
 
     const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
@@ -3948,29 +3747,13 @@ const grouped = {};
   let filtered;
 
 if(activeTab === "PendingApproval"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      return status === "PENDING APPROVAL" || status === "APPROVAL PENDING" || isPendingApprovalStatus(x.ApprovalStatus);
-    })
-  );
+  filtered = orders.filter(o => getOrderStatusLabel(o) === "PENDING APPROVAL");
 }
 else if(activeTab === "Approved"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      return status === "APPROVED" || status === "PENDING";
-    })
-  );
+  filtered = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
 }
 else if(activeTab === "Rejected"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-      return status === "REJECTED" || approval === "REJECTED";
-    })
-  );
+  filtered = orders.filter(o => getOrderStatusLabel(o) === "REJECTED");
 }
 else if(activeTab === "All"){
   filtered = orders.filter(o => 
@@ -4021,18 +3804,11 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   `;
 
   paginatedOrders.forEach(o=>{
-
-    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
-    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
-    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
-    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
-    const tableStatus = isRejected
-      ? "Rejected"
-      : isPendingApproval
-        ? "Pending Approval"
-        : isApproved
-          ? "Approved"
-          : (o.items[0].Status || "Pending Approval");
+    const tableStatusRaw = getOrderStatusLabel(o);
+    const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
+      tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
+      tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
       
     const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
@@ -4558,13 +4334,11 @@ function escapeHtml(value){
 }
 
 function getPrintableStatusLabel(status){
-  const s = (status || "").toString().trim().toUpperCase();
-  if(s.includes("REJECT")) return "Rejected";
-  if(s.includes("PENDING APPROVAL") || s === "PENDINGAPPROVAL" || s === "APPROVAL PENDING") return "Pending Approval";
-  if(s === "APPROVED" || s === "PENDING") return "Approved";
-  if(s.includes("DISPATCH")) return s.includes("NOT") ? "Not Dispatched" : "Dispatched";
-  if(s === "PROCESSED") return "Processed";
-  return s || "Pending";
+  const s = normalizeRowStatus(status);
+  if(s === "PENDING APPROVAL") return "Pending Approval";
+  if(s === "PARTIALLY DISPATCHED") return "Partially Dispatched";
+  if(s === "NOT DESPATCHED") return "Not Dispatched";
+  return s.charAt(0) + s.slice(1).toLowerCase();
 }
 
 async function printOrderDetails(orderNo){
@@ -4589,7 +4363,7 @@ async function printOrderDetails(orderNo){
     return sum + pending;
   }, 0);
   const totalValue = data.reduce((sum, r) => sum + getEffectiveValue(r), 0);
-  const overallStatus = getPrintableStatusLabel(order.Status || order.ApprovalStatus);
+  const overallStatus = getPrintableStatusLabel(getOrderStatusLabel(data));
 
   const summaryRows = [
     ["Order Type", order.OrderType || "-"],
@@ -4791,30 +4565,12 @@ function changePage(direction){
   if(user.Role === "admin" || user.Branch === "HQ"){
 
     if(window.activeTab === "Approved"){
-      orders = orders.filter(o => 
-        o.some(x => {
-          const status = (x.Status || "").toString().trim().toUpperCase();
-          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-          return (status === "APPROVED" || status === "PENDING")
-            && !pendingApproval
-            && approval !== "REJECTED"
-            && (approval === "APPROVED" || approval === "");
-        })
-      );
+      orders = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
     } else {
-      orders = orders.filter(o => 
-        o.some(x => {
-          const status = (x.Status || "").toString().trim().toUpperCase();
-          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-          return status !== "APPROVED"
-            && status !== "PENDING"
-            && status !== "PENDING APPROVAL"
-            && !pendingApproval
-            && approval !== "REJECTED";
-        })
-      );
+      orders = orders.filter(o => {
+        const status = getOrderStatusLabel(o);
+        return status !== "APPROVED" && status !== "PENDING APPROVAL" && status !== "REJECTED";
+      });
     }
 
   } else {
