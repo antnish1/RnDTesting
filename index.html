@@ -135,36 +135,64 @@ body {
     
 .menu-btn {
   position: relative;
-  padding: 7px 10px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  color: var(--pc-text-muted);
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--pc-border);
+  border-radius: 12px;
+  color: var(--pc-text);
   font-weight: 600;
-  letter-spacing: 0.1px;
-  transition: color 0.18s ease, background-color 0.18s ease;
-  box-shadow: none;
+  letter-spacing: 0.2px;
+  transition: all 0.22s ease;
+  box-shadow: 0 2px 6px rgba(15,23,42,0.06);
 }
 
+/* 🔥 HOVER EFFECT */
 .menu-btn:hover {
-  color: var(--pc-primary);
-  background: rgba(37,99,235,0.08);
+  background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));
+  color: #ffffff !important;   /* ✅ FIX */
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(79,70,229,0.32);
+}
+/* 🔥 ACTIVE CLICK */
+.menu-btn:active {
+  transform: scale(0.98);
 }
 
-.menu-btn:active {
-  transform: none;
+/* 🔥 SUBTLE GLOW */
+.menu-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+}
+
+.menu-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.25s;
+  box-shadow: 0 0 0 2px rgba(170, 205, 220, 0.28) inset;
+}
+
+.menu-btn:hover::after {
+  opacity: 1;
 }
 
 
 
 .active-tab {
-  background: rgba(37,99,235,0.12);
-  color: #1d4ed8;
-  box-shadow: none;
+  background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));
+  color: #ffffff;   /* ✅ FIX */
+  box-shadow: 0 8px 20px rgba(79,70,229,0.28);
 }
 .top-btn {
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
   font-weight: 600;
 
   display: inline-flex;
@@ -172,53 +200,57 @@ body {
   gap: 6px;
   white-space: nowrap;
 
-  background: transparent;
-  border: none;
-  transition: color 0.18s ease, background-color 0.18s ease;
-  box-shadow: none;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid var(--pc-border);
+
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.06);
 }
 
 .top-btn:hover {
-  color: var(--pc-primary);
-  background: rgba(37,99,235,0.08);
-  transform: none;
-  box-shadow: none;
+    color: #0f172a;
+  background: rgba(255,255,255,0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(15,23,42,0.12);
 }
 
 .active-top-btn {
-  background: rgba(37,99,235,0.12);
-  color: #1d4ed8;
-  border: none;
+  background: linear-gradient(135deg, var(--pc-primary), var(--pc-secondary));
+  color: white;
+  border-color: #7c86ff;
 }
 
 .order-action-btn{
-  padding: 6px 10px !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  transition: color 0.18s ease, background-color 0.18s ease !important;
-  border: none !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.14);
+  transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  border: 1px solid rgba(255,255,255,0.18);
 }
 
 .order-action-btn:hover{
-  transform: none;
-  box-shadow: none !important;
-  filter: none;
-  background: rgba(37,99,235,0.1) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.26);
+  filter: brightness(1.03);
 }
 
 .order-action-btn:active{
-  transform: none;
-  box-shadow: none !important;
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
 }
     
 .logout-btn {
-  background: transparent !important;
-  color: #b91c1c !important;
-  border: none !important;
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.logout-btn {
+  background: #b85c5c;
+  color: #fff;
+  border: 1px solid #9f4c4c;
 }
 
 .logout-btn:hover {
-  background: rgba(185,28,28,0.08) !important;
+  background: #a54b4b;
 }
     
 
@@ -264,32 +296,9 @@ input:focus, select:focus, button:focus {
     
     
 
-.track-table thead th {
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.track-table tbody tr {
-  background: #fff;
-}
-
-.track-table tbody tr:nth-child(even) {
-  background: #f8fafc;
-}
-
-.track-table tbody tr:hover {
-  background: #eef2ff !important;
-}
-
-#popup > div {
-  animation: popIn 180ms ease-out;
-  border-radius: 18px !important;
-  border-color: var(--pc-border) !important;
-}
-
-@keyframes popIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+/* Smooth UI feel */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .track-table thead th {
@@ -322,7 +331,7 @@ input:focus, select:focus, button:focus {
 
 /* Card hover lift */
 .pc-section:hover {
-  box-shadow: 0 10px 20px rgba(15,23,42,0.10);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
 }
 
 /* Table polish */
@@ -893,9 +902,15 @@ document.getElementById("app").innerHTML = `
 <!-- HEADER WITH LOGOUT -->
 <div class="w-full rounded-2xl px-6 py-3 flex justify-between items-center backdrop-blur-md"
      style="
-  background: rgba(255,255,255,0.78);
-  border: 1px solid var(--pc-border);
-  box-shadow: 0 8px 18px rgba(15,23,42,0.10);
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,0.75) 0%,
+    rgba(255,255,255,0.75) 22%,
+    #2f3e4d 40%,
+    #3f556b 100%
+  );
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
 ">
 
 <div class="relative flex items-center w-full">
