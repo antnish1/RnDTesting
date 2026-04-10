@@ -2637,12 +2637,16 @@ const orderStatus = getOrderStatusLabel(data);
 const isAdmin = user.Branch === "HQ";
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
 const visibleOrderComments = orderComments.filter(c => {
   if(c?.action === "SUPER_EDITED_QTY") return false;
   if(hasManagerApprovedLog && c?.action === "SUPER_FORWARDED_MANAGER") return false;
   return true;
 });
+=======
+const visibleOrderComments = orderComments.filter(c => c?.action !== "SUPER_EDITED_QTY");
+>>>>>>> main
 const userCommentsCount = getOrderCommentCount({ items: data, OrderComments: order.OrderComments });
 const commentPalette = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9", "#fee2e2"];
 const commentByColor = {};
@@ -2821,10 +2825,16 @@ document.getElementById("main").innerHTML = `
 <!-- ================= PROCESS BAR (HQ ONLY) ================= -->
 
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
 <div class="rounded-lg px-2 py-1.5"
   style="background:rgba(148,163,184,0.12); border:1px solid rgba(148,163,184,0.28);">
 
   <div class="flex justify-start items-center flex-wrap gap-2">
+=======
+<div class="relative pc-section">
+
+  <div class="flex justify-end items-center flex-wrap gap-2">
+>>>>>>> main
 
 ${actionButtons}
   </div>
@@ -2842,8 +2852,13 @@ ${actionButtons}
         <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
           ORDER SUMMARY
         </span>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
         <span class="text-[14px] font-extrabold tracking-wide" style="color:#1d4ed8; letter-spacing:0.04em;">${orderNo}</span>
         <span class="text-[11px] font-medium" style="color: var(--pc-text-muted);">${formatDateTime(order.created_at)}</span>
+=======
+        <span class="text-[11px] font-bold tracking-wide" style="color:#1d4ed8;">${orderNo}</span>
+        <span class="text-[10px]" style="color: var(--pc-text-muted);">${formatDateTime(order.created_at)}</span>
+>>>>>>> main
       </div>
     </div>
 
@@ -2946,8 +2961,25 @@ ${actionButtons}
   <!-- ================= PARTS TABLE ================= -->
   <div class="relative pc-section">
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
     <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
       <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">PART DETAILS</span>
+=======
+    <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">PART DETAILS</span>
+      ${canSuperEditQty ? `
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+          style="
+            background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#1e3a8a'};
+            color:#ffffff;
+            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? '#86efac' : '#93c5fd'};
+            box-shadow:0 4px 10px ${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(30,58,138,0.25)'};
+          ">
+          ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
+        </button>
+      ` : ""}
+>>>>>>> main
     </div>
     ${canSuperEditQty ? `
       <div class="absolute -top-3 right-4 px-3" style="background: var(--pc-bg);">
@@ -2964,6 +2996,16 @@ ${actionButtons}
       </div>
     ` : ""}
 
+    ${canSuperEditQty ? `
+      <div class="flex justify-end mt-1 mb-2">
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#0f766e'}; color:white;">
+          ${window.superAcceptedEdits?.[orderNo] ? "Edited Qty Accepted" : "Accept Edited Qty"}
+        </button>
+      </div>
+    ` : ""}
+
     <div class="overflow-x-auto mt-2">
 
       <table class="w-full text-sm border rounded-lg overflow-hidden">
@@ -2972,6 +3014,7 @@ ${actionButtons}
               style="background:#f1f5f9; color:#0f172a;">
 
           <tr>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
             <th class="py-2 text-left">Part</th>
             <th class="text-left px-2">Description</th>
             <th class="text-left">Qty</th>
@@ -2986,6 +3029,22 @@ ${actionButtons}
             <th class="text-left">Transport</th>
             <th class="text-left">Docket</th>
             <th class="px-1 text-left">
+=======
+            <th class="py-2">Part</th>
+            <th class="text-left px-2">Description</th>
+            <th>Qty</th>
+            <th>Billed</th>
+            <th>Pending</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Processed</th>
+            <th>Reg Dt</th>
+            <th>Bill No</th>
+            <th>Billing Dt</th>
+            <th>Transport</th>
+            <th>Docket</th>
+            <th class="px-1 text-center">
+>>>>>>> main
               PrevQty
               <div class="mt-1">
                 <select onchange="changePrevQtyDays('${orderNo}', this.value)"
@@ -2998,7 +3057,11 @@ ${actionButtons}
                 </select>
               </div>
             </th>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
             ${canSuperEditQty ? "<th class='w-16 text-left'>Edit Qty</th><th class='w-10 text-left'>Remove</th>" : ""}
+=======
+            ${canSuperEditQty ? "<th class='w-16'>Edit Qty</th><th class='w-10 text-center'>Remove</th>" : ""}
+>>>>>>> main
           </tr>
 
         </thead>
@@ -4412,6 +4475,7 @@ async function approveOrder(orderNo){
     );
   }
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
   await updateApproval(orderNo, "Approved");
 }
 
@@ -4427,6 +4491,23 @@ async function approveWithOriginalQty(orderNo){
   await updateApproval(orderNo, "Approved");
 }
 
+=======
+  await updateApproval(orderNo, "Approved");
+}
+
+async function approveWithOriginalQty(orderNo){
+  closePopup();
+  showLoader();
+  await db
+    .from("requests")
+    .update({ editedqty: null, editedvalue: null })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+  await appendOrderActionLog(orderNo, "SUPER_RESET_TO_ORIGINAL", `Edited quantities reset to original by ${getUser()?.Name || "Unknown User"} before approval.`);
+  await updateApproval(orderNo, "Approved");
+}
+
+>>>>>>> main
 async function acceptEditedQty(orderNo){
   showLoader();
   const { data } = await db
