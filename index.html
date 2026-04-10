@@ -870,14 +870,15 @@ function loadBranch(){
 
 const user = getUser();
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
-    const isSuper = isSuperLikeRole(user);
+const isSuper = isSuperLikeRole(user);
+const isManager = isManagerRole(user);
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isAdmin){
   window.activeTab = "Approved";
 }else if(isSuper){
-  window.activeTab = "PendingApproval";
+  window.activeTab = isManager ? "Dashboard" : "PendingApproval";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -951,6 +952,13 @@ document.getElementById("app").innerHTML = `
 </span>
     </button>
 ` : isSuper ? `
+    ${isManager ? `
+      <button onclick="loadSuper('Dashboard')"
+      class="top-btn ${window.activeTab==='Dashboard' ? 'active-top-btn' : ''}"
+      data-tab="Dashboard">
+        Dashboard
+      </button>
+    ` : ""}
 
     <button onclick="loadSuper('PendingApproval')" 
     class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
@@ -3707,6 +3715,127 @@ function renderSearchResults(data){
 }
 
 
+function renderManagerDashboard(orders){
+  const safeOrders = orders || [];
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  const totalOrders = safeOrders.length;
+  const pendingOrders = safeOrders.filter(o => getOrderStatusLabel(o) === "PENDING APPROVAL");
+  const approvedOrders = safeOrders.filter(o => getOrderStatusLabel(o) === "APPROVED");
+  const rejectedOrders = safeOrders.filter(o => getOrderStatusLabel(o) === "REJECTED");
+
+  const totalValue = safeOrders.reduce((sum, o) =>
+    sum + (o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0)
+  , 0);
+  const avgValue = totalOrders ? (totalValue / totalOrders) : 0;
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayOrders = safeOrders.filter(o => (o.created_at || "").slice(0, 10) === todayKey).length;
+  const aging24 = pendingOrders.filter(o => (now - new Date(o.created_at || 0).getTime()) >= dayMs).length;
+  const aging48 = pendingOrders.filter(o => (now - new Date(o.created_at || 0).getTime()) >= 2 * dayMs).length;
+
+  const branchMap = {};
+  safeOrders.forEach(o => {
+    const branch = o.Branch || "-";
+    if(!branchMap[branch]){
+      branchMap[branch] = { branch, orders: 0, pending: 0, approved: 0, rejected: 0, value: 0, lastOrderAt: null };
+    }
+    const status = getOrderStatusLabel(o);
+    const row = branchMap[branch];
+    row.orders += 1;
+    row.value += (o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0);
+    if(status === "PENDING APPROVAL") row.pending += 1;
+    else if(status === "APPROVED") row.approved += 1;
+    else if(status === "REJECTED") row.rejected += 1;
+    if(!row.lastOrderAt || new Date(o.created_at) > new Date(row.lastOrderAt)){
+      row.lastOrderAt = o.created_at;
+    }
+  });
+
+  const branchRows = Object.values(branchMap).sort((a, b) => b.value - a.value);
+
+  const recentActivity = safeOrders.flatMap(o => {
+    const comments = getOrderComments(o).filter(c => isSystemActionComment(c));
+    return comments.map(c => ({
+      orderNo: o.OrderNo,
+      by: c.by || "SYSTEM",
+      at: c.at || "",
+      title: getActionEventTitle(c.action, c.text),
+      color: getActionEventColor(c.action)
+    }));
+  }).sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0)).slice(0, 12);
+
+  document.getElementById("main").innerHTML = `
+    <div class="space-y-4">
+      <div class="pc-section">
+        <div class="text-xs font-semibold tracking-wider mb-3" style="color: var(--pc-secondary);">MANAGER DASHBOARD</div>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">TOTAL ORDERS</div><div class="text-xl font-extrabold">${totalOrders}</div></div>
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">PENDING APPROVAL</div><div class="text-xl font-extrabold" style="color:#b45309;">${pendingOrders.length}</div></div>
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">APPROVED</div><div class="text-xl font-extrabold" style="color:#166534;">${approvedOrders.length}</div></div>
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">REJECTED</div><div class="text-xl font-extrabold" style="color:#b91c1c;">${rejectedOrders.length}</div></div>
+        </div>
+        <div class="grid grid-cols-4 gap-3 mt-3">
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">TOTAL VALUE</div><div class="text-lg font-bold">₹ ${Math.round(totalValue).toLocaleString("en-IN")}</div></div>
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">AVG ORDER VALUE</div><div class="text-lg font-bold">₹ ${Math.round(avgValue).toLocaleString("en-IN")}</div></div>
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">TODAY ORDERS</div><div class="text-lg font-bold">${todayOrders}</div></div>
+          <div class="rounded-lg p-3 border" style="border-color:var(--pc-border);background:#fff;"><div class="text-[11px]" style="color:var(--pc-text-muted);">AGING PENDING</div><div class="text-sm font-semibold">&gt;24h: ${aging24} | &gt;48h: ${aging48}</div></div>
+        </div>
+      </div>
+
+      <div class="pc-section">
+        <div class="text-xs font-semibold tracking-wider mb-2" style="color: var(--pc-secondary);">BRANCH-WISE STATS</div>
+        <div class="overflow-x-auto">
+          <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+            <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
+              <tr>
+                <th class="text-left">Branch</th>
+                <th class="text-left">Orders</th>
+                <th class="text-left">Pending</th>
+                <th class="text-left">Approved</th>
+                <th class="text-left">Rejected</th>
+                <th class="text-left">Value</th>
+                <th class="text-left">Avg Value</th>
+                <th class="text-left">Last Order</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${branchRows.map(b => `
+                <tr>
+                  <td class="text-left font-semibold">${b.branch}</td>
+                  <td>${b.orders}</td>
+                  <td>${b.pending}</td>
+                  <td>${b.approved}</td>
+                  <td>${b.rejected}</td>
+                  <td>₹ ${Math.round(b.value).toLocaleString("en-IN")}</td>
+                  <td>₹ ${Math.round(b.orders ? (b.value / b.orders) : 0).toLocaleString("en-IN")}</td>
+                  <td>${formatDateTime(b.lastOrderAt || "")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pc-section">
+        <div class="text-xs font-semibold tracking-wider mb-2" style="color: var(--pc-secondary);">RECENT WORKFLOW ACTIVITY</div>
+        <div class="space-y-1">
+          ${recentActivity.length ? recentActivity.map(a => `
+            <div class="px-3 py-2 rounded-md border text-xs flex items-center gap-2" style="border-color:var(--pc-border);background:#fff;">
+              <span class="font-semibold uppercase" style="color:${a.color};">${escapeHtml(a.title || "-")}</span>
+              <span style="color:#64748b;">#${escapeHtml(a.orderNo || "-")}</span>
+              <span class="ml-auto" style="color:#475569;">${escapeHtml(formatDateTimeIST(a.at || "").toUpperCase())}</span>
+              <span style="color:#334155;">BY ${escapeHtml((a.by || "SYSTEM").toUpperCase())}</span>
+            </div>
+          `).join("") : `<div class="text-xs" style="color:var(--pc-text-muted);">No recent workflow events.</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
 function clearUniversalSearch(){
   document.getElementById("universalSearch").value = "";
   refreshCurrentView();
@@ -3761,6 +3890,11 @@ const grouped = {};
   const orders = applyOrderSort(
     Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
   ).filter(shouldShowOrder);
+
+  if(isManager && activeTab === "Dashboard"){
+    renderManagerDashboard(orders);
+    return;
+  }
 
   // FILTER TABS
   let filtered;
