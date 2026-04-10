@@ -326,6 +326,34 @@ input:focus, select:focus, button:focus {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+.track-table thead th {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.track-table tbody tr {
+  background: #fff;
+}
+
+.track-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.track-table tbody tr:hover {
+  background: #eef2ff !important;
+}
+
+#popup > div {
+  animation: popIn 180ms ease-out;
+  border-radius: 18px !important;
+  border-color: var(--pc-border) !important;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Card hover lift */
 .pc-section:hover {
   box-shadow: 0 10px 20px rgba(15,23,42,0.10);
@@ -2959,6 +2987,16 @@ ${actionButtons}
             box-shadow:0 4px 10px ${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(30,58,138,0.25)'};
           ">
           ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
+        </button>
+      </div>
+    ` : ""}
+
+    ${canSuperEditQty ? `
+      <div class="flex justify-end mt-1 mb-2">
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#0f766e'}; color:white;">
+          ${window.superAcceptedEdits?.[orderNo] ? "Edited Qty Accepted" : "Accept Edited Qty"}
         </button>
       </div>
     ` : ""}
