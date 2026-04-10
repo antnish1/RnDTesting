@@ -2956,6 +2956,16 @@ ${actionButtons}
       ` : ""}
     </div>
 
+    ${canSuperEditQty ? `
+      <div class="flex justify-end mt-1 mb-2">
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+          style="background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#0f766e'}; color:white;">
+          ${window.superAcceptedEdits?.[orderNo] ? "Edited Qty Accepted" : "Accept Edited Qty"}
+        </button>
+      </div>
+    ` : ""}
+
     <div class="overflow-x-auto mt-2">
 
       <table class="w-full text-sm text-center border rounded-lg overflow-hidden">
