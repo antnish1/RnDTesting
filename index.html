@@ -195,27 +195,28 @@ body {
 }
 
 .order-action-btn{
-  padding: 6px 10px !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  transition: color 0.18s ease, background-color 0.18s ease !important;
-  border: none !important;
+  padding: 4px 9px !important;
+  border-radius: 7px !important;
+  border: 1px solid rgba(148,163,184,0.38) !important;
   background: transparent !important;
+  box-shadow: 0 1px 0 rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.5) !important;
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
   color: var(--pc-text) !important;
   position: relative;
+  letter-spacing: 0.01em;
 }
 
 .order-action-btn:hover{
-  transform: none;
-  box-shadow: none !important;
-  filter: none;
-  background: transparent !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.62) !important;
+  background: rgba(15,23,42,0.035) !important;
   color: var(--pc-primary) !important;
+  border-color: rgba(59,130,246,0.45) !important;
 }
 
 .order-action-btn:active{
-  transform: none;
-  box-shadow: none !important;
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.12) !important;
 }
 
 .order-action-btn::after{
@@ -236,6 +237,13 @@ body {
   transform: scaleX(1);
   opacity:1;
 }
+
+.oa-primary{ color:#1d4ed8 !important; }
+.oa-success{ color:#166534 !important; }
+.oa-danger{ color:#b91c1c !important; }
+.oa-muted{ color:#334155 !important; }
+.oa-neutral{ color:#0f172a !important; }
+.oa-teal{ color:#0f766e !important; }
     
 .logout-btn {
   background: transparent !important;
@@ -2714,45 +2722,38 @@ if(isSuper){
     <div class="flex gap-2 items-center flex-wrap justify-end">
       ${canSuperActions ? `
         <button onclick="openChangeApproverPopup('${orderNo}', '${order.ApprovedBy || ""}')"
-          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-          style="color:#1d4ed8;">
+          class="order-action-btn oa-primary px-3 py-2 rounded-lg font-semibold text-sm">
           Change Approver
         </button>
 
         <button onclick="approveOrder('${orderNo}')"
-          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-          style="color:#166534;">
+          class="order-action-btn oa-success px-3 py-2 rounded-lg font-semibold text-sm">
           Approve
         </button>
 
         <button onclick="updateApproval('${orderNo}','Rejected')"
-          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-          style="color:#b91c1c;">
+          class="order-action-btn oa-danger px-3 py-2 rounded-lg font-semibold text-sm">
           Reject
         </button>
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="color:#334155;">
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
         Download
       </button>
 
       <button onclick="printOrderDetails('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="color:#0f766e;">
+        class="order-action-btn oa-teal px-3 py-2 rounded-lg font-semibold text-sm">
         Print
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="color:#334155;">
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
         Comment
       </button>
 
       <button onclick="goBack()"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="color:#0f172a;">
+        class="order-action-btn oa-neutral px-3 py-2 rounded-lg font-semibold text-sm">
         Back
       </button>
 
@@ -2772,34 +2773,29 @@ else{
           />
 
           <button onclick="processOrder('${orderNo}')"
-            class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-            style="background:#2563eb;color:white;">
+            class="order-action-btn oa-primary px-3 py-2 rounded-lg font-semibold text-sm">
             Process
           </button>
         </div>
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#4b5563;color:white;">
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
         Download
       </button>
 
       <button onclick="printOrderDetails('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#0f766e;color:white;">
+        class="order-action-btn oa-teal px-3 py-2 rounded-lg font-semibold text-sm">
         Print
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#4b5563;color:white;">
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
         Comment
       </button>
 
       <button onclick="goBack()"
-        class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#f3f4f6;color:#111827;">
+        class="order-action-btn oa-neutral px-3 py-2 rounded-lg font-semibold text-sm">
         Back
       </button>
 
