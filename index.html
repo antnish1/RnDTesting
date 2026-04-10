@@ -315,34 +315,6 @@ input:focus, select:focus, button:focus {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.track-table thead th {
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.track-table tbody tr {
-  background: #fff;
-}
-
-.track-table tbody tr:nth-child(even) {
-  background: #f8fafc;
-}
-
-.track-table tbody tr:hover {
-  background: #eef2ff !important;
-}
-
-#popup > div {
-  animation: popIn 180ms ease-out;
-  border-radius: 18px !important;
-  border-color: var(--pc-border) !important;
-}
-
-@keyframes popIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
 /* Card hover lift */
 .pc-section:hover {
   box-shadow: 0 10px 20px rgba(15,23,42,0.10);
@@ -496,22 +468,22 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: clamp(170px, 24vw, 280px);
-  height: 34px;
-  padding: 0 8px 0 30px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
+  width: clamp(220px, 30vw, 360px);
+  height: 38px;
+  padding: 0 10px 0 34px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
   font-size: 12px;
   font-weight: 500;
-  box-shadow: none;
-  transition: color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 
 .search-bar:focus {
-  border-color: rgba(37,99,235,0.35);
-  background: rgba(37,99,235,0.06);
-  box-shadow: none;
+  border-color: #60a5fa;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.14);
 }
 
 /* 🔥 PLACEHOLDER */
@@ -2733,51 +2705,46 @@ if(isSuper){
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap justify-end">
       ${canSuperActions ? `
-        <div class="flex gap-2 items-center mr-3">
-          <button onclick="sendToApprover('${orderNo}')"
-            class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-            style="background:#2563eb;color:white;">
-            Send
-          </button>
-          <select id="changeApprover" class="pc-field w-[190px] text-sm">
-            ${superApproverOptions}
-          </select>
-        </div>
+        <button onclick="openChangeApproverPopup('${orderNo}', '${order.ApprovedBy || ""}')"
+          class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
+          style="color:#1d4ed8;">
+          Change Approver
+        </button>
 
         <button onclick="approveOrder('${orderNo}')"
           class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#16a34a;color:white;">
+          style="color:#166534;">
           Approve
         </button>
 
         <button onclick="updateApproval('${orderNo}','Rejected')"
           class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#dc2626;color:white;">
+          style="color:#b91c1c;">
           Reject
         </button>
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#475569;color:white;">
+        style="color:#334155;">
         Download
       </button>
 
       <button onclick="printOrderDetails('${orderNo}')"
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#0f766e;color:white;">
+        style="color:#0f766e;">
         Print
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#4b5563;color:white;">
+        style="color:#334155;">
         Comment
       </button>
 
       <button onclick="goBack()"
         class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#e2e8f0;color:#0f172a;">
+        style="color:#0f172a;">
         Back
       </button>
 
@@ -2973,10 +2940,20 @@ ${actionButtons}
   <!-- ================= PARTS TABLE ================= -->
   <div class="relative pc-section">
 
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        PART DETAILS
-      </span>
+    <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">PART DETAILS</span>
+      ${canSuperEditQty ? `
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+          style="
+            background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#1e3a8a'};
+            color:#ffffff;
+            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? '#86efac' : '#93c5fd'};
+            box-shadow:0 4px 10px ${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(30,58,138,0.25)'};
+          ">
+          ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
+        </button>
+      ` : ""}
     </div>
 
     ${canSuperEditQty ? `
@@ -4074,8 +4051,50 @@ async function updateApproval(orderNo, status){
   loadSuper(window.activeTab);
 }
 
-async function sendToApprover(orderNo){
-  const approver = document.getElementById("changeApprover")?.value;
+async function openChangeApproverPopup(orderNo, currentApprover = ""){
+  const { data: superUsers } = await db
+    .from("users")
+    .select("Name")
+    .in("Role", ["super", "manager"]);
+
+  const options = [`<option value="">Select Approver</option>`]
+    .concat((superUsers || []).map(u =>
+      `<option value="${u.Name}" ${u.Name === currentApprover ? "selected" : ""}>${u.Name}</option>`
+    ))
+    .join("");
+
+  showPopup(
+    "Change Approver",
+    "info",
+    `
+      <div class="flex gap-2 justify-end">
+        <button onclick="sendToApprover('${orderNo}', document.getElementById('popupApproverSelect')?.value)"
+          class="px-4 py-2 rounded-lg font-semibold text-sm"
+          style="background:#1d4ed8;color:#fff;">
+          Send
+        </button>
+        <button onclick="closePopup()"
+          class="px-4 py-2 rounded-lg font-semibold text-sm"
+          style="background:#e2e8f0;color:#0f172a;">
+          Cancel
+        </button>
+      </div>
+    `
+  );
+
+  const popupMsg = document.getElementById("popupMsg");
+  if(popupMsg){
+    popupMsg.innerHTML = `
+      <div class="space-y-2 text-left">
+        <label class="text-xs font-semibold tracking-wide" style="color:var(--pc-text-muted);">APPROVER</label>
+        <select id="popupApproverSelect" class="pc-field text-sm">${options}</select>
+      </div>
+    `;
+  }
+}
+
+async function sendToApprover(orderNo, selectedApprover = ""){
+  const approver = selectedApprover || document.getElementById("changeApprover")?.value;
   if(!approver){
     return showPopup("Please select approver ❗");
   }
@@ -4092,6 +4111,7 @@ async function sendToApprover(orderNo){
   }
 
   await appendOrderActionLog(orderNo, "APPROVER_CHANGED", `Approver changed to ${approver} by ${getUser()?.Name || "Unknown User"}.`, { approver });
+  closePopup();
   showPopup("Approver updated ✅");
   openOrderView(orderNo);
 }
