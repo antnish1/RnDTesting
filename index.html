@@ -2637,7 +2637,16 @@ const orderStatus = getOrderStatusLabel(data);
 const isAdmin = user.Branch === "HQ";
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
+const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
+const visibleOrderComments = orderComments.filter(c => {
+  if(c?.action === "SUPER_EDITED_QTY") return false;
+  if(hasManagerApprovedLog && c?.action === "SUPER_FORWARDED_MANAGER") return false;
+  return true;
+});
+=======
 const visibleOrderComments = orderComments.filter(c => c?.action !== "SUPER_EDITED_QTY");
+>>>>>>> main
 const userCommentsCount = getOrderCommentCount({ items: data, OrderComments: order.OrderComments });
 const commentPalette = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9", "#fee2e2"];
 const commentByColor = {};
@@ -2816,9 +2825,16 @@ document.getElementById("main").innerHTML = `
 <!-- ================= PROCESS BAR (HQ ONLY) ================= -->
 
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
+<div class="rounded-lg px-2 py-1.5"
+  style="background:rgba(148,163,184,0.12); border:1px solid rgba(148,163,184,0.28);">
+
+  <div class="flex justify-start items-center flex-wrap gap-2">
+=======
 <div class="relative pc-section">
 
   <div class="flex justify-end items-center flex-wrap gap-2">
+>>>>>>> main
 
 ${actionButtons}
   </div>
@@ -2836,8 +2852,13 @@ ${actionButtons}
         <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
           ORDER SUMMARY
         </span>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
+        <span class="text-[14px] font-extrabold tracking-wide" style="color:#1d4ed8; letter-spacing:0.04em;">${orderNo}</span>
+        <span class="text-[11px] font-medium" style="color: var(--pc-text-muted);">${formatDateTime(order.created_at)}</span>
+=======
         <span class="text-[11px] font-bold tracking-wide" style="color:#1d4ed8;">${orderNo}</span>
         <span class="text-[10px]" style="color: var(--pc-text-muted);">${formatDateTime(order.created_at)}</span>
+>>>>>>> main
       </div>
     </div>
 
@@ -2940,6 +2961,10 @@ ${actionButtons}
   <!-- ================= PARTS TABLE ================= -->
   <div class="relative pc-section">
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">PART DETAILS</span>
+=======
     <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background: var(--pc-bg);">
       <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">PART DETAILS</span>
       ${canSuperEditQty ? `
@@ -2954,7 +2979,22 @@ ${actionButtons}
           ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
         </button>
       ` : ""}
+>>>>>>> main
     </div>
+    ${canSuperEditQty ? `
+      <div class="absolute -top-3 right-4 px-3" style="background: var(--pc-bg);">
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+          style="
+            background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#1e3a8a'};
+            color:#ffffff;
+            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? '#86efac' : '#93c5fd'};
+            box-shadow:0 4px 10px ${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(30,58,138,0.25)'};
+          ">
+          ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
+        </button>
+      </div>
+    ` : ""}
 
     ${canSuperEditQty ? `
       <div class="flex justify-end mt-1 mb-2">
@@ -2968,12 +3008,28 @@ ${actionButtons}
 
     <div class="overflow-x-auto mt-2">
 
-      <table class="w-full text-sm text-center border rounded-lg overflow-hidden">
+      <table class="w-full text-sm border rounded-lg overflow-hidden">
 
-        <thead class="text-xs uppercase tracking-wider border-b"
-              style="background: var(--pc-warm); color: var(--pc-text);">
+        <thead class="text-[11px] uppercase tracking-wider border-b"
+              style="background:#f1f5f9; color:#0f172a;">
 
           <tr>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
+            <th class="py-2 text-left">Part</th>
+            <th class="text-left px-2">Description</th>
+            <th class="text-left">Qty</th>
+            <th class="text-left">Billed</th>
+            <th class="text-left">Pending</th>
+            <th class="text-left">Value</th>
+            <th class="text-left">Status</th>
+            <th class="text-left">Processed</th>
+            <th class="text-left">Reg Dt</th>
+            <th class="text-left">Bill No</th>
+            <th class="text-left">Billing Dt</th>
+            <th class="text-left">Transport</th>
+            <th class="text-left">Docket</th>
+            <th class="px-1 text-left">
+=======
             <th class="py-2">Part</th>
             <th class="text-left px-2">Description</th>
             <th>Qty</th>
@@ -2988,6 +3044,7 @@ ${actionButtons}
             <th>Transport</th>
             <th>Docket</th>
             <th class="px-1 text-center">
+>>>>>>> main
               PrevQty
               <div class="mt-1">
                 <select onchange="changePrevQtyDays('${orderNo}', this.value)"
@@ -3000,7 +3057,11 @@ ${actionButtons}
                 </select>
               </div>
             </th>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
+            ${canSuperEditQty ? "<th class='w-16 text-left'>Edit Qty</th><th class='w-10 text-left'>Remove</th>" : ""}
+=======
             ${canSuperEditQty ? "<th class='w-16'>Edit Qty</th><th class='w-10 text-center'>Remove</th>" : ""}
+>>>>>>> main
           </tr>
 
         </thead>
@@ -3011,7 +3072,7 @@ ${actionButtons}
 
       </table>
 
-      ${isSuper ? `<div class="mt-2 text-[11px]" style="color: var(--pc-text-muted);">Super edits are review-only. Original order Qty in DB remains unchanged.</div>` : ""}
+      ${isSuper ? `` : ""}
 
       <div class="text-right mt-4 font-bold"
            style="color: #0f172a;">
@@ -3046,7 +3107,7 @@ let html = `
 <thead class="text-yellow-400 text-center">
 <tr>
 <th>Date</th>
-<th>Branch</th>
+<th class="text-left">Branch</th>
 <th>Machine</th>
 <th>Parts</th>
 <th>Total</th>
@@ -3063,7 +3124,7 @@ const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 html += `
 <tr onclick="toggleHQ(${i})" class="bg-gray-900 hover:bg-gray-800 transition rounded-lg shadow cursor-pointer">
 <td>${formatDateTime(o.created_at)}</td>
-<td class="text-center">${o.Branch}</td>
+<td class="text-left">${o.Branch}</td>
 <td class="text-center">${o.MachineNo}</td>
 <td>${o.items.length}</td>
 <td>₹ ${total}</td>
@@ -3628,7 +3689,7 @@ function renderSearchResults(data){
           <tr>
             <th>Date</th>
             <th>Order Type</th>
-            <th>Branch</th>
+            <th class="text-left">Branch</th>
             <th>Qty</th>
             <th>Value</th>
             <th>Order No</th>
@@ -3672,7 +3733,7 @@ function renderSearchResults(data){
     ${o.OrderType || "-"}
   </span>
 </td>
-      <td>${o.Branch || "-"}</td>
+      <td class="text-left">${o.Branch || "-"}</td>
       <td class="px-4 py-3 text-center">${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toFixed(2)}</td>
       <td class="font-semibold">
@@ -3832,8 +3893,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
             
               <th>Date</th>
               <th>Order Type</th>
-              <th>Customer</th>
-              <th>Branch</th>
+              <th class="text-left">Customer</th>
+              <th class="text-left">Branch</th>
               <th>Qty</th>
               <th>Value</th>
               <th>Order No</th>
@@ -3876,7 +3937,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
           ${o.OrderType || "-"}
         </span>
       </td>
-      <td>${o.CustomerName || "Stock"}</td>
+      <td class="text-left">${o.CustomerName || "Stock"}</td>
       <td>${o.Branch}</td>
       <td>${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toLocaleString("en-IN")}</td>
@@ -4414,6 +4475,7 @@ async function approveOrder(orderNo){
     );
   }
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-2g8t42
   await updateApproval(orderNo, "Approved");
 }
 
@@ -4429,6 +4491,23 @@ async function approveWithOriginalQty(orderNo){
   await updateApproval(orderNo, "Approved");
 }
 
+=======
+  await updateApproval(orderNo, "Approved");
+}
+
+async function approveWithOriginalQty(orderNo){
+  closePopup();
+  showLoader();
+  await db
+    .from("requests")
+    .update({ editedqty: null, editedvalue: null })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+  await appendOrderActionLog(orderNo, "SUPER_RESET_TO_ORIGINAL", `Edited quantities reset to original by ${getUser()?.Name || "Unknown User"} before approval.`);
+  await updateApproval(orderNo, "Approved");
+}
+
+>>>>>>> main
 async function acceptEditedQty(orderNo){
   showLoader();
   const { data } = await db
