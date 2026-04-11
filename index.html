@@ -952,14 +952,7 @@ document.getElementById("app").innerHTML = `
 </span>
     </button>
 ` : isSuper ? `
-    ${isManager ? `
-      <button onclick="loadSuper('Dashboard')"
-      class="top-btn ${window.activeTab==='Dashboard' ? 'active-top-btn' : ''}"
-      data-tab="Dashboard">
-        Dashboard
-      </button>
-    ` : ""}
-
+    ${isManager ? `` : `
     <button onclick="loadSuper('PendingApproval')" 
     class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
     data-tab="PendingApproval">
@@ -983,6 +976,7 @@ document.getElementById("app").innerHTML = `
     data-tab="All">
       All Orders
     </button>
+    `}
 
 ` : `
     <button onclick="loadAdmin('Approved')" 
@@ -3719,7 +3713,8 @@ function renderManagerDashboard(orders){
   const allOrders = orders || [];
   const today = new Date().toISOString().slice(0, 10);
   window.managerDashDateRange = window.managerDashDateRange || { from: "", to: today };
-  window.managerDashFilter = window.managerDashFilter || null;
+  window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "PENDING APPROVAL" };
+  window.managerDashTableVisible = window.managerDashTableVisible !== false;
 
   const fromDate = window.managerDashDateRange.from ? new Date(window.managerDashDateRange.from + "T00:00:00") : null;
   const toDate = window.managerDashDateRange.to ? new Date(window.managerDashDateRange.to + "T23:59:59") : null;
@@ -3795,8 +3790,6 @@ function renderManagerDashboard(orders){
     if(sk === "DISPATCHED"){ row.dispatchedCount += 1; row.dispatchedValue += val; }
   });
   const branchRows = Object.values(branchMap).sort((a,b)=> b.totalValue - a.totalValue);
-  const maxVal = Math.max(1, ...branchRows.map(r => r.totalValue));
-  const heat = (v) => `background: rgba(37,99,235,${Math.min(0.42, (v/maxVal)*0.42)});`;
 
   let selectedOrders = safeOrders;
   const activeFilter = window.managerDashFilter;
@@ -3804,6 +3797,8 @@ function renderManagerDashboard(orders){
     selectedOrders = safeOrders.filter(o => statusKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "type"){
     selectedOrders = safeOrders.filter(o => orderTypeKey(o) === activeFilter.key);
+  } else if(activeFilter?.type === "branch"){
+    selectedOrders = safeOrders.filter(o => (o.Branch || "-") === activeFilter.key);
   }
 
   const cardHtml = (c, type) => {
@@ -3811,25 +3806,37 @@ function renderManagerDashboard(orders){
     return `
       <button onclick="setManagerDashboardCardFilter('${type}','${c.key}','${c.label.replace(/'/g, "\\'")}')"
         class="text-left rounded-lg p-2.5 border transition-all duration-200 hover:-translate-y-[1px]"
-        style="border-color:${active ? c.color : 'var(--pc-border)'}; background:${active ? 'rgba(37,99,235,0.06)' : '#fff'}; box-shadow:${active ? '0 8px 18px rgba(37,99,235,0.15)' : '0 2px 8px rgba(15,23,42,0.06)'};">
+        style="border-color:${active ? c.color : '#334155'}; background:${active ? 'rgba(37,99,235,0.18)' : 'rgba(15,23,42,0.55)'}; box-shadow:${active ? '0 8px 18px rgba(37,99,235,0.28)' : '0 2px 8px rgba(2,6,23,0.40)'};">
         <div class="text-[10px] font-semibold tracking-wider" style="color:${c.color};">${c.label}</div>
         <div class="mt-1 flex items-end justify-between">
-          <div class="text-lg font-black" style="color:#0f172a;">${c.count}</div>
-          <div class="text-[11px] font-semibold" style="color:#334155;">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
+          <div class="text-lg font-black" style="color:#f8fafc;">${c.count}</div>
+          <div class="text-[11px] font-semibold" style="color:#cbd5e1;">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
         </div>
       </button>
     `;
   };
 
+  const totalRow = branchRows.reduce((acc, b) => {
+    acc.totalOrders += b.totalOrders; acc.totalValue += b.totalValue;
+    acc.pendingCount += b.pendingCount; acc.pendingValue += b.pendingValue;
+    acc.approvedCount += b.approvedCount; acc.approvedValue += b.approvedValue;
+    acc.rejectedCount += b.rejectedCount; acc.rejectedValue += b.rejectedValue;
+    acc.processedCount += b.processedCount; acc.processedValue += b.processedValue;
+    acc.dispatchedCount += b.dispatchedCount; acc.dispatchedValue += b.dispatchedValue;
+    return acc;
+  }, {
+    totalOrders:0,totalValue:0,pendingCount:0,pendingValue:0,approvedCount:0,approvedValue:0,rejectedCount:0,rejectedValue:0,processedCount:0,processedValue:0,dispatchedCount:0,dispatchedValue:0
+  });
+
   document.getElementById("main").innerHTML = `
-    <div class="space-y-4">
-      <div class="pc-section">
+    <div class="space-y-4" style="color:#e2e8f0;">
+      <div class="pc-section" style="background:linear-gradient(180deg, rgba(15,23,42,0.96), rgba(15,23,42,0.88)); border-color:#334155;">
         <div class="flex items-center justify-between gap-3 mb-3">
-          <div class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">MANAGER DASHBOARD</div>
+          <div class="text-xs font-semibold tracking-wider" style="color: #93c5fd;">MANAGER DASHBOARD</div>
           <div class="flex items-center gap-2 text-xs">
-            <span style="color:var(--pc-text-muted);">From</span>
+            <span style="color:#cbd5e1;">From</span>
             <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.from || ""}" />
-            <span style="color:var(--pc-text-muted);">To</span>
+            <span style="color:#cbd5e1;">To</span>
             <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.to || ""}" />
             <button onclick="applyManagerDashboardDateRange()" class="order-action-btn oa-primary px-2 py-1 rounded-md text-xs font-semibold">Apply</button>
             <button onclick="resetManagerDashboardDateRange()" class="order-action-btn oa-neutral px-2 py-1 rounded-md text-xs font-semibold">Reset</button>
@@ -3844,64 +3851,98 @@ function renderManagerDashboard(orders){
         </div>
       </div>
 
-      <div class="pc-section">
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+      <div class="relative pc-section" style="background:linear-gradient(180deg, rgba(15,23,42,0.96), rgba(15,23,42,0.88)); border-color:#334155;">
+        <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background:var(--pc-bg);">
+          <span class="text-xs font-semibold tracking-wider" style="color:#93c5fd;">
             ${activeFilter ? `FILTERED ORDERS - ${escapeHtml(activeFilter.label)}` : "FILTERED ORDERS - ALL"}
-          </div>
+          </span>
+          <button onclick="toggleManagerDashboardFilteredTable()"
+            class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide transition-all duration-200 hover:-translate-y-[1px]"
+            style="background:#1d4ed8;color:#fff;border:1px solid #60a5fa; box-shadow:0 4px 10px rgba(29,78,216,0.25);">
+            ${window.managerDashTableVisible ? "HIDE FILTERED TABLE" : "SHOW FILTERED TABLE"}
+          </button>
+        </div>
+        <div class="absolute -top-3 right-4 px-3" style="background:var(--pc-bg);">
           ${activeFilter ? `<button onclick="clearManagerDashboardCardFilter()" class="order-action-btn oa-neutral px-2 py-1 rounded-md text-xs font-semibold">Clear Filter</button>` : ""}
         </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto mt-2 ${window.managerDashTableVisible ? "" : "hidden"}" id="managerFilteredTableWrap">
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
             <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
               <tr>
-                <th>Date</th><th>Order No</th><th>Order Type</th><th>Order For</th><th class="text-left">Branch</th><th class="text-right">Value</th><th>Status</th>
+                <th>Date</th><th>Order Type</th><th class="text-left">Customer</th><th class="text-left">Branch</th><th class="text-center">Qty</th><th class="text-right">Value</th><th>Order No</th><th>Status</th>
               </tr>
             </thead>
             <tbody>
               ${selectedOrders.slice(0, 120).map(o => `
                 <tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer">
                   <td>${formatDateTime(o.created_at)}</td>
-                  <td class="font-semibold">${o.OrderNo}</td>
-                  <td>${o.OrderType || "-"}</td>
-                  <td>${o.OrderFor || "-"}</td>
+                  <td>
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                      style="
+                        background:${o.OrderType === 'VOR' ? '#fef3c7' : o.OrderType === 'SOP' ? '#dbeafe' : o.OrderType === 'ZMAC' ? '#e0e7ff' : '#ede9fe'};
+                        color:${o.OrderType === 'VOR' ? '#92400e' : o.OrderType === 'SOP' ? '#1e3a8a' : o.OrderType === 'ZMAC' ? '#3730a3' : '#5b21b6'};">
+                      ${o.OrderType || "-"}
+                    </span>
+                  </td>
+                  <td class="text-left">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td>
                   <td class="text-left">${o.Branch || "-"}</td>
+                  <td class="text-center">${(o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0)}</td>
                   <td class="text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
+                  <td class="font-semibold">${o.OrderNo}</td>
                   <td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td>
                 </tr>
-              `).join("") || `<tr><td colspan="7" class="text-center py-4">No orders in selected filter/date range.</td></tr>`}
+              `).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected filter/date range.</td></tr>`}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div class="pc-section">
-        <div class="text-xs font-semibold tracking-wider mb-2" style="color: var(--pc-secondary);">BRANCH-WISE STATS (HEAT MAP)</div>
-        <div class="overflow-x-auto">
+      <div class="relative pc-section" style="background:linear-gradient(180deg, rgba(15,23,42,0.96), rgba(15,23,42,0.88)); border-color:#334155;">
+        <div class="absolute -top-3 left-4 px-3" style="background:var(--pc-bg);">
+          <span class="text-xs font-semibold tracking-wider" style="color:#93c5fd;">BRANCH-WISE STATS</span>
+        </div>
+        <div class="overflow-x-auto mt-2">
           <table class="track-table w-full text-sm border rounded-lg overflow-hidden">
             <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
               <tr>
-                <th class="text-left">Branch</th>
-                <th class="text-center">Total Orders</th><th class="text-right">Total Value</th>
-                <th class="text-center">Pending</th><th class="text-right">Pending Value</th>
-                <th class="text-center">Approved</th><th class="text-right">Approved Value</th>
-                <th class="text-center">Rejected</th><th class="text-right">Rejected Value</th>
-                <th class="text-center">Processed</th><th class="text-right">Processed Value</th>
-                <th class="text-center">Disp/P.Disp</th><th class="text-right">Disp/P.Disp Value</th>
+                <th rowspan="2" class="text-left">Branch</th>
+                <th colspan="2" class="text-center">Live Total</th>
+                <th colspan="2" class="text-center">Pending Approval</th>
+                <th colspan="2" class="text-center">Approved</th>
+                <th colspan="2" class="text-center">Rejected</th>
+                <th colspan="2" class="text-center">Processed</th>
+                <th colspan="2" class="text-center">Dispatched / P.Dispatched</th>
+              </tr>
+              <tr>
+                <th class="text-center">Orders</th><th class="text-right">Value</th>
+                <th class="text-center">Orders</th><th class="text-right">Value</th>
+                <th class="text-center">Orders</th><th class="text-right">Value</th>
+                <th class="text-center">Orders</th><th class="text-right">Value</th>
+                <th class="text-center">Orders</th><th class="text-right">Value</th>
+                <th class="text-center">Orders</th><th class="text-right">Value</th>
               </tr>
             </thead>
             <tbody>
               ${branchRows.map(b => `
-                <tr>
+                <tr onclick="setManagerDashboardBranchFilter('${(b.branch || '').replace(/'/g, "\\'")}')" class="cursor-pointer hover:bg-slate-800/40 transition-colors">
                   <td class="text-left font-semibold">${b.branch}</td>
-                  <td class="text-center">${b.totalOrders}</td><td class="text-right" style="${heat(b.totalValue)}">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.pendingCount}</td><td class="text-right" style="${heat(b.pendingValue)}">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.approvedCount}</td><td class="text-right" style="${heat(b.approvedValue)}">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.rejectedCount}</td><td class="text-right" style="${heat(b.rejectedValue)}">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.processedCount}</td><td class="text-right" style="${heat(b.processedValue)}">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.dispatchedCount}</td><td class="text-right" style="${heat(b.dispatchedValue)}">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center">${b.totalOrders}</td><td class="text-right">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center">${b.pendingCount}</td><td class="text-right">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center">${b.approvedCount}</td><td class="text-right">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center">${b.rejectedCount}</td><td class="text-right">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center">${b.processedCount}</td><td class="text-right">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center">${b.dispatchedCount}</td><td class="text-right">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</td>
                 </tr>
               `).join("")}
+              <tr style="background:rgba(30,64,175,0.22);">
+                <td class="text-left font-bold">TOTAL</td>
+                <td class="text-center font-bold">${totalRow.totalOrders}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.totalValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.pendingCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.pendingValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.approvedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.approvedValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.rejectedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.rejectedValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.processedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.processedValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.dispatchedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.dispatchedValue).toLocaleString("en-IN")}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -3930,6 +3971,17 @@ function setManagerDashboardCardFilter(type, key, label){
 
 function clearManagerDashboardCardFilter(){
   window.managerDashFilter = null;
+  loadSuper("Dashboard", true);
+}
+
+function toggleManagerDashboardFilteredTable(){
+  window.managerDashTableVisible = !window.managerDashTableVisible;
+  loadSuper("Dashboard", true);
+}
+
+function setManagerDashboardBranchFilter(branch){
+  window.managerDashFilter = { type: "branch", key: branch, label: `BRANCH: ${branch}` };
+  window.managerDashTableVisible = true;
   loadSuper("Dashboard", true);
 }
 
