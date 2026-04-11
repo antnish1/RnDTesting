@@ -3833,30 +3833,18 @@ function renderManagerDashboard(orders){
     : activeFilter?.type === "type" ? "linear-gradient(180deg, #f0fdfa, #f8fafc)"
     : activeFilter?.type === "branch" ? "linear-gradient(180deg, #fff7ed, #f8fafc)"
     : "linear-gradient(180deg, #f8fafc, #ffffff)";
-  const ddmmyyyy = (val) => {
-    if(!val) return "--/--/----";
-    const [y,m,d] = val.split("-");
-    return `${d}/${m}/${y}`;
-  };
-
   document.getElementById("main").innerHTML = `
     <div class="space-y-4">
-      <div class="rounded-lg px-3 py-2 border flex items-center gap-2 justify-end"
-           style="background:linear-gradient(135deg,#e0f2fe,#dbeafe); border-color:#93c5fd;">
-        <span class="text-xs font-semibold" style="color:#1e3a8a;">Date Range</span>
-        <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.from || ""}" onchange="applyManagerDashboardDateRange()" />
-        <span class="text-xs font-semibold" style="color:#1e3a8a;">to</span>
-        <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.to || ""}" onchange="applyManagerDashboardDateRange()" />
-        <span class="text-[11px] font-semibold px-2 py-1 rounded-md" style="background:#ffffff;border:1px solid #bfdbfe;color:#1e3a8a;">
-          ${ddmmyyyy(window.managerDashDateRange.from)} - ${ddmmyyyy(window.managerDashDateRange.to)}
-        </span>
-      </div>
-
-      <div class="relative pc-section" style="background:linear-gradient(135deg,#e0ecff,#f0f9ff); border-color:#93c5fd;">
+      <div class="relative pc-section" style="background:linear-gradient(135deg,#dbeafe,#e0f2fe); border-color:#60a5fa; box-shadow:0 10px 24px rgba(30,64,175,0.15);">
         <div class="absolute -top-3 left-4 px-3" style="background:#ffffff;">
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">MANAGER DASHBOARD</span>
         </div>
-        <div class="h-1"></div>
+        <div class="flex items-center justify-end gap-2 text-xs mb-2">
+          <span style="color:#1e3a8a;font-weight:600;">From</span>
+          <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.from || ""}" onchange="applyManagerDashboardDateRange()" />
+          <span style="color:#1e3a8a;font-weight:600;">To</span>
+          <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.to || ""}" onchange="applyManagerDashboardDateRange()" />
+        </div>
 
         <div class="grid grid-cols-6 gap-2">
           ${statusCards.map(c => cardHtml(c, "status")).join("")}
