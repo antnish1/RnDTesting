@@ -108,6 +108,87 @@
   --pc-success: #22c55e;
   --pc-warning: #f59e0b;
   --pc-danger: #ef4444;
+  --pc-font-ui: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --pc-font-strong: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+body, button, input, select, textarea, table, th, td {
+  font-family: var(--pc-font-ui);
+}
+
+/* ===== Global high-contrast refactor layer ===== */
+.pc-section{
+  color: var(--pc-text) !important;
+  border-color: #334155 !important;
+  box-shadow: 0 16px 34px rgba(2,6,23,0.45) !important;
+}
+
+.pc-field{
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 0 rgba(255,255,255,0.02) !important;
+}
+
+.pc-field::placeholder{
+  color: #94a3b8 !important;
+}
+
+.pc-field:focus{
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.18) !important;
+}
+
+table{
+  border-color: #334155 !important;
+}
+
+thead th{
+  background: linear-gradient(180deg, #1f2937, #0f172a) !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+tbody td{
+  color: #e2e8f0 !important;
+  border-color: rgba(148,163,184,0.22) !important;
+}
+
+.track-table tbody tr{
+  background: #0f172a !important;
+}
+
+.track-table tbody tr:nth-child(even){
+  background: #111827 !important;
+}
+
+.track-table tbody tr:hover{
+  background: #1e293b !important;
+}
+
+.order-action-btn{
+  border-color: #475569 !important;
+  color: #dbeafe !important;
+  background: linear-gradient(180deg, rgba(30,41,59,0.55), rgba(15,23,42,0.65)) !important;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.35) !important;
+}
+
+.order-action-btn:hover{
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, rgba(37,99,235,0.28), rgba(30,64,175,0.30)) !important;
+  box-shadow: 0 10px 20px rgba(30,64,175,0.32) !important;
+}
+
+#popup > div{
+  background: linear-gradient(180deg, #111827, #0f172a) !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+#popupMsg{
+  color: #e2e8f0 !important;
 }
 
 
