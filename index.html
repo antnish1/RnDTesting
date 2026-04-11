@@ -3713,7 +3713,8 @@ function renderSearchResults(data){
 function renderManagerDashboard(orders){
   const allOrders = orders || [];
   const today = new Date().toISOString().slice(0, 10);
-  window.managerDashDateRange = window.managerDashDateRange || { from: "", to: today };
+  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
   window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "PENDING APPROVAL" };
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
 
@@ -3806,8 +3807,8 @@ function renderManagerDashboard(orders){
     const active = activeFilter && activeFilter.type === type && activeFilter.key === c.key;
     return `
       <button onclick="setManagerDashboardCardFilter('${type}','${c.key}','${c.label.replace(/'/g, "\\'")}')"
-        class="text-left rounded-lg p-2.5 border transition-all duration-200 hover:-translate-y-[2px] hover:scale-[1.01]"
-        style="border-color:${active ? c.color : '#bfdbfe'}; background:linear-gradient(135deg, ${c.bg1}, ${c.bg2}); box-shadow:${active ? '0 10px 24px rgba(37,99,235,0.20)' : '0 4px 10px rgba(15,23,42,0.08)'};">
+        class="text-left rounded-lg p-2.5 border transition-all duration-300 hover:-translate-y-[4px] hover:scale-[1.03]"
+        style="border-color:${active ? c.color : '#bfdbfe'}; background:linear-gradient(135deg, ${c.bg1}, ${c.bg2}); box-shadow:${active ? '0 14px 30px rgba(37,99,235,0.26)' : '0 6px 16px rgba(15,23,42,0.10)'};">
         <div class="text-[10px] font-semibold tracking-wider" style="color:${c.color};">${c.label}</div>
         <div class="mt-1 flex items-end justify-between">
           <div class="text-lg font-black" style="color:#0f172a;">${c.count}</div>
@@ -3828,23 +3829,34 @@ function renderManagerDashboard(orders){
   }, {
     totalOrders:0,totalValue:0,pendingCount:0,pendingValue:0,approvedCount:0,approvedValue:0,rejectedCount:0,rejectedValue:0,processedCount:0,processedValue:0,dispatchedCount:0,dispatchedValue:0
   });
+  const filterBg = activeFilter?.type === "status" ? "linear-gradient(180deg, #eff6ff, #f8fafc)"
+    : activeFilter?.type === "type" ? "linear-gradient(180deg, #f0fdfa, #f8fafc)"
+    : activeFilter?.type === "branch" ? "linear-gradient(180deg, #fff7ed, #f8fafc)"
+    : "linear-gradient(180deg, #f8fafc, #ffffff)";
+  const ddmmyyyy = (val) => {
+    if(!val) return "--/--/----";
+    const [y,m,d] = val.split("-");
+    return `${d}/${m}/${y}`;
+  };
 
   document.getElementById("main").innerHTML = `
     <div class="space-y-4">
-      <div class="relative pc-section" style="background:#ffffff; border-color:var(--pc-border);">
+      <div class="rounded-lg px-3 py-2 border flex items-center gap-2 justify-end"
+           style="background:linear-gradient(135deg,#e0f2fe,#dbeafe); border-color:#93c5fd;">
+        <span class="text-xs font-semibold" style="color:#1e3a8a;">Date Range</span>
+        <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.from || ""}" onchange="applyManagerDashboardDateRange()" />
+        <span class="text-xs font-semibold" style="color:#1e3a8a;">to</span>
+        <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.to || ""}" onchange="applyManagerDashboardDateRange()" />
+        <span class="text-[11px] font-semibold px-2 py-1 rounded-md" style="background:#ffffff;border:1px solid #bfdbfe;color:#1e3a8a;">
+          ${ddmmyyyy(window.managerDashDateRange.from)} - ${ddmmyyyy(window.managerDashDateRange.to)}
+        </span>
+      </div>
+
+      <div class="relative pc-section" style="background:linear-gradient(135deg,#e0ecff,#f0f9ff); border-color:#93c5fd;">
         <div class="absolute -top-3 left-4 px-3" style="background:#ffffff;">
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">MANAGER DASHBOARD</span>
         </div>
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <div class="flex items-center gap-2 text-xs">
-            <span style="color:#64748b;">From</span>
-            <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.from || ""}" />
-            <span style="color:#64748b;">To</span>
-            <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.to || ""}" />
-            <button onclick="applyManagerDashboardDateRange()" class="order-action-btn oa-primary px-2 py-1 rounded-md text-xs font-semibold">Apply</button>
-            <button onclick="resetManagerDashboardDateRange()" class="order-action-btn oa-neutral px-2 py-1 rounded-md text-xs font-semibold">Reset</button>
-          </div>
-        </div>
+        <div class="h-1"></div>
 
         <div class="grid grid-cols-6 gap-2">
           ${statusCards.map(c => cardHtml(c, "status")).join("")}
@@ -3854,7 +3866,7 @@ function renderManagerDashboard(orders){
         </div>
       </div>
 
-      <div class="relative pc-section" style="background:#ffffff; border-color:var(--pc-border);">
+      <div class="relative pc-section" style="background:${filterBg}; border-color:var(--pc-border);">
         <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background:#ffffff;">
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">
             ${activeFilter ? `FILTERED ORDERS - ${escapeHtml(activeFilter.label)}` : "FILTERED ORDERS - ALL"}
@@ -3865,24 +3877,11 @@ function renderManagerDashboard(orders){
             ${window.managerDashTableVisible ? "HIDE FILTERED TABLE" : "SHOW FILTERED TABLE"}
           </button>
         </div>
-        <div class="absolute -top-3 right-4 px-3" style="background:#ffffff;">
-          ${activeFilter ? `<button onclick="clearManagerDashboardCardFilter()" class="order-action-btn oa-neutral px-2 py-1 rounded-md text-xs font-semibold">Clear Filter</button>` : ""}
-        </div>
         <div class="overflow-x-auto mt-2 ${window.managerDashTableVisible ? "" : "hidden"}" id="managerFilteredTableWrap">
-          <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
-            <colgroup>
-              <col style="width: 130px;">
-              <col style="width: 130px;">
-              <col style="width: 180px;">
-              <col style="width: 120px;">
-              <col style="width: 80px;">
-              <col style="width: 130px;">
-              <col style="width: 130px;">
-              <col style="width: 140px;">
-            </colgroup>
+          <table class="track-table w-full table-auto text-sm text-left border rounded-lg overflow-hidden">
             <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
               <tr>
-                <th>Date</th><th>Order Type</th><th class="text-left">Customer</th><th class="text-left">Branch</th><th class="text-center">Qty</th><th class="text-right">Value</th><th>Order No</th><th>Status</th>
+                <th class="px-2">Date</th><th class="px-2">Order Type</th><th class="text-left px-2">Customer</th><th class="text-left px-2">Branch</th><th class="text-center px-2">Qty</th><th class="text-right px-4">Value</th><th class="text-center px-5">Order No</th><th class="px-2">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -3892,16 +3891,17 @@ function renderManagerDashboard(orders){
                   <td>
                     <span class="px-2 py-1 rounded-full text-xs font-semibold"
                       style="
-                        background:${o.OrderType === 'VOR' ? '#fef3c7' : o.OrderType === 'SOP' ? '#dbeafe' : o.OrderType === 'ZMAC' ? '#e0e7ff' : '#ede9fe'};
-                        color:${o.OrderType === 'VOR' ? '#92400e' : o.OrderType === 'SOP' ? '#1e3a8a' : o.OrderType === 'ZMAC' ? '#3730a3' : '#5b21b6'};">
+                        background:${o.OrderType === 'VOR' ? '#fde68a' : o.OrderType === 'SOP' ? '#dbeafe' : o.OrderType === 'ZMAC' ? '#e0e7ff' : '#ede9fe'};
+                        color:${o.OrderType === 'VOR' ? '#92400e' : o.OrderType === 'SOP' ? '#1e3a8a' : o.OrderType === 'ZMAC' ? '#3730a3' : '#5b21b6'};
+                        box-shadow:${o.OrderType === 'VOR' ? '0 0 0 1px rgba(146,64,14,0.25), 0 2px 6px rgba(146,64,14,0.15)' : 'none'};">
                       ${o.OrderType || "-"}
                     </span>
                   </td>
                   <td class="text-left px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td>
                   <td class="text-left px-2 whitespace-nowrap">${o.Branch || "-"}</td>
                   <td class="text-center px-2 whitespace-nowrap">${(o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0)}</td>
-                  <td class="text-right px-3 whitespace-nowrap">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
-                  <td class="font-semibold px-3 whitespace-nowrap">${o.OrderNo}</td>
+                  <td class="text-right px-6 whitespace-nowrap">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
+                  <td class="font-semibold text-center px-6 whitespace-nowrap">${o.OrderNo}</td>
                   <td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td>
                 </tr>
               `).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected filter/date range.</td></tr>`}
@@ -3919,20 +3919,20 @@ function renderManagerDashboard(orders){
             <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
               <tr>
                 <th rowspan="2" class="text-left">Branch</th>
-                <th colspan="2" class="text-center" style="background:rgba(219,234,254,0.55);">Live Total</th>
-                <th colspan="2" class="text-center" style="background:rgba(254,243,199,0.62);">Pending Approval</th>
-                <th colspan="2" class="text-center" style="background:rgba(220,252,231,0.62);">Approved</th>
-                <th colspan="2" class="text-center" style="background:rgba(254,226,226,0.62);">Rejected</th>
-                <th colspan="2" class="text-center" style="background:rgba(237,233,254,0.62);">Processed</th>
-                <th colspan="2" class="text-center" style="background:rgba(224,242,254,0.62);">Dispatched / P.Dispatched</th>
+                <th colspan="2" class="text-center" style="background:rgba(147,197,253,0.8);">Live Total</th>
+                <th colspan="2" class="text-center" style="background:rgba(253,224,71,0.70);">Pending Approval</th>
+                <th colspan="2" class="text-center" style="background:rgba(134,239,172,0.72);">Approved</th>
+                <th colspan="2" class="text-center" style="background:rgba(252,165,165,0.75);">Rejected</th>
+                <th colspan="2" class="text-center" style="background:rgba(196,181,253,0.78);">Processed</th>
+                <th colspan="2" class="text-center" style="background:rgba(125,211,252,0.78);">Dispatched / P.Dispatched</th>
               </tr>
               <tr>
-                <th class="text-center" style="background:rgba(219,234,254,0.35);">Orders</th><th class="text-right" style="background:rgba(219,234,254,0.35);">Value</th>
-                <th class="text-center" style="background:rgba(254,243,199,0.38);">Orders</th><th class="text-right" style="background:rgba(254,243,199,0.38);">Value</th>
-                <th class="text-center" style="background:rgba(220,252,231,0.38);">Orders</th><th class="text-right" style="background:rgba(220,252,231,0.38);">Value</th>
-                <th class="text-center" style="background:rgba(254,226,226,0.38);">Orders</th><th class="text-right" style="background:rgba(254,226,226,0.38);">Value</th>
-                <th class="text-center" style="background:rgba(237,233,254,0.38);">Orders</th><th class="text-right" style="background:rgba(237,233,254,0.38);">Value</th>
-                <th class="text-center" style="background:rgba(224,242,254,0.38);">Orders</th><th class="text-right" style="background:rgba(224,242,254,0.38);">Value</th>
+                <th class="text-center" style="background:rgba(147,197,253,0.52);">Orders</th><th class="text-right" style="background:rgba(147,197,253,0.52);">Value</th>
+                <th class="text-center" style="background:rgba(253,224,71,0.5);">Orders</th><th class="text-right" style="background:rgba(253,224,71,0.5);">Value</th>
+                <th class="text-center" style="background:rgba(134,239,172,0.52);">Orders</th><th class="text-right" style="background:rgba(134,239,172,0.52);">Value</th>
+                <th class="text-center" style="background:rgba(252,165,165,0.55);">Orders</th><th class="text-right" style="background:rgba(252,165,165,0.55);">Value</th>
+                <th class="text-center" style="background:rgba(196,181,253,0.55);">Orders</th><th class="text-right" style="background:rgba(196,181,253,0.55);">Value</th>
+                <th class="text-center" style="background:rgba(125,211,252,0.55);">Orders</th><th class="text-right" style="background:rgba(125,211,252,0.55);">Value</th>
               </tr>
             </thead>
             <tbody>
