@@ -95,19 +95,19 @@
 
 
 :root {
-  --pc-primary: #2563eb;
-  --pc-secondary: #0ea5e9;
-  --pc-light: #eaf2ff;
-  --pc-warm: #dbe7f7;
+  --pc-primary: #60a5fa;
+  --pc-secondary: #22d3ee;
+  --pc-light: #0f172a;
+  --pc-warm: #1e293b;
 
-  --pc-bg: #eef3fb;
-  --pc-surface: #ffffff;
-  --pc-border: #c9d7eb;
-  --pc-text: #0f172a;
-  --pc-text-muted: #475569;
-  --pc-success: #16a34a;
-  --pc-warning: #d97706;
-  --pc-danger: #dc2626;
+  --pc-bg: #0b1220;
+  --pc-surface: #111827;
+  --pc-border: #334155;
+  --pc-text: #e5e7eb;
+  --pc-text-muted: #94a3b8;
+  --pc-success: #22c55e;
+  --pc-warning: #f59e0b;
+  --pc-danger: #ef4444;
 }
 
 
@@ -262,7 +262,7 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-field {
-  background: #FFFFFF;
+  background: #0f172a;
   border: 1px solid var(--pc-border);
   color: var(--pc-text);
   border-radius: 12px;
@@ -273,7 +273,7 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-field::placeholder {
-  color: #6B7280;
+  color: #94a3b8;
 }
 
 .pc-field:focus {
@@ -283,7 +283,7 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-section {
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,248,255,0.98));
+  background: linear-gradient(180deg, rgba(17,24,39,0.96), rgba(15,23,42,0.96));
   border: 1px solid var(--pc-border);
   border-radius: 16px;
   padding: 16px;
@@ -292,8 +292,8 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-field option {
-  color: #1F2937;
-  background: #FFFFFF;
+  color: #e5e7eb;
+  background: #0f172a;
 }
     
     
@@ -304,15 +304,15 @@ input:focus, select:focus, button:focus {
 }
 
 .track-table tbody tr {
-  background: #fff;
+  background: #0f172a;
 }
 
 .track-table tbody tr:nth-child(even) {
-  background: #f8fafc;
+  background: #111827;
 }
 
 .track-table tbody tr:hover {
-  background: #eef2ff !important;
+  background: #1e293b !important;
 }
 
 #popup > div {
@@ -339,9 +339,9 @@ table {
 thead th {
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #0f172a;
-  background: linear-gradient(180deg, #eff5ff, #e6efff) !important;
-  border-color: #d8e3f3 !important;
+  color: #e2e8f0;
+  background: linear-gradient(180deg, #1f2937, #111827) !important;
+  border-color: #334155 !important;
 }
 
 tbody tr {
@@ -940,9 +940,9 @@ document.getElementById("app").innerHTML = `
 <!-- HEADER WITH LOGOUT -->
 <div class="w-full rounded-2xl px-6 py-3 flex justify-between items-center backdrop-blur-md"
      style="
-  background: rgba(255,255,255,0.78);
+  background: rgba(15,23,42,0.88);
   border: 1px solid var(--pc-border);
-  box-shadow: 0 8px 18px rgba(15,23,42,0.10);
+  box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
 
 <div class="relative flex items-center w-full">
