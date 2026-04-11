@@ -3625,14 +3625,15 @@ function renderSearchResults(data){
     <div class="overflow-x-auto">
 	      <table class="track-table w-full text-sm text-left border rounded-lg">
 
-        <thead class="text-xs uppercase">
-          <tr>
-            <th>Date</th>
-            <th>Order Type</th>
-            <th class="text-left">Branch</th>
-            <th>Qty</th>
-            <th>Value</th>
-            <th>Order No</th>
+	        <thead class="text-xs uppercase">
+	          <tr>
+	            <th>Date</th>
+	            <th>Order Type</th>
+	            <th class="text-left">Order For</th>
+	            <th class="text-left">Branch</th>
+	            <th>Qty</th>
+	            <th>Value</th>
+	            <th>Order No</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -3672,9 +3673,12 @@ function renderSearchResults(data){
     ">
     ${o.OrderType || "-"}
   </span>
-</td>
-      <td class="text-left">${o.Branch || "-"}</td>
-	      <td class="px-4 py-3">${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
+	</td>
+	      <td class="text-left">
+	        ${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}
+	      </td>
+	      <td class="text-left">${o.Branch || "-"}</td>
+		      <td class="px-4 py-3">${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toFixed(2)}</td>
       <td class="font-semibold">
         ${o.OrderNo}
