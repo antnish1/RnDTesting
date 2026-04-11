@@ -3841,9 +3841,9 @@ function renderManagerDashboard(orders){
         </div>
         <div class="flex items-center justify-end gap-2 text-xs mb-2">
           <span style="color:#1e3a8a;font-weight:600;">From</span>
-          <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.from || ""}" onchange="applyManagerDashboardDateRange()" />
+          <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" style="width:132px; min-width:132px;" value="${window.managerDashDateRange.from || ""}" onchange="applyManagerDashboardDateRange()" />
           <span style="color:#1e3a8a;font-weight:600;">To</span>
-          <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" value="${window.managerDashDateRange.to || ""}" onchange="applyManagerDashboardDateRange()" />
+          <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" style="width:132px; min-width:132px;" value="${window.managerDashDateRange.to || ""}" onchange="applyManagerDashboardDateRange()" />
         </div>
 
         <div class="grid grid-cols-6 gap-2">
@@ -3889,7 +3889,12 @@ function renderManagerDashboard(orders){
                   <td class="text-left px-2 whitespace-nowrap">${o.Branch || "-"}</td>
                   <td class="text-center px-2 whitespace-nowrap">${(o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0)}</td>
                   <td class="text-right px-6 whitespace-nowrap">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
-                  <td class="font-semibold text-center px-6 whitespace-nowrap">${o.OrderNo}</td>
+                  <td class="font-semibold text-center px-6 whitespace-nowrap">
+                    ${o.OrderNo}
+                    ${getOrderCommentCount(o) > 0
+                      ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+                      : ""}
+                  </td>
                   <td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td>
                 </tr>
               `).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected filter/date range.</td></tr>`}
@@ -3903,16 +3908,16 @@ function renderManagerDashboard(orders){
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">BRANCH-WISE STATS</span>
         </div>
         <div class="overflow-x-auto mt-2">
-          <table class="track-table w-full text-sm border rounded-lg overflow-hidden">
-            <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
+          <table class="track-table w-full text-sm border rounded-xl overflow-hidden" style="background:#ffffff; border-color:#cbd5e1;">
+            <thead class="text-[11px] uppercase tracking-[0.06em] border-b" style="background:linear-gradient(180deg, #f8fafc, #eef2ff); color:#0f172a; border-color:#cbd5e1;">
               <tr>
                 <th rowspan="2" class="text-left">Branch</th>
-                <th colspan="2" class="text-center" style="background:rgba(147,197,253,0.8);">Live Total</th>
-                <th colspan="2" class="text-center" style="background:rgba(253,224,71,0.70);">Pending Approval</th>
-                <th colspan="2" class="text-center" style="background:rgba(134,239,172,0.72);">Approved</th>
-                <th colspan="2" class="text-center" style="background:rgba(252,165,165,0.75);">Rejected</th>
-                <th colspan="2" class="text-center" style="background:rgba(196,181,253,0.78);">Processed</th>
-                <th colspan="2" class="text-center" style="background:rgba(125,211,252,0.78);">Dispatched / P.Dispatched</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#bfdbfe,#dbeafe);">Live Total</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#fde68a,#fef3c7);">Pending Approval</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#86efac,#dcfce7);">Approved</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#fca5a5,#fee2e2);">Rejected</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#c4b5fd,#ede9fe);">Processed</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#7dd3fc,#e0f2fe);">Dispatched / P.Dispatched</th>
               </tr>
               <tr>
                 <th class="text-center" style="background:rgba(147,197,253,0.52);">Orders</th><th class="text-right" style="background:rgba(147,197,253,0.52);">Value</th>
@@ -3925,14 +3930,14 @@ function renderManagerDashboard(orders){
             </thead>
             <tbody>
               ${branchRows.map(b => `
-                <tr onclick="setManagerDashboardBranchFilter('${(b.branch || '').replace(/'/g, "\\'")}')" class="cursor-pointer hover:bg-slate-100 transition-colors">
-                  <td class="text-left font-semibold">${b.branch}</td>
-                  <td class="text-center" style="background:rgba(219,234,254,0.16);">${b.totalOrders}</td><td class="text-right" style="background:rgba(219,234,254,0.16);">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center" style="background:rgba(254,243,199,0.18);">${b.pendingCount}</td><td class="text-right" style="background:rgba(254,243,199,0.18);">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center" style="background:rgba(220,252,231,0.18);">${b.approvedCount}</td><td class="text-right" style="background:rgba(220,252,231,0.18);">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center" style="background:rgba(254,226,226,0.18);">${b.rejectedCount}</td><td class="text-right" style="background:rgba(254,226,226,0.18);">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center" style="background:rgba(237,233,254,0.18);">${b.processedCount}</td><td class="text-right" style="background:rgba(237,233,254,0.18);">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center" style="background:rgba(224,242,254,0.18);">${b.dispatchedCount}</td><td class="text-right" style="background:rgba(224,242,254,0.18);">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</td>
+                <tr onclick="setManagerDashboardBranchFilter('${(b.branch || '').replace(/'/g, "\\'")}')" class="cursor-pointer hover:bg-blue-50 transition-colors">
+                  <td class="text-left font-semibold py-2 px-2">${b.branch}</td>
+                  <td class="text-center" style="background:rgba(219,234,254,0.16);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.totalOrders}</span></td><td class="text-right pr-2" style="background:rgba(219,234,254,0.16);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(254,243,199,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.pendingCount}</span></td><td class="text-right pr-2" style="background:rgba(254,243,199,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(220,252,231,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.approvedCount}</span></td><td class="text-right pr-2" style="background:rgba(220,252,231,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(254,226,226,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.rejectedCount}</span></td><td class="text-right pr-2" style="background:rgba(254,226,226,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(237,233,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.processedCount}</span></td><td class="text-right pr-2" style="background:rgba(237,233,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(224,242,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.dispatchedCount}</span></td><td class="text-right pr-2" style="background:rgba(224,242,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</span></td>
                 </tr>
               `).join("")}
               <tr style="background:rgba(30,64,175,0.22);">
