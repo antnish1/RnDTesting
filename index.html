@@ -1091,6 +1091,7 @@ main.innerHTML = `
         <option>SOP</option>
         <option>ZMAC</option> <!-- ✅ NEW -->
         <option>ZSPL</option>
+        <option>LUBES</option>
       </select>
 
       <select id="orderFor" class="pc-field">
@@ -3747,21 +3748,21 @@ function renderManagerDashboard(orders){
   const byType = (k) => summaryFrom(safeOrders.filter(o => orderTypeKey(o) === k));
 
   const statusCards = [
-    { key: "ALL", label: "TOTAL ORDERS", ...summaryFrom(safeOrders), color: "#1e3a8a" },
-    { key: "PENDING APPROVAL", label: "PENDING APPROVAL", ...byStatus("PENDING APPROVAL"), color: "#b45309" },
-    { key: "APPROVED", label: "APPROVED", ...byStatus("APPROVED"), color: "#166534" },
-    { key: "REJECTED", label: "REJECTED", ...byStatus("REJECTED"), color: "#b91c1c" },
-    { key: "PROCESSED", label: "PROCESSED", ...byStatus("PROCESSED"), color: "#7c3aed" },
-    { key: "DISPATCHED", label: "DISPATCHED / P.DISPATCHED", ...byStatus("DISPATCHED"), color: "#0f766e" }
+    { key: "ALL", label: "TOTAL ORDERS", ...summaryFrom(safeOrders), color: "#1e3a8a", bg1:"#dbeafe", bg2:"#eff6ff" },
+    { key: "PENDING APPROVAL", label: "PENDING APPROVAL", ...byStatus("PENDING APPROVAL"), color: "#b45309", bg1:"#fef3c7", bg2:"#fffbeb" },
+    { key: "APPROVED", label: "APPROVED", ...byStatus("APPROVED"), color: "#166534", bg1:"#dcfce7", bg2:"#f0fdf4" },
+    { key: "REJECTED", label: "REJECTED", ...byStatus("REJECTED"), color: "#b91c1c", bg1:"#fee2e2", bg2:"#fff1f2" },
+    { key: "PROCESSED", label: "PROCESSED", ...byStatus("PROCESSED"), color: "#7c3aed", bg1:"#ede9fe", bg2:"#f5f3ff" },
+    { key: "DISPATCHED", label: "DISPATCHED / P.DISPATCHED", ...byStatus("DISPATCHED"), color: "#0f766e", bg1:"#ccfbf1", bg2:"#f0fdfa" }
   ];
 
   const typeCards = [
-    { key: "VOR", label: "VOR", ...byType("VOR"), color: "#92400e" },
-    { key: "ZMAC", label: "ZMAC", ...byType("ZMAC"), color: "#4338ca" },
-    { key: "ZSPL", label: "ZSPL", ...byType("ZSPL"), color: "#0369a1" },
-    { key: "LUBES", label: "LUBES", ...byType("LUBES"), color: "#166534" },
-    { key: "SOP_CUSTOMER", label: "SOP CUSTOMER", ...byType("SOP_CUSTOMER"), color: "#0f766e" },
-    { key: "SOP_STOCK", label: "SOP STOCK", ...byType("SOP_STOCK"), color: "#334155" }
+    { key: "VOR", label: "VOR", ...byType("VOR"), color: "#92400e", bg1:"#ffedd5", bg2:"#fff7ed" },
+    { key: "ZMAC", label: "ZMAC", ...byType("ZMAC"), color: "#4338ca", bg1:"#e0e7ff", bg2:"#eef2ff" },
+    { key: "ZSPL", label: "ZSPL", ...byType("ZSPL"), color: "#0369a1", bg1:"#dbeafe", bg2:"#f0f9ff" },
+    { key: "LUBES", label: "LUBES", ...byType("LUBES"), color: "#166534", bg1:"#dcfce7", bg2:"#f0fdf4" },
+    { key: "SOP_CUSTOMER", label: "SOP CUSTOMER", ...byType("SOP_CUSTOMER"), color: "#0f766e", bg1:"#ccfbf1", bg2:"#f0fdfa" },
+    { key: "SOP_STOCK", label: "SOP STOCK", ...byType("SOP_STOCK"), color: "#334155", bg1:"#e2e8f0", bg2:"#f8fafc" }
   ];
 
   const branchMap = {};
@@ -3806,7 +3807,7 @@ function renderManagerDashboard(orders){
     return `
       <button onclick="setManagerDashboardCardFilter('${type}','${c.key}','${c.label.replace(/'/g, "\\'")}')"
         class="text-left rounded-lg p-2.5 border transition-all duration-200 hover:-translate-y-[2px] hover:scale-[1.01]"
-        style="border-color:${active ? c.color : '#bfdbfe'}; background:${active ? 'linear-gradient(135deg, rgba(219,234,254,0.95), rgba(224,242,254,0.92))' : 'linear-gradient(135deg, rgba(248,250,252,0.98), rgba(239,246,255,0.96))'}; box-shadow:${active ? '0 10px 24px rgba(37,99,235,0.20)' : '0 4px 10px rgba(15,23,42,0.08)'};">
+        style="border-color:${active ? c.color : '#bfdbfe'}; background:linear-gradient(135deg, ${c.bg1}, ${c.bg2}); box-shadow:${active ? '0 10px 24px rgba(37,99,235,0.20)' : '0 4px 10px rgba(15,23,42,0.08)'};">
         <div class="text-[10px] font-semibold tracking-wider" style="color:${c.color};">${c.label}</div>
         <div class="mt-1 flex items-end justify-between">
           <div class="text-lg font-black" style="color:#0f172a;">${c.count}</div>
@@ -3831,7 +3832,7 @@ function renderManagerDashboard(orders){
   document.getElementById("main").innerHTML = `
     <div class="space-y-4">
       <div class="relative pc-section" style="background:#ffffff; border-color:var(--pc-border);">
-        <div class="absolute -top-3 left-4 px-3" style="background:var(--pc-bg);">
+        <div class="absolute -top-3 left-4 px-3" style="background:#ffffff;">
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">MANAGER DASHBOARD</span>
         </div>
         <div class="flex items-center justify-between gap-3 mb-3">
@@ -3854,7 +3855,7 @@ function renderManagerDashboard(orders){
       </div>
 
       <div class="relative pc-section" style="background:#ffffff; border-color:var(--pc-border);">
-        <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background:var(--pc-bg);">
+        <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background:#ffffff;">
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">
             ${activeFilter ? `FILTERED ORDERS - ${escapeHtml(activeFilter.label)}` : "FILTERED ORDERS - ALL"}
           </span>
@@ -3864,11 +3865,21 @@ function renderManagerDashboard(orders){
             ${window.managerDashTableVisible ? "HIDE FILTERED TABLE" : "SHOW FILTERED TABLE"}
           </button>
         </div>
-        <div class="absolute -top-3 right-4 px-3" style="background:var(--pc-bg);">
+        <div class="absolute -top-3 right-4 px-3" style="background:#ffffff;">
           ${activeFilter ? `<button onclick="clearManagerDashboardCardFilter()" class="order-action-btn oa-neutral px-2 py-1 rounded-md text-xs font-semibold">Clear Filter</button>` : ""}
         </div>
         <div class="overflow-x-auto mt-2 ${window.managerDashTableVisible ? "" : "hidden"}" id="managerFilteredTableWrap">
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+            <colgroup>
+              <col style="width: 130px;">
+              <col style="width: 130px;">
+              <col style="width: 180px;">
+              <col style="width: 120px;">
+              <col style="width: 80px;">
+              <col style="width: 130px;">
+              <col style="width: 130px;">
+              <col style="width: 140px;">
+            </colgroup>
             <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
               <tr>
                 <th>Date</th><th>Order Type</th><th class="text-left">Customer</th><th class="text-left">Branch</th><th class="text-center">Qty</th><th class="text-right">Value</th><th>Order No</th><th>Status</th>
@@ -3877,7 +3888,7 @@ function renderManagerDashboard(orders){
             <tbody>
               ${selectedOrders.slice(0, 120).map(o => `
                 <tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer">
-                  <td>${formatDateTime(o.created_at)}</td>
+                  <td class="whitespace-nowrap px-2">${formatDateTime(o.created_at)}</td>
                   <td>
                     <span class="px-2 py-1 rounded-full text-xs font-semibold"
                       style="
@@ -3886,11 +3897,11 @@ function renderManagerDashboard(orders){
                       ${o.OrderType || "-"}
                     </span>
                   </td>
-                  <td class="text-left">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td>
-                  <td class="text-left">${o.Branch || "-"}</td>
-                  <td class="text-center">${(o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0)}</td>
-                  <td class="text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
-                  <td class="font-semibold">${o.OrderNo}</td>
+                  <td class="text-left px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td>
+                  <td class="text-left px-2 whitespace-nowrap">${o.Branch || "-"}</td>
+                  <td class="text-center px-2 whitespace-nowrap">${(o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0)}</td>
+                  <td class="text-right px-3 whitespace-nowrap">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
+                  <td class="font-semibold px-3 whitespace-nowrap">${o.OrderNo}</td>
                   <td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td>
                 </tr>
               `).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected filter/date range.</td></tr>`}
@@ -3900,7 +3911,7 @@ function renderManagerDashboard(orders){
       </div>
 
       <div class="relative pc-section" style="background:#ffffff; border-color:var(--pc-border);">
-        <div class="absolute -top-3 left-4 px-3" style="background:var(--pc-bg);">
+        <div class="absolute -top-3 left-4 px-3" style="background:#ffffff;">
           <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">BRANCH-WISE STATS</span>
         </div>
         <div class="overflow-x-auto mt-2">
@@ -3926,14 +3937,14 @@ function renderManagerDashboard(orders){
             </thead>
             <tbody>
               ${branchRows.map(b => `
-                <tr onclick="setManagerDashboardBranchFilter('${(b.branch || '').replace(/'/g, "\\'")}')" class="cursor-pointer hover:bg-slate-800/40 transition-colors">
+                <tr onclick="setManagerDashboardBranchFilter('${(b.branch || '').replace(/'/g, "\\'")}')" class="cursor-pointer hover:bg-slate-100 transition-colors">
                   <td class="text-left font-semibold">${b.branch}</td>
-                  <td class="text-center">${b.totalOrders}</td><td class="text-right">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.pendingCount}</td><td class="text-right">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.approvedCount}</td><td class="text-right">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.rejectedCount}</td><td class="text-right">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.processedCount}</td><td class="text-right">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</td>
-                  <td class="text-center">${b.dispatchedCount}</td><td class="text-right">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center" style="background:rgba(219,234,254,0.16);">${b.totalOrders}</td><td class="text-right" style="background:rgba(219,234,254,0.16);">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center" style="background:rgba(254,243,199,0.18);">${b.pendingCount}</td><td class="text-right" style="background:rgba(254,243,199,0.18);">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center" style="background:rgba(220,252,231,0.18);">${b.approvedCount}</td><td class="text-right" style="background:rgba(220,252,231,0.18);">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center" style="background:rgba(254,226,226,0.18);">${b.rejectedCount}</td><td class="text-right" style="background:rgba(254,226,226,0.18);">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center" style="background:rgba(237,233,254,0.18);">${b.processedCount}</td><td class="text-right" style="background:rgba(237,233,254,0.18);">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</td>
+                  <td class="text-center" style="background:rgba(224,242,254,0.18);">${b.dispatchedCount}</td><td class="text-right" style="background:rgba(224,242,254,0.18);">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</td>
                 </tr>
               `).join("")}
               <tr style="background:rgba(30,64,175,0.22);">
@@ -3967,7 +3978,15 @@ function resetManagerDashboardDateRange(){
 }
 
 function setManagerDashboardCardFilter(type, key, label){
+  if(
+    window.managerDashFilter &&
+    window.managerDashFilter.type === type &&
+    window.managerDashFilter.key === key
+  ){
+    return;
+  }
   window.managerDashFilter = { type, key, label };
+  window.managerDashTableVisible = true;
   loadSuper("Dashboard", true);
 }
 
