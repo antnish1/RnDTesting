@@ -504,6 +504,56 @@ tr[style*="f59e0b"]:hover {
   font-weight: 500;
 }
 
+.offer-strip {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(251,191,36,0.55);
+  background: linear-gradient(90deg, #111827 0%, #1f2937 35%, #0f172a 100%);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.offer-strip::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.22) 32%, transparent 54%);
+  animation: offerShine 3.2s linear infinite;
+  pointer-events:none;
+}
+
+.offer-marquee{
+  display:flex;
+  width:max-content;
+  min-width:100%;
+  animation: offerMarquee 18s linear infinite;
+}
+
+.offer-pill{
+  flex:0 0 auto;
+  margin: 0 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color:#111827;
+  background: linear-gradient(180deg, #fde68a, #f59e0b);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  text-transform: uppercase;
+}
+
+@keyframes offerMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes offerShine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
 /* filter arrow indicator on all table headers */
 table thead th::after {
   content: " ▼";
@@ -1022,6 +1072,19 @@ document.getElementById("app").innerHTML = `
 
 
 
+  </div>
+
+  <div class="offer-strip px-2 py-2">
+    <div class="offer-marquee items-center gap-3">
+      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="text-xs md:text-sm font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
+        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+      </span>
+      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="text-xs md:text-sm font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
+        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+      </span>
+    </div>
   </div>
 
   <div id="main" class="w-full"></div>
