@@ -97,7 +97,7 @@
   --pc-secondary: #22d3ee;
   --pc-light: #0f172a;
   --pc-warm: #1e293b;
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
 
   --pc-bg: #0b1220;
   --pc-surface: #111827;
@@ -487,7 +487,7 @@ input:focus, select:focus, button:focus {
 }
 
 #popup > div {
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
   animation: popupIn 190ms cubic-bezier(.2,.8,.2,1);
   border-radius: 18px !important;
   border-color: rgba(250,204,21,0.24) !important;
@@ -671,7 +671,7 @@ tr[style*="f59e0b"]:hover {
   box-shadow: 0 6px 18px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.72);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
 }
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
 
 .search-bar:focus {
   border-color: #facc15;
@@ -733,7 +733,7 @@ tr[style*="f59e0b"]:hover {
   border-radius: 12px;
   border: 1px solid rgba(250,204,21,0.22);
   background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
   padding: 8px 10px;
   min-height: 70px;
 }
@@ -2745,7 +2745,7 @@ const orders = applyTrackDateFilter(allOrders);
 const statusCounts = {};
 orders.forEach(o => {
   const s = getOrderStatusLabel(o);
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
   if(!statusCounts[s]) statusCounts[s] = { count: 0, value: 0 };
   statusCounts[s].count += 1;
   statusCounts[s].value += (o.items || []).reduce((sum, x) => sum + getEffectiveValue(x), 0);
@@ -2778,22 +2778,22 @@ let html = `
       <div class="track-summary-grid">
         <div class="track-status-card">
           <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
           <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${orders.length} Orders</div>
           <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(orders.reduce((sum, o) => sum + (o.items || []).reduce((s, x) => s + getEffectiveValue(x), 0), 0)).toLocaleString("en-IN")}</div>
-=======
+
           <div class="text-2xl font-black mt-1" style="color:#f8fafc;">${orders.length}</div>
->>>>>>> main
+ main
         </div>
         ${Object.entries(statusCounts).map(([status, count]) => `
           <div class="track-status-card">
             <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
             <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${count.count} Orders</div>
             <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(count.value).toLocaleString("en-IN")}</div>
-=======
+
             <div class="text-2xl font-black mt-1" style="color:#f8fafc;">${count}</div>
->>>>>>> main
+ main
           </div>
         `).join("")}
       </div>
@@ -2802,19 +2802,19 @@ let html = `
         <div class="track-filter-grid">
           <div>
             <label for="trackFromDate">From Date</label>
-<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
             <input id="trackFromDate" type="date" class="pc-field h-[38px]" value="${TRACK_FROM_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('from', this.value)" />
           </div>
           <div>
             <label for="trackToDate">To Date</label>
             <input id="trackToDate" type="date" class="pc-field h-[38px]" value="${TRACK_TO_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('to', this.value)" />
-=======
+
             <input id="trackFromDate" type="date" class="pc-field" value="${TRACK_FROM_DATE}" onchange="updateTrackDateFilter('from', this.value)" />
           </div>
           <div>
             <label for="trackToDate">To Date</label>
             <input id="trackToDate" type="date" class="pc-field" value="${TRACK_TO_DATE}" onchange="updateTrackDateFilter('to', this.value)" />
->>>>>>> main
+ main
           </div>
           <div class="flex items-end">
             <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; loadTrack('track', true)">Reset Filter</button>
