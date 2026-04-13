@@ -585,6 +585,143 @@ tr[style*="f59e0b"]:hover {
   font-weight: 500;
 }
 
+.header-logo-shell{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.92));
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 10px 24px rgba(2,6,23,0.36), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+
+.header-logo{
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.new-order-shell{
+  display: grid;
+  gap: 16px;
+}
+
+.new-order-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.new-order-card{
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  padding: 18px;
+  box-shadow: 0 20px 34px rgba(2,6,23,0.45);
+}
+
+.new-order-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #fef08a;
+  font-weight: 800;
+}
+
+.new-order-fields{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.new-order-fields label{
+  display:block;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.parts-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(180deg, rgba(17,24,39,0.97), rgba(10,15,27,0.97));
+  padding: 16px;
+  box-shadow: 0 24px 40px rgba(2,6,23,0.5);
+}
+
+.parts-table-wrap{
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid #374151;
+}
+
+.order-cta{
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.order-cta:hover{
+  transform: translateY(-1px);
+}
+
+.cta-primary{
+  background: linear-gradient(180deg, #facc15 0%, #f2b707 52%, #de9f01 100%);
+  color: #1f2937;
+  box-shadow: 0 14px 24px rgba(250,204,21,0.28), 0 3px 0 rgba(146,102,0,0.32);
+}
+
+.cta-secondary{
+  background: linear-gradient(180deg, #fde68a, #facc15);
+  color: #1f2937;
+  border: 1px solid rgba(250,204,21,0.35);
+}
+
+.cta-tertiary{
+  background: rgba(30,41,59,0.9);
+  color: #fde68a;
+  border: 1px solid rgba(250,204,21,0.32);
+}
+
+.summary-strip{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(120deg, rgba(250,204,21,0.08), rgba(15,23,42,0.45));
+}
+
+@media (max-width: 1024px){
+  .new-order-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px){
+  .new-order-fields{
+    grid-template-columns: 1fr;
+  }
+
+  .search-bar{
+    width: min(70vw, 360px);
+  }
+}
+
 .offer-strip {
   position: relative;
   overflow: hidden;
@@ -745,21 +882,40 @@ tr[style*="f59e0b"]:hover {
 .login-cta{
   width: 100%;
   margin-top: 16px;
-  min-height: 46px;
+  min-height: 48px;
   border-radius: 12px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #062236;
-  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
-  border: 1px solid rgba(255,255,255,0.35);
-  box-shadow: 0 12px 20px rgba(14,165,233,0.28);
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  color: #1a1200;
+  background: linear-gradient(180deg, #f6c21a 0%, #f2b705 45%, #dfa300 100%);
+  border: none;
+  box-shadow: 0 12px 22px rgba(242,183,5,0.30), 0 4px 0 rgba(153,111,0,0.32);
+  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background-color .22s ease;
 }
 
 .login-cta:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 16px 28px rgba(14,165,233,0.38);
-  filter: brightness(1.03);
+  transform: translateY(-2px) scale(1.01);
+  background: linear-gradient(180deg, #efb808 0%, #d9a404 100%);
+  box-shadow: 0 16px 28px rgba(217,164,4,0.38), 0 5px 0 rgba(122,89,0,0.36);
+}
+
+.login-cta:active{
+  transform: translateY(0);
+  background: linear-gradient(180deg, #d29f04 0%, #b88a03 100%);
+  box-shadow: 0 6px 12px rgba(184,138,3,0.28);
+}
+
+.login-cta:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.35), 0 12px 22px rgba(242,183,5,0.30);
+}
+
+.login-cta:disabled{
+  background: linear-gradient(180deg, rgba(242,183,5,0.45), rgba(184,138,3,0.45));
+  color: rgba(26,18,0,0.7);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 @media (max-width: 860px){
@@ -1160,10 +1316,12 @@ document.getElementById("app").innerHTML = `
   <!-- LEFT: LOGO -->
 <div class="flex items-center gap-4">
 
-  <img 
-    src="HDU4w-removebg-preview.png"
-    class="h-12 w-auto object-contain"
-  />
+  <div class="header-logo-shell">
+    <img
+      src="HDU4w-removebg-preview.png"
+      class="header-logo"
+    />
+  </div>
 
   <div class="h-6 w-px bg-gray-400 opacity-50"></div>
 
@@ -1284,13 +1442,13 @@ document.getElementById("app").innerHTML = `
 
   </div>
 
-  <div class="offer-strip px-2 py-1 w-full">
+  <div class="offer-strip px-2 py-2 w-full">
     <div class="offer-marquee items-center gap-3">
-      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="offer-pill">🔥 Priority Pitch</span>
       <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
         BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
       </span>
-      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="offer-pill">🔥 Priority Pitch</span>
       <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
         BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
       </span>
@@ -1343,167 +1501,127 @@ updateMenuHighlight();
 const main = document.getElementById("main");
 
 main.innerHTML = `
-<div class="space-y-5">
+<div class="new-order-shell">
+  <div class="new-order-grid">
 
+    <div class="new-order-card pc-section">
+      <div class="new-order-tag">Order Setup</div>
+      <div class="new-order-fields">
+        <div>
+          <label for="orderType">Order Type</label>
+          <select id="orderType" class="pc-field">
+            <option value="">Select Order Type</option>
+            <option>VOR</option>
+            <option>SOP</option>
+            <option>ZMAC</option>
+            <option>ZSPL</option>
+            <option>LUBES</option>
+          </select>
+        </div>
 
-  <!-- ================= ORDER FORM ================= -->
-  <div class="relative pc-section">
-  
-    <!-- FLOAT LABEL -->
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        ORDER DETAILS
-      </span>
+        <div>
+          <label for="orderFor">Order For</label>
+          <select id="orderFor" class="pc-field">
+            <option value="">Select Order For</option>
+            <option>Customer</option>
+            <option>Stock</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="employeeName">Employee Name</label>
+          <input id="employeeName" class="pc-field" style="opacity: 0.85;" readonly />
+        </div>
+
+        <div>
+          <label for="approvedBy">Approved By</label>
+          <select id="approvedBy" class="pc-field">
+            <option value="">Select Approver</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-4 gap-3">
+    <div class="new-order-card pc-section customer-section">
+      <div class="new-order-tag">Customer Details</div>
+      <div class="new-order-fields">
+        <div>
+          <label for="machineNo">Machine Number</label>
+          <input id="machineNo" placeholder="Enter Machine No" class="pc-field"/>
+        </div>
 
-      <select id="orderType" class="pc-field">
-        <option value="">Order Type</option>
-        <option>VOR</option>
-        <option>SOP</option>
-        <option>ZMAC</option> <!-- ✅ NEW -->
-        <option>ZSPL</option>
-        <option>LUBES</option>
-      </select>
+        <div>
+          <label for="customerName">Customer Name</label>
+          <input id="customerName" class="pc-field" style="opacity: 0.85;" placeholder="Auto-fetched Customer Name" readonly />
+        </div>
 
-      <select id="orderFor" class="pc-field">
-        <option value="">Order For</option>
-        <option>Customer</option>
-        <option>Stock</option>
-      </select>
+        <div>
+          <label for="machineType">Machine Type</label>
+          <select id="machineType" class="pc-field">
+            <option value="">Select Machine Type</option>
+            <option>UW</option>
+            <option>BW</option>
+          </select>
+        </div>
 
-        <input id="employeeName"
-          class="pc-field"
-          style="opacity: 0.85;"
-          readonly />
-
-        <select id="approvedBy" class="pc-field">
-          <option value="">Select Approver</option>
-        </select>
+        <div>
+          <label for="callId">Call ID</label>
+          <input id="callId" placeholder="Enter Call ID" class="pc-field"/>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ================= CUSTOMER FORM ================= -->
-  <div class="relative pc-section customer-section">
-  
-    <!-- FLOAT LABEL -->
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        CUSTOMER DETAILS
-      </span>
+  <div class="parts-shell">
+    <div class="new-order-tag mb-3">Parts Builder</div>
+    <div class="parts-table-wrap">
+      <table class="w-full text-sm text-center rounded-lg overflow-hidden table-fixed min-w-[980px]">
+        <thead class="backdrop-blur-sm text-xs uppercase tracking-wider border-b">
+          <tr>
+            <th class="py-3 w-[18%]">Part</th>
+            <th class="py-3 w-[10%]">Qty</th>
+            <th class="py-3 w-[12%]">30D Qty</th>
+            <th class="py-3 w-[26%]">Description</th>
+            <th class="py-3 w-[10%]">DNP</th>
+            <th class="py-3 w-[10%]">Category</th>
+            <th class="py-3 w-[14%]">Value</th>
+            <th class="py-3 w-[10%]"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
 
-    <div class="grid grid-cols-4 gap-3">
+    <div class="summary-strip">
+      <div class="flex items-center gap-3 flex-wrap">
+        <button onclick="addRow()" class="order-cta cta-secondary px-5 py-2.5">
+          <span class="pc-btn-inline">
+            <i data-lucide="plus-circle" class="pc-icon"></i>
+            Add Item
+          </span>
+        </button>
 
-      <input id="machineNo" placeholder="Machine No"
-          class="pc-field"/>
+        <button onclick="document.getElementById('uploadPartsExcel').click()" class="order-cta cta-tertiary px-5 py-2.5">
+          <span class="pc-btn-inline">
+            <i data-lucide="upload" class="pc-icon"></i>
+            Bulk Parts Upload
+          </span>
+        </button>
+        <input type="file" id="uploadPartsExcel" accept=".xlsx" hidden />
+      </div>
 
-            <input id="customerName"
-              class="pc-field"
-              style="opacity: 0.85;"
-              placeholder="Customer Name"
-              readonly />
+      <div class="text-lg font-semibold tracking-wide" style="color: #f8fafc;">
+        Total: ₹ <span id="total" style="font-size: 22px; color: #facc15;">0</span>
+      </div>
 
-      <select id="machineType" class="pc-field">
-        <option value="">Machine Type</option>
-        <option>UW</option>
-        <option>BW</option>
-      </select>
-
-        <input id="callId" placeholder="Call ID"
-      class="pc-field"/>
-
+      <button onclick="submitOrder()" class="order-cta cta-primary px-6 py-2.5">
+        <span class="pc-btn-inline">
+          <i data-lucide="send" class="pc-icon"></i>
+          Submit Order
+        </span>
+      </button>
     </div>
   </div>
-</div>
-
-<div class="relative p-5 pt-8 rounded-xl border mt-6"
-     style="background: linear-gradient(180deg, rgba(170,205,220,0.08), rgba(129,166,198,0.08)); border-color: var(--pc-border);">
-
-  <!-- 🔥 FLOATING TITLE -->
-  <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4" style="background: var(--pc-bg);">
-    <h2 class="text-xs tracking-widest font-semibold" style="color: var(--pc-secondary);">
-      PARTS DETAIL
-    </h2>
-  </div>
-
-
-
-<table class="w-full text-sm text-center border border-gray-700 rounded-lg overflow-hidden table-fixed">
-<thead class="backdrop-blur-sm text-xs uppercase tracking-wider border-b"
-      style="background: #D2C4B4; color: #1F2937; border-color: #BFAF9D;">
-<tr>
-<th class="py-3 w-[18%]" style="color: #1F2937;">Part</th>
-<th class="py-3 w-[10%]" style="color: #1F2937;">Qty</th>
-
-<th class="py-3 w-[12%]" style="color: #1F2937;">
-  30D Qty
-</th>
-
-<th class="py-3 w-[26%]" style="color: #1F2937;">Desc</th>
-<th class="py-3 w-[10%]" style="color: #1F2937;">DNP</th>
-<th class="py-3 w-[10%]" style="color: #1F2937;">Cat</th>
-<th class="py-3 w-[14%]" style="color: #1F2937;">Value</th>
-<th class="py-3 w-[10%]" style="color: #1F2937;"></th>
-
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
-
-<hr class="my-4" style="border-color: var(--pc-border);">
-
-<div class="mt-6 flex items-center justify-between p-4 rounded-xl"
-     style="
-       background: linear-gradient(135deg, rgba(170,205,220,0.15), rgba(129,166,198,0.15));
-       border: 1px solid var(--pc-border);
-       box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
-     ">
-
-<div class="flex items-center gap-3">
-
-  <!-- ADD ITEM -->
-  <button onclick="addRow()"
-    class="transition px-5 py-2 rounded-lg font-semibold shadow-md"
-    style="background: var(--pc-secondary); color: #0f1720;">
-    <span class="pc-btn-inline">
-      <i data-lucide="plus-circle" class="pc-icon"></i>
-      Add Item
-    </span>
-  </button>
-
-  <!-- BULK UPLOAD BUTTON -->
-  <button onclick="document.getElementById('uploadPartsExcel').click()"
-    class="transition px-5 py-2 rounded-lg font-semibold shadow-md"
-    style="background: var(--pc-primary); color: #0f1720;">
-    <span class="pc-btn-inline">
-      <i data-lucide="upload" class="pc-icon"></i>
-      Bulk Parts Upload
-    </span>
-  </button>
-
-  <!-- HIDDEN FILE INPUT -->
-  <input type="file" id="uploadPartsExcel" accept=".xlsx" hidden />
-
-</div>
-
-  <div class="text-lg font-semibold tracking-wide" style="color: var(--pc-text);">
-    Total: ₹ <span id="total" style="font-size: 20px;">0</span>
-  </div>
-
-<button onclick="submitOrder()"
-class="transition px-6 py-2 rounded-lg font-semibold shadow-md"
-style="background: var(--pc-primary); color: #0f1720;">
-    <span class="pc-btn-inline">
-      <i data-lucide="send" class="pc-icon"></i>
-      Submit Order
-    </span>
-  </button>
-
-</div>
-
-</div>
 </div>
 `;
 renderIcons();
@@ -1630,7 +1748,7 @@ tr.innerHTML = `
 <td class="desc py-1"></td>
 <td class="dnp py-1"></td>
 <td class="cat py-1"></td>
-<td class="val py-1 font-semibold" style="color:#1F2937;"></td>
+<td class="val py-1 font-semibold" style="color:#f8fafc;"></td>
 
 <td class="py-1">
   <button class="delete-row-btn text-red-400 hover:text-red-300 font-bold"
