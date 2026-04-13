@@ -2117,6 +2117,544 @@ main
   background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.96));
 }
 
+.search-bar {
+  width: clamp(280px, 34vw, 460px);
+  height: 42px;
+  padding: 0 14px 0 40px;
+  border-radius: 12px;
+  border: 1px solid #94a3b8;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.72);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.search-bar:focus {
+  border-color: #facc15;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.20), 0 8px 22px rgba(217,119,6,0.14);
+  transform: translateY(-1px);
+}
+
+.track-shell{
+  display:grid;
+  gap: 14px;
+}
+
+.track-hero{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.28);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.98));
+  box-shadow: 0 18px 34px rgba(2,6,23,0.5);
+  padding: 12px;
+}
+
+.track-stat{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.20);
+  background: linear-gradient(160deg, rgba(31,41,55,0.85), rgba(15,23,42,0.8));
+  padding: 10px 12px;
+}
+
+.track-summary-grid{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.track-status-card{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
+  padding: 8px 10px;
+  min-height: 70px;
+}
+
+.track-filter-shell{
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(15,23,42,0.62);
+  padding: 8px;
+}
+
+.track-filter-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.track-filter-grid label{
+  display:block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #fcd34d;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.track-table-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  box-shadow: 0 22px 42px rgba(2,6,23,0.52);
+  overflow: hidden;
+}
+
+.track-table-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(180deg, rgba(245,158,11,0.1), rgba(17,24,39,0.5));
+}
+
+.track-table-wrap{
+  overflow-x:auto;
+  padding: 10px 10px 0;
+}
+
+.track-table{
+  min-width: 980px;
+}
+
+.track-table tbody tr{
+  transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.track-table tbody tr:hover{
+  background: linear-gradient(90deg, rgba(250,204,21,0.12), rgba(30,41,59,0.18)) !important;
+  transform: translateY(-1px);
+}
+
+.track-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(250,204,21,0.18);
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.95));
+}
+
+.track-page-btn{
+  min-width: 108px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.38);
+  background: rgba(30,41,59,0.9);
+  color: #fef3c7;
+  font-weight: 700;
+}
+
+.track-page-btn:hover:not(:disabled){
+  background: linear-gradient(180deg, rgba(250,204,21,0.28), rgba(217,119,6,0.22));
+  color: #fff;
+}
+
+.track-page-btn:disabled{
+  opacity: .42;
+  cursor:not-allowed;
+}
+
+.admin-shell{
+  display:grid;
+  gap: 12px;
+}
+
+.admin-strip{
+  border-radius: 16px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.95));
+  padding: 12px;
+}
+
+.admin-tabs-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-chip{
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border:1px solid rgba(250,204,21,0.36);
+  background: rgba(250,204,21,0.14);
+  color:#fef3c7;
+  font-weight: 700;
+}
+
+.admin-orderno-input{
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.36);
+  background: linear-gradient(180deg, rgba(2,6,23,0.9), rgba(15,23,42,0.92));
+  color: #f8fafc;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.admin-orderno-input:focus{
+  border-color: #facc15 !important;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.2) !important;
+}
+
+.detail-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(140deg, rgba(17,24,39,0.95), rgba(15,23,42,0.92));
+}
+
+.detail-action-btn{
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(30,41,59,0.9);
+  color: #e2e8f0;
+}
+
+.detail-action-btn:hover{
+  border-color: rgba(250,204,21,0.52);
+  color: #fef3c7;
+  background: linear-gradient(180deg, rgba(250,204,21,0.2), rgba(180,83,9,0.18));
+}
+
+.popup-btn{
+  min-width: 92px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(250,204,21,0.3);
+  background: rgba(30,41,59,0.92);
+  color: #f1f5f9;
+}
+
+.popup-btn:hover{
+  border-color: rgba(250,204,21,0.55);
+  color: #fff7d6;
+}
+
+.popup-btn-primary{
+  background: linear-gradient(180deg, #facc15 0%, #d97706 100%);
+  border-color: rgba(250,204,21,0.8);
+  color: #1f2937;
+}
+
+.popup-btn-danger{
+  background: rgba(127,29,29,0.55);
+  border-color: rgba(248,113,113,0.45);
+  color: #fecaca;
+}
+
+.detail-meta-grid{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 10px;
+}
+
+.detail-meta-item{
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.9), rgba(15,23,42,0.88));
+  padding: 10px;
+}
+
+.detail-label{
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #fcd34d;
+}
+
+.detail-value{
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 4px;
+}
+
+@media (max-width: 1200px){
+  .track-summary-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detail-meta-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+
+@media (max-width: 960px){
+  .detail-meta-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+@media (max-width: 768px){
+  .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track-filter-grid{ grid-template-columns: 1fr; }
+  .detail-meta-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 560px){
+  .detail-meta-grid{ grid-template-columns: 1fr; }
+}
+
+/* 🔥 PLACEHOLDER */
+.search-bar::placeholder {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.header-logo-shell{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.92));
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 10px 24px rgba(2,6,23,0.36), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+
+.header-logo{
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.new-order-shell{
+  display: grid;
+  gap: 16px;
+}
+
+.new-order-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.new-order-card{
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  padding: 18px;
+  box-shadow: 0 20px 34px rgba(2,6,23,0.45);
+}
+
+.new-order-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #fef08a;
+  font-weight: 800;
+}
+
+.new-order-fields{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.new-order-fields label{
+  display:block;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.new-order-shell input.pc-field::placeholder{
+  color: #7c8aa3 !important;
+  opacity: 0.72;
+  font-weight: 500;
+}
+
+.parts-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(180deg, rgba(17,24,39,0.97), rgba(10,15,27,0.97));
+  padding: 16px;
+  box-shadow: 0 24px 40px rgba(2,6,23,0.5);
+}
+
+.parts-table-wrap{
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid #374151;
+}
+
+.order-cta{
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.order-cta:hover{
+  transform: translateY(-1px);
+}
+
+.cta-primary{
+  background: linear-gradient(180deg, #facc15 0%, #f2b707 52%, #de9f01 100%);
+  color: #1f2937;
+  box-shadow: 0 14px 24px rgba(250,204,21,0.28), 0 3px 0 rgba(146,102,0,0.32);
+}
+
+.cta-secondary{
+  background: linear-gradient(180deg, #fde68a, #facc15);
+  color: #1f2937;
+  border: 1px solid rgba(250,204,21,0.35);
+}
+
+.cta-tertiary{
+  background: rgba(30,41,59,0.9);
+  color: #fde68a;
+  border: 1px solid rgba(250,204,21,0.32);
+}
+
+.summary-strip{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(120deg, rgba(250,204,21,0.08), rgba(15,23,42,0.45));
+}
+
+@media (max-width: 1024px){
+  .new-order-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px){
+  .new-order-fields{
+    grid-template-columns: 1fr;
+  }
+
+  .search-bar{
+    width: min(70vw, 360px);
+  }
+}
+
+.offer-strip {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid rgba(251,191,36,0.55);
+  background: linear-gradient(90deg, #111827 0%, #1f2937 35%, #0f172a 100%);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.offer-strip::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.22) 32%, transparent 54%);
+  animation: offerShine 3.2s linear infinite;
+  pointer-events:none;
+}
+
+.offer-marquee{
+  display:flex;
+  width:max-content;
+  min-width:100%;
+  animation: offerMarquee 18s linear infinite;
+}
+
+.offer-pill{
+  flex:0 0 auto;
+  margin: 0 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color:#111827;
+  background: linear-gradient(180deg, #fde68a, #f59e0b);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  text-transform: uppercase;
+}
+
+@keyframes offerMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes offerShine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+/* ===== Premium Login Experience ===== */
+.login-shell{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(56,189,248,0.18), transparent 60%),
+    radial-gradient(900px 420px at 110% 10%, rgba(96,165,250,0.12), transparent 58%),
+    linear-gradient(180deg, #060b16 0%, #0b1220 46%, #0d1527 100%);
+}
+
+.login-grid{
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.24);
+  box-shadow: 0 30px 70px rgba(2,6,23,0.55);
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: blur(10px);
+}
+
+.login-aside{
+  padding: 28px 30px;
+  background: linear-gradient(160deg, rgba(30,41,59,0.86), rgba(15,23,42,0.9));
+  border-right: 1px solid rgba(148,163,184,0.18);
+  position: relative;
+}
+
+.login-aside::before{
+  content:"";
+  position:absolute;
+  width: 300px;
+  height: 180px;
+  top: -20px;
+  left: -20px;
+  background: radial-gradient(circle, rgba(224,242,254,0.24) 0%, rgba(224,242,254,0.05) 45%, transparent 75%);
+  pointer-events:none;
+}
+
+.login-card{
+  padding: 28px 26px;
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.96));
+}
+
 .login-title{
   font-size: clamp(1.25rem, 2vw, 1.65rem);
   font-weight: 800;
@@ -2155,7 +2693,7 @@ main
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #93c5fd;
+  color: #fcd34d;
   font-weight: 700;
 }
 
@@ -2172,8 +2710,8 @@ main
 
 .login-input:focus{
   outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56,189,248,0.2);
+  border-color: #facc15;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.2);
   transform: translateY(-1px);
 }
 
@@ -2481,6 +3019,10 @@ document.getElementById("app").innerHTML = `
     <section class="login-card">
       <h2 class="login-title">Secure Login</h2>
       <p class="login-subtitle">Use your branch and password to continue.</p>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full mt-2 mb-2 text-[11px] font-bold uppercase tracking-[0.08em]"
+           style="background:rgba(250,204,21,0.14); border:1px solid rgba(250,204,21,0.35); color:#fef3c7;">
+        Admin Panel • HQ Access
+      </div>
 
       <label class="login-label" for="branch">Branch</label>
       <select id="branch" class="login-input"></select>
@@ -2488,7 +3030,7 @@ document.getElementById("app").innerHTML = `
       <label class="login-label" for="password">Password</label>
       <input id="password" type="password" class="login-input" placeholder="Enter your password" />
 
-      <button onclick="login()" class="login-cta">Login</button>
+      <button onclick="login()" class="login-cta">Access Portal</button>
     </section>
   </main>
 </div>
@@ -3803,48 +4345,48 @@ else{
 }
 
 
+const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+if(CURRENT_PAGE > totalPages){
+  CURRENT_PAGE = totalPages;
+}
 const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
 const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
-const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     
 // UI
 let html = `
-<div class="space-y-4">
+<div class="admin-shell">
+  <div id="resultsContainer" class="space-y-4">
+    <section class="admin-strip">
+      <div class="admin-tabs-summary">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.1em] font-bold" style="color:#fcd34d;">HQ Admin Panel</p>
+          <h3 class="text-base font-extrabold" style="color:#f8fafc;">${activeTab.toUpperCase()} Orders</h3>
+        </div>
+        <div class="admin-chip">Total: ${filtered.length}</div>
+      </div>
+    </section>
 
+    <section class="track-table-shell">
+      <div class="track-table-header">
+        <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
+        <div class="admin-chip">Page ${CURRENT_PAGE} / ${totalPages}</div>
+      </div>
 
-
-  <div id="resultsContainer">
-<!-- TABLE -->
-<div class="relative pc-section">
-
-  <!-- FLOAT LABEL -->
-  <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-    <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-      ${activeTab.toUpperCase()} ORDERS
-    </span>
-  </div>
-
-  <div class="overflow-x-auto mt-2">
-
-    <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
-
-      <thead class="text-xs uppercase tracking-wider border-b"
-            style="background: var(--pc-warm); color: var(--pc-text);">
-
-        <tr>
-                <th class="px-4 py-3 text-center">Date</th>
-                <th class="px-4 py-3 text-center">Order Type</th>
-                <th class="px-4 py-3 text-left">Order For</th>
-                <th class="px-4 py-3 text-left">Branch</th>
-                <th class="px-4 py-3 text-right">Qty</th>
-                <th class="px-4 py-3 text-right">Value</th>
-                <th class="px-4 py-3 text-center">Order No</th>
-                <th class="px-4 py-3 text-center">Status</th>
-        </tr>
-
-      </thead>
-
-      <tbody>
+      <div class="track-table-wrap">
+        <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+          <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color: #fef3c7; border-color: rgba(250,204,21,0.35);">
+            <tr>
+              <th class="px-4 py-3 text-center">Date</th>
+              <th class="px-4 py-3 text-center">Order Type</th>
+              <th class="px-4 py-3 text-left">Order For</th>
+              <th class="px-4 py-3 text-left">Branch</th>
+              <th class="px-4 py-3 text-right">Qty</th>
+              <th class="px-4 py-3 text-right">Value</th>
+              <th class="px-4 py-3 text-center">Order No</th>
+              <th class="px-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
 `;
 
 paginatedOrders.forEach((o,i)=>{
@@ -3854,7 +4396,7 @@ const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
-class="cursor-pointer transition hover:scale-[1.01]"
+class="cursor-pointer"
 style="${getOrderTypeRowStyle(o.OrderType)}">
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 
@@ -3888,13 +4430,13 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
 <td class="px-4 py-3 text-right">
   ${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}
 </td>
-<td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
+<td class="px-4 py-3 text-right" style="color: #facc15; font-weight:700;">
   ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
 </td>
-<td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">
+<td class="px-4 py-3 text-center font-semibold" style="color: #facc15;">
   ${o.OrderNo}
   ${getOrderCommentCount(o) > 0
-    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>`
     : ""}
 </td>
 <td class="px-4 py-3 text-center">
@@ -3910,34 +4452,29 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
 });
 
 html += `
-</tbody>
-</table>
-</div>
+          </tbody>
+        </table>
+      </div>
 
-
-<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
-
-  <button onclick="changePage(-1)"
-    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
-    ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
-    ⬅ Prev
-  </button>
-
-  <span class="font-semibold tracking-wide leading-none">
-    Page ${CURRENT_PAGE} / ${totalPages}
-  </span>
-
-  <button onclick="changePage(1)"
-    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
-    style="background: var(--pc-secondary); color:white;"
-    ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
-    Next ➡
-  </button>
-
-</div>
-
-  </div> <!-- resultsContainer -->
+      <div class="track-footer">
+        <div class="text-xs" style="color:var(--pc-text-muted);">
+          Showing <span style="color:#fef3c7; font-weight:700;">${paginatedOrders.length}</span> of
+          <span style="color:#fef3c7; font-weight:700;">${filtered.length}</span> orders
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="changePage(-1)" class="track-page-btn"
+            ${CURRENT_PAGE === 1 ? "disabled" : ""}>
+            ⬅ Prev
+          </button>
+          <span class="admin-chip">Page ${CURRENT_PAGE} / ${totalPages}</span>
+          <button onclick="changePage(1)" class="track-page-btn"
+            ${CURRENT_PAGE >= totalPages ? "disabled" : ""}>
+            Next ➡
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
 `;
 
@@ -4558,7 +5095,8 @@ else{
           <input
             id="processOrderNo"
             value="${orderNo}"
-            class="pc-field w-[120px] h-[38px] text-sm"
+            class="pc-field admin-orderno-input w-[170px] text-sm"
+            placeholder="Enter Order No"
           />
 
           <button onclick="processOrder('${orderNo}')"
