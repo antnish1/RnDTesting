@@ -3091,30 +3091,6 @@ function loadUpload(){
 
 </div>
 
-<div class="relative pc-section">
-
-  <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-    <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-      INVENTORY REPORT UPLOAD
-    </span>
-  </div>
-
-  <div class="flex flex-wrap justify-center items-end gap-3 mt-4">
-    <div class="text-left">
-      <label for="inventoryReportDate" class="text-xs block mb-1" style="color:var(--pc-text-muted);">Report Date</label>
-      <input id="inventoryReportDate" type="date" class="pc-field min-w-[180px]" value="${new Date().toISOString().slice(0,10)}" />
-    </div>
-    <input type="file" id="uploadInventoryExcel" accept=".xlsx" class="pc-field max-w-xs"/>
-  </div>
-  <div id="inventorySyncWrap" class="hidden max-w-[560px] mx-auto mt-4">
-    <div class="text-xs mb-1 text-center" id="inventorySyncText" style="color:var(--pc-text-muted);">Preparing inventory upload...</div>
-    <div class="w-full h-2 rounded-full overflow-hidden" style="background:rgba(148,163,184,0.24);">
-      <div id="inventorySyncBar" class="h-full" style="width:0%; background:linear-gradient(90deg,#f59e0b,#facc15); transition:width .25s ease;"></div>
-    </div>
-  </div>
-
-</div>
-
   </div>
   `;
 }
@@ -4152,8 +4128,8 @@ showPopup("Saved ✅");
 }
 
 
-if(!window.__globalChangeBound){
-window.__globalChangeBound = true;
+
+
 document.addEventListener("change", async function(e){
 
   // ✅ STATUS REPORT
@@ -4230,10 +4206,6 @@ document.getElementById("popupMsg").innerHTML = `
 
   // ✅ INVENTORY REPORT
   if(e.target.id === "uploadInventoryExcel"){
-    if(window.inventoryUploadBusy){
-      showPopup("Inventory upload is already in progress. Please wait.");
-      return;
-    }
     const file = e.target.files?.[0];
     if(!file) return;
 
@@ -4248,13 +4220,11 @@ document.getElementById("popupMsg").innerHTML = `
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-    window.inventoryUploadBusy = true;
     await processInventoryExcelData(json, reportDate);
     e.target.value = "";
   }
 
 });
-}
   
   
 
@@ -4552,7 +4522,6 @@ async function processInventoryExcelData(rows, reportDate){
     const errorText = [err?.message, err?.details, err?.hint].filter(Boolean).join("\n");
     showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}\n\nPlease create SQL RPC: process_inventory_report(p_report_date date).`);
   } finally {
-    window.inventoryUploadBusy = false;
     if(!syncCompleted){
       console.warn("Inventory sync did not complete.");
     }
