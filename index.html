@@ -4307,6 +4307,75 @@ function parseInventoryNumber(v){
   return Number.isFinite(n) ? n : 0;
 }
 
+async function applyInventoryThreeTableFlow(stagingRows, reportDate){
+  const uniq = new Map();
+  stagingRows.forEach(r => {
+    const key = `${r.branch_code || ""}__${r.item_code || ""}`;
+    if(!r.branch_code || !r.item_code) return;
+    uniq.set(key, r);
+  });
+  const uniqueRows = [...uniq.values()];
+  if(!uniqueRows.length) return { upserted: 0, changed: 0 };
+
+  const branchCodes = [...new Set(uniqueRows.map(r => r.branch_code))];
+  const itemCodes = [...new Set(uniqueRows.map(r => r.item_code))];
+
+  const { data: currentRows, error: currentError } = await db
+    .from("inventory_current")
+    .select("branch_code,item_code,qty")
+    .in("branch_code", branchCodes)
+    .in("item_code", itemCodes);
+  if(currentError) throw currentError;
+
+  const currentMap = new Map(
+    (currentRows || []).map(r => [`${r.branch_code || ""}__${r.item_code || ""}`, Number(r.qty || 0)])
+  );
+
+  const currentPayload = uniqueRows.map(r => ({
+    report_date: reportDate,
+    branch_code: r.branch_code,
+    item_code: r.item_code,
+    item_name: r.item_name,
+    item_group: r.item_group,
+    uom: r.uom,
+    dnp: r.dnp,
+    qty: Number(r.qty || 0),
+    inv_value: Number(r.inv_value || 0),
+    updated_at: new Date().toISOString()
+  }));
+
+  const changesPayload = [];
+  uniqueRows.forEach(r => {
+    const key = `${r.branch_code || ""}__${r.item_code || ""}`;
+    const prevQty = Number(currentMap.get(key) || 0);
+    const newQty = Number(r.qty || 0);
+    if(prevQty !== newQty){
+      changesPayload.push({
+        report_date: reportDate,
+        branch_code: r.branch_code,
+        item_code: r.item_code,
+        prev_qty: prevQty,
+        new_qty: newQty,
+        delta_qty: newQty - prevQty
+      });
+    }
+  });
+
+  const { error: upsertError } = await db
+    .from("inventory_current")
+    .upsert(currentPayload, { onConflict: "branch_code,item_code" });
+  if(upsertError) throw upsertError;
+
+  if(changesPayload.length){
+    const { error: changesError } = await db
+      .from("inventory_changes")
+      .insert(changesPayload);
+    if(changesError) throw changesError;
+  }
+
+  return { upserted: currentPayload.length, changed: changesPayload.length };
+}
+
 async function processInventoryExcelData(rows, reportDate){
   if(!Array.isArray(rows) || !rows.length){
     showPopup("No inventory rows found in file.");
@@ -4366,12 +4435,12 @@ async function processInventoryExcelData(rows, reportDate){
       return;
     }
 
-    const { error: deleteError } = await db
+    const { error: deleteBeforeError } = await db
       .from("inventory_staging")
       .delete()
       .eq("report_date", reportDate);
-    if(deleteError){
-      throw deleteError;
+    if(deleteBeforeError){
+      throw deleteBeforeError;
     }
 
     const { error: insertError } = await db
@@ -4381,7 +4450,19 @@ async function processInventoryExcelData(rows, reportDate){
       throw insertError;
     }
 
-    showPopup(`Inventory Upload Complete ✅\nUploaded: ${payload.length}\nSkipped: ${skipped}`);
+    const stats = await applyInventoryThreeTableFlow(payload, reportDate);
+
+    const { error: deleteAfterError } = await db
+      .from("inventory_staging")
+      .delete()
+      .eq("report_date", reportDate);
+    if(deleteAfterError){
+      throw deleteAfterError;
+    }
+
+    showPopup(
+      `Inventory Upload Complete ✅\nUploaded: ${payload.length}\nChanged: ${stats.changed}\nCurrent Updated: ${stats.upserted}\nSkipped: ${skipped}`
+    );
   } catch(err){
     console.error("Inventory upload failed:", err);
     showPopup(`Inventory upload failed ❌\n${err?.message || "Unknown error"}`);
