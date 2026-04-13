@@ -663,6 +663,18 @@ tr[style*="f59e0b"]:hover {
   padding: 28px 30px;
   background: linear-gradient(160deg, rgba(30,41,59,0.86), rgba(15,23,42,0.9));
   border-right: 1px solid rgba(148,163,184,0.18);
+  position: relative;
+}
+
+.login-aside::before{
+  content:"";
+  position:absolute;
+  width: 300px;
+  height: 180px;
+  top: -20px;
+  left: -20px;
+  background: radial-gradient(circle, rgba(224,242,254,0.24) 0%, rgba(224,242,254,0.05) 45%, transparent 75%);
+  pointer-events:none;
 }
 
 .login-card{
@@ -675,6 +687,25 @@ tr[style*="f59e0b"]:hover {
   font-weight: 800;
   letter-spacing: 0.01em;
   color: #f8fafc;
+}
+
+.login-logo-wrap{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248,250,252,0.88), rgba(241,245,249,0.74));
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 12px 26px rgba(2,6,23,0.35), inset 0 1px 0 rgba(255,255,255,0.8);
+  backdrop-filter: blur(6px) brightness(1.05);
+}
+
+.login-logo{
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.38));
 }
 
 .login-subtitle{
@@ -937,7 +968,9 @@ document.getElementById("app").innerHTML = `
 <div class="login-shell">
   <main class="login-grid" aria-label="Parts Connect Portal Login">
     <section class="login-aside">
-      <img src="HDU4w-removebg-preview.png" alt="Parts Connect Portal" class="h-16 w-auto object-contain mb-4" />
+      <div class="login-logo-wrap mb-5">
+        <img src="HDU4w-removebg-preview.png" alt="Parts Connect Portal" class="login-logo" />
+      </div>
       <h1 class="login-title">Parts Connect Portal</h1>
       <p class="login-subtitle">Reliable, secure and role-based branch access for order operations.</p>
       <div class="mt-5 rounded-xl px-4 py-3" style="border:1px solid rgba(148,163,184,0.24); background:rgba(15,23,42,0.45);">
