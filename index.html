@@ -573,6 +573,7 @@ tr[style*="f59e0b"]:hover {
   box-shadow: 0 6px 18px rgba(2,6,23,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
 }
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
 
 .search-bar:focus {
   border-color: #facc15;
@@ -623,6 +624,58 @@ tr[style*="f59e0b"]:hover {
   padding: 8px;
 }
 
+=======
+
+.search-bar:focus {
+  border-color: #facc15;
+  background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98));
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.20), 0 8px 22px rgba(217,119,6,0.14);
+  transform: translateY(-1px);
+}
+
+.track-shell{
+  display:grid;
+  gap: 14px;
+}
+
+.track-hero{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.28);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.98));
+  box-shadow: 0 18px 34px rgba(2,6,23,0.5);
+  padding: 12px;
+}
+
+.track-stat{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.20);
+  background: linear-gradient(160deg, rgba(31,41,55,0.85), rgba(15,23,42,0.8));
+  padding: 10px 12px;
+}
+
+.track-summary-grid{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.track-status-card{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
+  padding: 8px 10px;
+  min-height: 70px;
+}
+
+.track-filter-shell{
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(15,23,42,0.62);
+  padding: 8px;
+}
+
+>>>>>>> main
 .track-filter-grid{
   display:grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -769,9 +822,12 @@ tr[style*="f59e0b"]:hover {
   transition: transform .22s ease, box-shadow .22s ease;
 }
 .mgr-kpi-card:hover{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(2,6,23,0.24); }
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
 .mgr-kpi-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
 .mgr-kpi-count{ font-size: 1.35rem; font-weight: 900; line-height: 1; color:#f8fafc; }
 .mgr-kpi-value{ font-size: 0.86rem; font-weight: 800; color:#fde68a; margin-top: 16px; }
+=======
+>>>>>>> main
 .mgr-filter-bar{
   display:grid;
   grid-template-columns: 1fr 1fr auto auto;
@@ -793,6 +849,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   cursor: pointer;
 }
 .mgr-branch-table th, .mgr-branch-table td{ padding: 8px 10px; }
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
 .table-toggle-btn{
   padding: 5px 10px;
   border-radius: 999px;
@@ -802,6 +859,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   background: rgba(30,41,59,0.92);
   color: #fef3c7;
 }
+=======
+>>>>>>> main
 .mgr-branch-detail{
   overflow: hidden;
   animation: mgrExpand .22s ease;
@@ -4647,19 +4706,29 @@ function renderManagerDashboard(orders){
       <button onclick="setManagerDashboardCardFilter('${c.filterType || "status"}','${c.key}','${c.label}')"
         class="mgr-kpi-card text-left"
         style="background:linear-gradient(160deg, ${c.tint}, rgba(15,23,42,0.86)); border-color:${active ? '#facc15' : c.border};">
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
         <div class="mgr-kpi-head">
           <div class="text-[10px] uppercase tracking-[0.08em] font-bold" style="color:#fcd34d;">${c.label}</div>
           <div class="mgr-kpi-count">${c.count}</div>
         </div>
         <div class="mgr-kpi-value">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
+=======
+        <div class="text-[10px] uppercase tracking-[0.08em] font-bold" style="color:#fcd34d;">${c.label}</div>
+        <div class="text-xl font-black mt-1" style="color:#f8fafc;">${c.count}</div>
+        <div class="text-xs font-semibold" style="color:#e2e8f0;">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
+>>>>>>> main
       </button>`;
   };
 
   document.getElementById("main").innerHTML = `
     <div class="mgr-shell">
       <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
         <div class="flex justify-end">
         <div class="mgr-filter-bar mb-2 w-full max-w-[760px]">
+=======
+        <div class="mgr-filter-bar mb-2">
+>>>>>>> main
           <div class="flex items-center gap-2">
             <span class="mgr-filter-label !mb-0">From</span>
             <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
@@ -4671,16 +4740,26 @@ function renderManagerDashboard(orders){
           <button class="track-page-btn" onclick="applyManagerDashboardDateRange()">Apply</button>
           <button class="track-page-btn" onclick="resetManagerDashboardDateRange()">Reset</button>
         </div>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
         </div>
+=======
+>>>>>>> main
 
         <div class="mgr-kpi-grid">${statusCards.map(cardHtml).join("")}</div>
         <div class="mgr-kpi-grid mt-2">${typeCards.map(c => cardHtml({ ...c, filterType: "type" })).join("")}</div>
       </section>
 
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
       <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
         <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Filtered Orders ${activeFilter ? `• ${escapeHtml(activeFilter.label)}` : ""}</div>
           <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
+=======
+      <section class="mgr-panel p-4 relative" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
+        <button onclick="toggleManagerDashboardFilteredTable()" class="track-page-btn absolute right-4 top-3 text-xs px-3 py-1.5">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
+        <div class="flex items-center justify-between gap-3 mb-2 flex-wrap pr-28">
+          <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Filtered Orders ${activeFilter ? `• ${escapeHtml(activeFilter.label)}` : ""}</div>
+>>>>>>> main
         </div>
         <div class="overflow-x-auto ${window.managerDashTableVisible ? "" : "hidden"}">
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
@@ -4718,7 +4797,11 @@ function renderManagerDashboard(orders){
                   <td class="text-center" style="background:rgba(250,204,21,0.10);">${b.processedCount}</td><td class="text-right" style="background:rgba(250,204,21,0.10);">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</td>
                   <td class="text-center" style="background:rgba(20,184,166,0.10);">${b.dispatchedCount}</td><td class="text-right" style="background:rgba(20,184,166,0.10);">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</td>
                 </tr>`).join("")}
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-4uwhq2
               <tr style="background:linear-gradient(90deg, rgba(250,204,21,0.34), rgba(217,119,6,0.28)); border-top:1px solid rgba(250,204,21,0.55);">
+=======
+              <tr style="background:rgba(250,204,21,0.18);">
+>>>>>>> main
                 <td class="font-bold">TOTAL</td>
                 <td class="text-center font-bold">${totalRow.totalOrders}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.totalValue).toLocaleString("en-IN")}</td>
                 <td class="text-center font-bold">${totalRow.pendingCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.pendingValue).toLocaleString("en-IN")}</td>
