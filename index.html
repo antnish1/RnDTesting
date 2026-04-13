@@ -1273,6 +1273,780 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   .login-aside{ border-right:0; border-bottom:1px solid rgba(148,163,184,0.18); }
 }
 
+.track-hero{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.28);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.98));
+  box-shadow: 0 18px 34px rgba(2,6,23,0.5);
+  padding: 12px;
+}
+
+.track-stat{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.20);
+  background: linear-gradient(160deg, rgba(31,41,55,0.85), rgba(15,23,42,0.8));
+  padding: 10px 12px;
+}
+
+.track-summary-grid{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.track-status-card{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
+  padding: 8px 10px;
+  min-height: 70px;
+}
+
+.track-filter-shell{
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(15,23,42,0.62);
+  padding: 8px;
+}
+
+.track-filter-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+  
+<script>
+ let GLOBAL_DATA = []; // stores current table data
+let TABLE_SORT_STATE = null;
+    let CURRENT_PAGE = 1;
+const PAGE_SIZE = 10;
+let TRACK_FROM_DATE = "";
+let TRACK_TO_DATE = "";
+const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const { createClient } = supabase;
+let cancelUploadFlag = false;
+let currentRow = null;
+    const db = createClient(
+
+.track-table-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  box-shadow: 0 22px 42px rgba(2,6,23,0.52);
+  overflow: hidden;
+}
+
+.track-table-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(180deg, rgba(245,158,11,0.1), rgba(17,24,39,0.5));
+}
+
+.track-table-wrap{
+  overflow-x:auto;
+  padding: 10px 10px 0;
+}
+
+.track-table{
+  min-width: 980px;
+}
+
+.track-table tbody tr{
+  transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.track-table tbody tr:hover{
+  background: linear-gradient(90deg, rgba(250,204,21,0.12), rgba(30,41,59,0.18)) !important;
+  transform: translateY(-1px);
+}
+
+.track-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(250,204,21,0.18);
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.95));
+}
+
+.track-page-btn{
+  min-width: 108px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.38);
+  background: rgba(30,41,59,0.9);
+  color: #fef3c7;
+  font-weight: 700;
+}
+
+.track-page-btn:hover:not(:disabled){
+  background: linear-gradient(180deg, rgba(250,204,21,0.28), rgba(217,119,6,0.22));
+  color: #fff;
+}
+
+.track-page-btn:disabled{
+  opacity: .42;
+  cursor:not-allowed;
+}
+
+.admin-shell{
+  display:grid;
+  gap: 12px;
+}
+
+.admin-strip{
+  border-radius: 16px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.95));
+  padding: 12px;
+}
+function compactPopupMessage(msg){
+  const text = (msg || "").toString().trim();
+  const lower = text.toLowerCase();
+  if(lower.includes("fill all fields")) return "Please complete all fields";
+  if(lower.includes("invalid credentials")) return "Invalid login details";
+  if(lower.includes("submit failed")) return "Order submission failed";
+  if(lower.includes("submitted")) return "Order submitted successfully";
+  if(lower.includes("duplicate")) return "Duplicate item not allowed";
+  if(lower.includes("already ordered") && lower.includes("within the past")) return "This part was ordered recently. Continue?";
+  if(lower.includes("invalid part number")) return "Invalid part number";
+  if(lower.includes("qty cannot be less than 1")) return "Quantity must be at least 1";
+  if(lower.includes("at least one part number")) return "Add at least one part";
+  if(lower.includes("order updated")) return "Order updated";
+  if(lower.includes("order rejected")) return "Order rejected";
+  if(lower.includes("saved")) return "Saved successfully";
+  if(lower.includes("upload complete")) return "Upload completed";
+  if(lower.includes("upload cancelled")) return "Upload cancelled";
+  if(lower.includes("please enter comment")) return "Please enter a comment";
+  if(lower.includes("comment added")) return "Comment posted";
+  if(lower.includes("please select approver")) return "Please select approver";
+  if(lower.includes("approver updated")) return "Approver updated";
+  return text;
+}
+function showPopup(msg, type = "info", actionsHTML = null){
+
+  const iconEl = document.getElementById("popupIcon");
+  const titleEl = document.getElementById("popupTitle");
+  const popupEl = document.getElementById("popup");
+
+  // ICON STYLE
+  if(type === "success"){
+    iconEl.innerHTML = "✓";
+    iconEl.style.background = "rgba(16,185,129,0.18)";
+    iconEl.style.color = "#34d399";
+    titleEl.innerText = "Success";
+  }
+  else if(type === "error"){
+    iconEl.innerHTML = "✕";
+    iconEl.style.background = "rgba(239,68,68,0.18)";
+    iconEl.style.color = "#fca5a5";
+    titleEl.innerText = "Error";
+  }
+  else if(type === "warning"){
+    iconEl.innerHTML = "!";
+    iconEl.style.background = "rgba(245,158,11,0.22)";
+    iconEl.style.color = "#fcd34d";
+    titleEl.innerText = "Warning";
+  }
+  else{
+    iconEl.innerHTML = "i";
+    iconEl.style.background = "rgba(250,204,21,0.2)";
+    iconEl.style.color = "#facc15";
+    titleEl.innerText = "Info";
+  }
+
+  document.getElementById("popupMsg").innerText = compactPopupMessage(msg);
+
+  // ✅ CUSTOM BUTTONS SUPPORT
+  if(actionsHTML){
+    document.getElementById("popupActions").innerHTML = actionsHTML;
+  } else {
+    document.getElementById("popupActions").innerHTML = `
+      <button onclick="closePopup()"
+        class="popup-btn popup-btn-primary">
+        OK
+      </button>
+    `;
+  }
+  document.querySelectorAll("#popupActions button").forEach(btn => {
+    if(!btn.className.includes("popup-btn")){
+      btn.classList.add("popup-btn");
+    }
+  });
+
+  popupEl.classList.remove("hidden");
+  setTimeout(() => {
+    popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
+  }, 0);
+}
+.mgr-kpi-grid{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0,1fr));
+  gap: 10px;
+}
+.mgr-kpi-card{
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  min-height: 76px;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.mgr-kpi-card:hover{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(2,6,23,0.24); }
+.mgr-kpi-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.mgr-kpi-count{ font-size: 1.35rem; font-weight: 900; line-height: 1; color:#f8fafc; }
+.mgr-kpi-value{ font-size: 0.86rem; font-weight: 800; color:#fde68a; margin-top: 16px; }
+.mgr-filter-bar{
+  display:grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 10px;
+  align-items:end;
+}
+.mgr-filter-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color:#fcd34d;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && !document.getElementById("popup").classList.contains("hidden")){
+    closePopup();
+  }
+});
+
+function getUser(){
+  try { return JSON.parse(localStorage.getItem("user")); }
+  catch { return null; }
+}
+@keyframes mgrExpand { from { opacity:0; max-height:0; } to { opacity:1; max-height:140px; } }
+
+function isSuperLikeRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "super" || role === "manager";
+}
+
+function isManagerRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "manager";
+}
+
+const PART_MASTER_CACHE = new Map();
+const PART_USAGE_30D_CACHE = new Map();
+
+function normalizePartNo(partNo){
+  return (partNo || "").toString().replace(/\s/g, "").toUpperCase();
+}
+
+async function getPartMasterByPartNo(partNo){
+  const normalizedPartNo = normalizePartNo(partNo);
+  if(!normalizedPartNo) return null;
+
+  if(PART_MASTER_CACHE.has(normalizedPartNo)){
+    return PART_MASTER_CACHE.get(normalizedPartNo);
+  }
+
+  const { data } = await db
+    .from("part_master")
+    .select("PartNo, Description, DNP, Cat1")
+    .eq("PartNo", normalizedPartNo)
+    .maybeSingle();
+
+  PART_MASTER_CACHE.set(normalizedPartNo, data || null);
+  return data || null;
+}
+
+async function getLast30QtyByBranchPart(branch, partNo){
+  const normalizedPartNo = normalizePartNo(partNo);
+  const key = `${branch || ""}__${normalizedPartNo}`;
+  if(PART_USAGE_30D_CACHE.has(key)){
+    return PART_USAGE_30D_CACHE.get(key);
+  }
+
+  const last30 = new Date();
+  last30.setDate(last30.getDate() - 30);
+
+  const { data: history } = await db
+    .from("requests")
+    .select("Qty, editedqty")
+    .eq("Branch", branch)
+    .eq("PartNo", normalizedPartNo)
+    .neq("Status", "REJECTED")
+    .neq("ApprovalStatus", "Rejected")
+    .gte("created_at", last30.toISOString());
+
+  let total30 = 0;
+  (history || []).forEach(r => {
+    total30 += getEffectiveQty(r);
+  });
+
+  PART_USAGE_30D_CACHE.set(key, total30);
+  return total30;
+}
+
+function renderIcons(){
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons();
+  }
+}
+
+.detail-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(140deg, rgba(17,24,39,0.95), rgba(15,23,42,0.92));
+}
+
+document.getElementById("app").innerHTML = `
+<div class="login-shell">
+  <main class="login-grid" aria-label="Parts Connect Portal Login">
+    <section class="login-aside">
+      <div class="login-logo-wrap mb-5">
+        <img src="HDU4w-removebg-preview.png" alt="Parts Connect Portal" class="login-logo" />
+      </div>
+      <h1 class="login-title">Parts Connect Portal</h1>
+      <p class="login-subtitle">Reliable, secure and role-based branch access for order operations.</p>
+      <div class="mt-5 rounded-xl px-4 py-3" style="border:1px solid rgba(148,163,184,0.24); background:rgba(15,23,42,0.45);">
+        <p class="text-xs leading-relaxed" style="color:#cbd5e1;">
+          Sign in to continue with branch-specific access, approvals, tracking and secure workflow actions.
+        </p>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <h2 class="login-title">Secure Login</h2>
+      <p class="login-subtitle">Use your branch and password to continue.</p>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full mt-2 mb-2 text-[11px] font-bold uppercase tracking-[0.08em]"
+           style="background:rgba(250,204,21,0.14); border:1px solid rgba(250,204,21,0.35); color:#fef3c7;">
+        Admin Panel • HQ Access
+      </div>
+
+      <label class="login-label" for="branch">Branch</label>
+      <select id="branch" class="login-input"></select>
+
+      <label class="login-label" for="password">Password</label>
+      <input id="password" type="password" class="login-input" placeholder="Enter your password" />
+
+      <button onclick="login()" class="login-cta">Access Portal</button>
+    </section>
+  </main>
+</div>
+`;
+
+.detail-meta-grid{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 10px;
+}
+
+.detail-meta-item{
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.9), rgba(15,23,42,0.88));
+  padding: 10px;
+}
+
+.detail-label{
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #fcd34d;
+}
+
+.detail-value{
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 4px;
+}
+
+@media (max-width: 1200px){
+  .track-summary-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detail-meta-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+
+@media (max-width: 960px){
+  .detail-meta-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+@media (max-width: 768px){
+  .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track-filter-grid{ grid-template-columns: 1fr; }
+  .detail-meta-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 560px){
+  .detail-meta-grid{ grid-template-columns: 1fr; }
+}
+
+/* 🔥 PLACEHOLDER */
+.search-bar::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.header-logo-shell{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.92));
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 10px 24px rgba(2,6,23,0.36), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+
+.header-logo{
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.new-order-shell{
+  display: grid;
+  gap: 16px;
+}
+
+.new-order-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.new-order-card{
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  padding: 18px;
+  box-shadow: 0 20px 34px rgba(2,6,23,0.45);
+}
+
+.new-order-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #fef08a;
+  font-weight: 800;
+}
+
+.new-order-fields{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.new-order-fields label{
+  display:block;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.new-order-shell input.pc-field::placeholder{
+  color: #7c8aa3 !important;
+  opacity: 0.72;
+  font-weight: 500;
+}
+
+.parts-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(180deg, rgba(17,24,39,0.97), rgba(10,15,27,0.97));
+  padding: 16px;
+  box-shadow: 0 24px 40px rgba(2,6,23,0.5);
+}
+
+.parts-table-wrap{
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid #374151;
+}
+
+.order-cta{
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.order-cta:hover{
+  transform: translateY(-1px);
+}
+
+.cta-primary{
+  background: linear-gradient(180deg, #facc15 0%, #f2b707 52%, #de9f01 100%);
+  color: #1f2937;
+  box-shadow: 0 14px 24px rgba(250,204,21,0.28), 0 3px 0 rgba(146,102,0,0.32);
+}
+
+.cta-secondary{
+  background: linear-gradient(180deg, #fde68a, #facc15);
+  color: #1f2937;
+  border: 1px solid rgba(250,204,21,0.35);
+}
+
+.cta-tertiary{
+  background: rgba(30,41,59,0.9);
+  color: #fde68a;
+  border: 1px solid rgba(250,204,21,0.32);
+}
+
+.summary-strip{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(120deg, rgba(250,204,21,0.08), rgba(15,23,42,0.45));
+}
+
+@media (max-width: 1024px){
+  .new-order-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px){
+  .new-order-fields{
+    grid-template-columns: 1fr;
+  }
+
+  .search-bar{
+    width: min(70vw, 360px);
+  }
+}
+
+.offer-strip {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid rgba(251,191,36,0.7);
+  background: linear-gradient(90deg, #1b2432 0%, #243042 45%, #1c2736 100%);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.3), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+.offer-strip::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.28) 32%, transparent 54%);
+  animation: offerShine 4.8s linear infinite;
+  pointer-events:none;
+}
+
+.offer-marquee{
+  display:flex;
+  width:max-content;
+  min-width:100%;
+  animation: offerMarquee 22s linear infinite;
+}
+
+.offer-pill{
+  flex:0 0 auto;
+  margin: 0 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color:#111827;
+  background: linear-gradient(180deg, #fde68a, #d97706);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  text-transform: uppercase;
+}
+
+@keyframes offerMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.offer-strip:hover .offer-marquee{
+  animation-play-state: paused;
+}
+
+@keyframes offerShine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+/* ===== Premium Login Experience ===== */
+.login-shell{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(56,189,248,0.18), transparent 60%),
+    radial-gradient(900px 420px at 110% 10%, rgba(96,165,250,0.12), transparent 58%),
+    linear-gradient(180deg, #060b16 0%, #0b1220 46%, #0d1527 100%);
+}
+
+.login-grid{
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.24);
+  box-shadow: 0 30px 70px rgba(2,6,23,0.55);
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: blur(10px);
+}
+
+.login-aside{
+  padding: 28px 30px;
+  background: linear-gradient(160deg, rgba(30,41,59,0.86), rgba(15,23,42,0.9));
+  border-right: 1px solid rgba(148,163,184,0.18);
+  position: relative;
+}
+
+.login-aside::before{
+  content:"";
+  position:absolute;
+  width: 300px;
+  height: 180px;
+  top: -20px;
+  left: -20px;
+  background: radial-gradient(circle, rgba(224,242,254,0.24) 0%, rgba(224,242,254,0.05) 45%, transparent 75%);
+  pointer-events:none;
+}
+
+.login-card{
+  padding: 28px 26px;
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.96));
+}
+
+.login-title{
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #f8fafc;
+}
+
+.login-logo-wrap{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248,250,252,0.88), rgba(241,245,249,0.74));
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 12px 26px rgba(2,6,23,0.35), inset 0 1px 0 rgba(255,255,255,0.8);
+  backdrop-filter: blur(6px) brightness(1.05);
+}
+
+.login-logo{
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.38));
+}
+
+.login-subtitle{
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.login-label{
+  display:block;
+  margin: 12px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fcd34d;
+  font-weight: 700;
+}
+
+.login-input{
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.login-input:focus{
+  outline: none;
+  border-color: #facc15;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.2);
+  transform: translateY(-1px);
+}
+
+.login-cta{
+  width: 100%;
+  margin-top: 16px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #1a1200;
+  background: linear-gradient(180deg, #f6c21a 0%, #f2b705 45%, #dfa300 100%);
+  border: none;
+  box-shadow: 0 12px 22px rgba(242,183,5,0.30), 0 4px 0 rgba(153,111,0,0.32);
+  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background-color .22s ease;
+}
+
+.login-cta:hover{
+  transform: translateY(-2px) scale(1.01);
+  background: linear-gradient(180deg, #efb808 0%, #d9a404 100%);
+  box-shadow: 0 16px 28px rgba(217,164,4,0.38), 0 5px 0 rgba(122,89,0,0.36);
+}
+
+.login-cta:active{
+  transform: translateY(0);
+  background: linear-gradient(180deg, #d29f04 0%, #b88a03 100%);
+  box-shadow: 0 6px 12px rgba(184,138,3,0.28);
+}
+
+.login-cta:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.35), 0 12px 22px rgba(242,183,5,0.30);
+}
+
+.login-cta:disabled{
+  background: linear-gradient(180deg, rgba(242,183,5,0.45), rgba(184,138,3,0.45));
+  color: rgba(26,18,0,0.7);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 860px){
+  .login-grid{ grid-template-columns: 1fr; }
+  .login-aside{ border-right:0; border-bottom:1px solid rgba(148,163,184,0.18); }
+}
+
 /* filter arrow indicator on all table headers */
 table thead th::after {
   content: " ▼";
@@ -2515,9 +3289,19 @@ if(error) return showPopup("Submit failed");
 await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
 showPopup("Submitted ✅ Order No: "+orderNo);
 
-loadCreate();
+  return orders.filter(o => {
+    const created = new Date(o.created_at);
+    if(fromDate && created < fromDate) return false;
+    if(toDate && created > toDate) return false;
+    return true;
+  });
 }
 
+function updateTrackDateFilter(kind, value){
+  if(kind === "from") TRACK_FROM_DATE = value || "";
+  if(kind === "to") TRACK_TO_DATE = value || "";
+  loadTrack("track", true);
+}
 
 // ---------- TRACK ----------
 function applyTrackDateFilter(orders){
@@ -3039,54 +3823,6 @@ function loadUpload(){
   <div class="flex justify-center mt-4">
     <input type="file" id="uploadInward" accept=".xlsx"
       class="pc-field max-w-xs"/>
-  </div>
-
-</div>
-
-<div class="relative pc-section">
-
-  <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-    <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-      INVENTORY REPORT UPLOAD
-    </span>
-  </div>
-
-  <div class="flex flex-wrap justify-center items-end gap-3 mt-4">
-    <div class="text-left">
-      <label for="inventoryReportDate" class="text-xs block mb-1" style="color:var(--pc-text-muted);">Report Date</label>
-      <input id="inventoryReportDate" type="date" class="pc-field min-w-[180px]" value="${new Date().toISOString().slice(0,10)}" />
-    </div>
-    <input type="file" id="uploadInventoryExcel" accept=".xlsx" class="pc-field max-w-xs"/>
-  </div>
-  <div id="inventorySyncWrap" class="hidden max-w-[560px] mx-auto mt-4">
-    <div class="text-xs mb-1 text-center" id="inventorySyncText" style="color:var(--pc-text-muted);">Preparing inventory upload...</div>
-    <div class="w-full h-2 rounded-full overflow-hidden" style="background:rgba(148,163,184,0.24);">
-      <div id="inventorySyncBar" class="h-full" style="width:0%; background:linear-gradient(90deg,#f59e0b,#facc15); transition:width .25s ease;"></div>
-    </div>
-  </div>
-
-</div>
-
-<div class="relative pc-section">
-
-  <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-    <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-      INVENTORY REPORT UPLOAD
-    </span>
-  </div>
-
-  <div class="flex flex-wrap justify-center items-end gap-3 mt-4">
-    <div class="text-left">
-      <label for="inventoryReportDate" class="text-xs block mb-1" style="color:var(--pc-text-muted);">Report Date</label>
-      <input id="inventoryReportDate" type="date" class="pc-field min-w-[180px]" value="${new Date().toISOString().slice(0,10)}" />
-    </div>
-    <input type="file" id="uploadInventoryExcel" accept=".xlsx" class="pc-field max-w-xs"/>
-  </div>
-  <div id="inventorySyncWrap" class="hidden max-w-[560px] mx-auto mt-4">
-    <div class="text-xs mb-1 text-center" id="inventorySyncText" style="color:var(--pc-text-muted);">Preparing inventory upload...</div>
-    <div class="w-full h-2 rounded-full overflow-hidden" style="background:rgba(148,163,184,0.24);">
-      <div id="inventorySyncBar" class="h-full" style="width:0%; background:linear-gradient(90deg,#f59e0b,#facc15); transition:width .25s ease;"></div>
-    </div>
   </div>
 
 </div>
@@ -4476,6 +5212,114 @@ async function processInventoryExcelData(rows, reportDate){
     return;
   }
 
+    if(!error){
+      updated++;
+      if(!statusLoggedOrders.has(orderNo)){
+        await appendOrderActionLog(
+          orderNo,
+          "STATUS_UPDATED",
+          `Status updated to ${(status || "Processed")} via upload by ${getUser()?.Name || "Unknown User"}.`,
+          { status: status || "Processed" }
+        );
+        statusLoggedOrders.add(orderNo);
+      }
+    } else {
+      console.error(error);
+      skipped++;
+    }
+
+    if(!payload.length){
+      showPopup("No valid inventory data found after filtering totals/blank rows.");
+      return;
+    }
+
+    const finalPayload = payload;
+    setInventoryProgress(5, `Prepared ${finalPayload.length} rows. Syncing staging data...`);
+    await insertInventoryStagingInBatches(finalPayload, 500);
+    setInventoryProgress(80, "Applying server-side merge (inventory_current + inventory_changes)...");
+
+    const { data: rpcData, error: rpcError } = await db.rpc("process_inventory_report", {
+      p_report_date: reportDate
+    });
+    if(rpcError) throw rpcError;
+
+    const stats = Array.isArray(rpcData) ? (rpcData[0] || {}) : (rpcData || {});
+    syncCompleted = true;
+    setInventoryProgress(100, "Inventory processing completed.");
+
+    showPopup(
+      `Inventory Upload Complete ✅\nUploaded: ${finalPayload.length}\nChanged: ${stats.changed_count ?? stats.changed ?? 0}\nCurrent Updated: ${stats.current_updated ?? stats.upserted ?? finalPayload.length}\nSkipped: ${skipped}`
+    );
+  } catch(err){
+    console.error("Inventory upload failed:", err);
+    const errorText = [err?.message, err?.details, err?.hint].filter(Boolean).join("\n");
+    showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}\n\nPlease create SQL RPC: process_inventory_report(p_report_date date).`);
+  } finally {
+    window.inventoryUploadBusy = false;
+    if(!syncCompleted){
+      console.warn("Inventory sync did not complete.");
+    }
+    setTimeout(hideInventoryProgress, 1200);
+    hideLoader();
+  }
+}
+
+function normalizeInventoryHeaderKey(key){
+  return (key || "").toString().replace(/\n/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function getInventoryValue(row, aliases){
+  const entries = Object.entries(row || {});
+  const keyMap = new Map(entries.map(([k]) => [normalizeInventoryHeaderKey(k), k]));
+  for(const alias of aliases){
+    const hit = keyMap.get(normalizeInventoryHeaderKey(alias));
+    if(hit !== undefined) return row[hit];
+  }
+  return "";
+}
+
+function parseInventoryNumber(v){
+  if(v === null || v === undefined || v === "") return 0;
+  const n = Number(String(v).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
+function setInventoryProgress(percent, message){
+  const wrap = document.getElementById("inventorySyncWrap");
+  const bar = document.getElementById("inventorySyncBar");
+  const txt = document.getElementById("inventorySyncText");
+  if(!wrap || !bar || !txt) return;
+  wrap.classList.remove("hidden");
+  bar.style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`;
+  txt.textContent = message || "Processing inventory...";
+}
+
+function hideInventoryProgress(){
+  const wrap = document.getElementById("inventorySyncWrap");
+  if(wrap) wrap.classList.add("hidden");
+}
+
+async function insertInventoryStagingInBatches(rows, batchSize = 500){
+  let inserted = 0;
+  for(let i=0; i<rows.length; i += batchSize){
+    const chunk = rows.slice(i, i + batchSize);
+    const { error } = await db
+      .from("inventory_staging")
+      .upsert(chunk, { onConflict: "report_date,branch_code,item_code" });
+    if(error) throw error;
+    inserted += chunk.length;
+    const pct = 10 + Math.round((inserted / rows.length) * 60);
+    setInventoryProgress(pct, `Syncing staging rows... ${inserted}/${rows.length}`);
+  }
+  return inserted;
+}
+
+async function processInventoryExcelData(rows, reportDate){
+  if(!Array.isArray(rows) || !rows.length){
+    showPopup("No inventory rows found in file.");
+    return;
+  }
+
   showLoader();
   let syncCompleted = false;
   try{
@@ -4533,24 +5377,16 @@ async function processInventoryExcelData(rows, reportDate){
     const finalPayload = payload;
     setInventoryProgress(5, `Prepared ${finalPayload.length} rows. Syncing staging data...`);
     await insertInventoryStagingInBatches(finalPayload, 500);
-    setInventoryProgress(80, "Applying server-side merge (inventory_current + inventory_changes)...");
-
-    const { data: rpcData, error: rpcError } = await db.rpc("process_inventory_report", {
-      p_report_date: reportDate
-    });
-    if(rpcError) throw rpcError;
-
-    const stats = Array.isArray(rpcData) ? (rpcData[0] || {}) : (rpcData || {});
     syncCompleted = true;
-    setInventoryProgress(100, "Inventory processing completed.");
+    setInventoryProgress(100, "Inventory staging upload completed.");
 
     showPopup(
-      `Inventory Upload Complete ✅\nUploaded: ${finalPayload.length}\nChanged: ${stats.changed_count ?? stats.changed ?? 0}\nCurrent Updated: ${stats.current_updated ?? stats.upserted ?? finalPayload.length}\nSkipped: ${skipped}`
+      `Inventory Upload Complete ✅\nSaved In: inventory_staging\nUploaded: ${finalPayload.length}\nSkipped: ${skipped}`
     );
   } catch(err){
     console.error("Inventory upload failed:", err);
     const errorText = [err?.message, err?.details, err?.hint].filter(Boolean).join("\n");
-    showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}\n\nPlease create SQL RPC: process_inventory_report(p_report_date date).`);
+    showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}`);
   } finally {
     window.inventoryUploadBusy = false;
     if(!syncCompleted){
