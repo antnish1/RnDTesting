@@ -3043,6 +3043,24 @@ function loadUpload(){
 
 </div>
 
+<div class="relative pc-section">
+
+  <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+    <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+      INVENTORY REPORT UPLOAD
+    </span>
+  </div>
+
+  <div class="flex flex-wrap justify-center items-end gap-3 mt-4">
+    <div class="text-left">
+      <label for="inventoryReportDate" class="text-xs block mb-1" style="color:var(--pc-text-muted);">Report Date</label>
+      <input id="inventoryReportDate" type="date" class="pc-field min-w-[180px]" value="${new Date().toISOString().slice(0,10)}" />
+    </div>
+    <input type="file" id="uploadInventoryExcel" accept=".xlsx" class="pc-field max-w-xs"/>
+  </div>
+
+</div>
+
   </div>
   `;
 }
@@ -4156,6 +4174,26 @@ document.getElementById("popupMsg").innerHTML = `
     showPopup("Inward Upload Coming Soon 🚧");
   }
 
+  // ✅ INVENTORY REPORT
+  if(e.target.id === "uploadInventoryExcel"){
+    const file = e.target.files?.[0];
+    if(!file) return;
+
+    const reportDate = document.getElementById("inventoryReportDate")?.value;
+    if(!reportDate){
+      showPopup("Select inventory report date first.");
+      return;
+    }
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+    await processInventoryExcelData(json, reportDate);
+    e.target.value = "";
+  }
+
 });
   
   
@@ -4247,6 +4285,111 @@ async function processExcelData(rows){
   showPopup(`Upload Complete ✅\nUpdated: ${updated}\nSkipped: ${skipped}`);
 
   loadAdmin(window.activeTab);
+}
+
+function normalizeInventoryHeaderKey(key){
+  return (key || "").toString().replace(/\n/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function getInventoryValue(row, aliases){
+  const entries = Object.entries(row || {});
+  const keyMap = new Map(entries.map(([k]) => [normalizeInventoryHeaderKey(k), k]));
+  for(const alias of aliases){
+    const hit = keyMap.get(normalizeInventoryHeaderKey(alias));
+    if(hit !== undefined) return row[hit];
+  }
+  return "";
+}
+
+function parseInventoryNumber(v){
+  if(v === null || v === undefined || v === "") return 0;
+  const n = Number(String(v).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function processInventoryExcelData(rows, reportDate){
+  if(!Array.isArray(rows) || !rows.length){
+    showPopup("No inventory rows found in file.");
+    return;
+  }
+
+  showLoader();
+  try{
+    const payload = [];
+    let skipped = 0;
+
+    for(const row of rows){
+      const branch = String(getInventoryValue(row, ["Branch"])).trim();
+      const brCode = String(getInventoryValue(row, ["Br. Code", "Br Code"])).trim();
+      const itemCode = String(getInventoryValue(row, ["Itemcode", "Item Code"])).trim();
+      const itemName = String(getInventoryValue(row, ["ItemName", "Item Name"])).trim();
+      const itemGroup = String(getInventoryValue(row, ["Item Group"])).trim();
+      const bhlhln = String(getInventoryValue(row, ["BHLHLN"])).trim();
+      const rec = String(getInventoryValue(row, ["REC"])).trim();
+      const nsp = String(getInventoryValue(row, ["NSP"])).trim();
+      const uom = String(getInventoryValue(row, ["UOM"])).trim();
+      const dnp = parseInventoryNumber(getInventoryValue(row, ["DNP"]));
+      const openingBalance = parseInventoryNumber(getInventoryValue(row, ["Opening Balance"]));
+      const openingInvVal = parseInventoryNumber(getInventoryValue(row, ["Opening Inv Val"]));
+      const received = parseInventoryNumber(getInventoryValue(row, ["Received"]));
+      const issued = parseInventoryNumber(getInventoryValue(row, ["Issued"]));
+      const closingBalance = parseInventoryNumber(getInventoryValue(row, ["Closing Balance"]));
+      const closingInvVal = parseInventoryNumber(getInventoryValue(row, ["Closing Inv Val"]));
+
+      // Skip grand-total/footer rows and empty rows
+      if(/^grand total$/i.test(branch) || /^grand total$/i.test(itemCode) || (!itemCode && !itemName)){
+        skipped++;
+        continue;
+      }
+
+      payload.push({
+        report_date: reportDate,
+        branch: branch || null,
+        br_code: brCode || null,
+        itemcode: itemCode.toUpperCase(),
+        itemname: itemName || null,
+        item_group: itemGroup || null,
+        bhlhln: bhlhln || null,
+        rec: rec || null,
+        nsp: nsp || null,
+        uom: uom || null,
+        dnp: dnp,
+        opening_balance: openingBalance,
+        opening_inv_val: openingInvVal,
+        received: received,
+        issued: issued,
+        closing_balance: closingBalance,
+        closing_inv_val: closingInvVal
+      });
+    }
+
+    if(!payload.length){
+      showPopup("No valid inventory data found after filtering totals/blank rows.");
+      return;
+    }
+
+    const { error: deleteError } = await db
+      .from("inventory")
+      .delete()
+      .eq("report_date", reportDate);
+    if(deleteError){
+      throw deleteError;
+    }
+
+    const { error: insertError } = await db
+      .from("inventory")
+      .insert(payload);
+    if(insertError){
+      throw insertError;
+    }
+
+    showPopup(`Inventory Upload Complete ✅\nUploaded: ${payload.length}\nSkipped: ${skipped}`);
+  } catch(err){
+    console.error("Inventory upload failed:", err);
+    showPopup(`Inventory upload failed ❌\n${err?.message || "Unknown error"}`);
+  } finally {
+    hideLoader();
+  }
 }
 
 
