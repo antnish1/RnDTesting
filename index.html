@@ -31,28 +31,26 @@
 </div>
 
 <!-- POPUP -->
-<div id="popup" class="hidden fixed inset-0 flex items-center justify-center z-50"
+<div id="popup" class="hidden fixed inset-0 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-live="polite"
      style="background: rgba(15,23,32,0.65); backdrop-filter: blur(6px);">
 
-  <div class="w-[360px] p-6 rounded-2xl shadow-2xl text-center space-y-4"
-       style="
-         background: linear-gradient(180deg, #ffffff, #f8fafc);
-         border: 1px solid var(--pc-border);
-         box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-       ">
+  <div id="popupCard" class="w-[min(92vw,420px)] p-5 rounded-2xl shadow-2xl text-center space-y-3"
+       style="background: linear-gradient(165deg, rgba(17,24,39,0.98), rgba(15,23,42,0.98)); border: 1px solid rgba(250,204,21,0.25); box-shadow: 0 26px 56px rgba(0,0,0,0.5);">
 
     <!-- ICON -->
-    <div id="popupIcon" class="mx-auto w-12 h-12 flex items-center justify-center rounded-full"
-         style="background: rgba(129,166,198,0.15); color: var(--pc-secondary);">
+    <div id="popupIcon" class="mx-auto w-12 h-12 flex items-center justify-center rounded-full text-xl"
+         style="background: rgba(250,204,21,0.18); color: #facc15;">
       ✔️
     </div>
 
+    <p id="popupTitle" class="text-sm font-extrabold tracking-wide uppercase" style="color:#fcd34d;">Notice</p>
+
     <!-- MESSAGE -->
     <p id="popupMsg" class="text-sm font-medium leading-relaxed"
-       style="color: var(--pc-text);"></p>
+       style="color: #e2e8f0;"></p>
 
     <!-- ACTIONS -->
-    <div id="popupActions" class="mt-4 flex justify-center gap-3"></div>
+    <div id="popupActions" class="mt-3 flex justify-center gap-3 flex-wrap"></div>
 
   </div>
 </div>
@@ -99,6 +97,96 @@
   --pc-secondary: #22d3ee;
   --pc-light: #0f172a;
   --pc-warm: #1e293b;
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
+  --pc-bg: #0b1220;
+  --pc-surface: #111827;
+  --pc-border: #334155;
+  --pc-text: #e5e7eb;
+  --pc-text-muted: #94a3b8;
+  --pc-success: #22c55e;
+  --pc-warning: #f59e0b;
+  --pc-danger: #ef4444;
+  --pc-font-ui: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --pc-font-strong: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+body, button, input, select, textarea, table, th, td {
+  font-family: var(--pc-font-ui);
+}
+
+/* ===== Global high-contrast refactor layer ===== */
+.pc-section{
+  color: var(--pc-text) !important;
+  border-color: #334155 !important;
+  box-shadow: 0 16px 34px rgba(2,6,23,0.45) !important;
+}
+
+.pc-field{
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 0 rgba(255,255,255,0.02) !important;
+}
+
+.pc-field::placeholder{
+  color: #94a3b8 !important;
+}
+
+.pc-field:focus{
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.18) !important;
+}
+
+table{
+  border-color: #334155 !important;
+}
+
+thead th{
+  background: linear-gradient(180deg, #1f2937, #0f172a) !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+tbody td{
+  color: #e2e8f0 !important;
+  border-color: rgba(148,163,184,0.22) !important;
+}
+
+.track-table tbody tr{
+  background: #0f172a !important;
+}
+
+.track-table tbody tr:nth-child(even){
+  background: #111827 !important;
+}
+
+.track-table tbody tr:hover{
+  background: #1e293b !important;
+}
+
+.order-action-btn{
+  border-color: #475569 !important;
+  color: #dbeafe !important;
+  background: linear-gradient(180deg, rgba(30,41,59,0.55), rgba(15,23,42,0.65)) !important;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.35) !important;
+}
+
+.order-action-btn:hover{
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, rgba(37,99,235,0.28), rgba(30,64,175,0.30)) !important;
+  box-shadow: 0 10px 20px rgba(30,64,175,0.32) !important;
+}
+
+#popup > div{
+  background: linear-gradient(180deg, #111827, #0f172a) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(250,204,21,0.24) !important;
+}
+
+=======
 
   --pc-bg: #0b1220;
   --pc-surface: #111827;
@@ -187,6 +275,7 @@ tbody td{
   border-color: #334155 !important;
 }
 
+>>>>>>> main
 #popupMsg{
   color: #e2e8f0 !important;
 }
@@ -398,6 +487,15 @@ input:focus, select:focus, button:focus {
 }
 
 #popup > div {
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+  animation: popupIn 190ms cubic-bezier(.2,.8,.2,1);
+  border-radius: 18px !important;
+  border-color: rgba(250,204,21,0.24) !important;
+}
+
+@keyframes popupIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+=======
   animation: popIn 180ms ease-out;
   border-radius: 18px !important;
   border-color: var(--pc-border) !important;
@@ -405,6 +503,7 @@ input:focus, select:focus, button:focus {
 
 @keyframes popIn {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
+>>>>>>> main
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -572,6 +671,29 @@ tr[style*="f59e0b"]:hover {
   box-shadow: 0 6px 18px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.72);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
 }
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+
+.search-bar:focus {
+  border-color: #facc15;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.20), 0 8px 22px rgba(217,119,6,0.14);
+  transform: translateY(-1px);
+}
+
+.track-shell{
+  display:grid;
+  gap: 14px;
+}
+
+.track-hero{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.28);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.98));
+  box-shadow: 0 18px 34px rgba(2,6,23,0.5);
+  padding: 12px;
+}
+
+=======
 
 .search-bar:focus {
   border-color: #facc15;
@@ -593,6 +715,7 @@ tr[style*="f59e0b"]:hover {
   padding: 16px;
 }
 
+>>>>>>> main
 .track-stat{
   border-radius: 12px;
   border: 1px solid rgba(250,204,21,0.20);
@@ -610,6 +733,203 @@ tr[style*="f59e0b"]:hover {
   border-radius: 12px;
   border: 1px solid rgba(250,204,21,0.22);
   background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+  padding: 8px 10px;
+  min-height: 70px;
+}
+
+.track-filter-shell{
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(15,23,42,0.62);
+  padding: 8px;
+}
+
+.track-filter-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.track-filter-grid label{
+  display:block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #fcd34d;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.track-table-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  box-shadow: 0 22px 42px rgba(2,6,23,0.52);
+  overflow: hidden;
+}
+
+.track-table-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(180deg, rgba(245,158,11,0.1), rgba(17,24,39,0.5));
+}
+
+.track-table-wrap{
+  overflow-x:auto;
+  padding: 10px 10px 0;
+}
+
+.track-table{
+  min-width: 980px;
+}
+
+.track-table tbody tr{
+  transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.track-table tbody tr:hover{
+  background: linear-gradient(90deg, rgba(250,204,21,0.12), rgba(30,41,59,0.18)) !important;
+  transform: translateY(-1px);
+}
+
+.track-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(250,204,21,0.18);
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.95));
+}
+
+.track-page-btn{
+  min-width: 108px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.38);
+  background: rgba(30,41,59,0.9);
+  color: #fef3c7;
+  font-weight: 700;
+}
+
+.track-page-btn:hover:not(:disabled){
+  background: linear-gradient(180deg, rgba(250,204,21,0.28), rgba(217,119,6,0.22));
+  color: #fff;
+}
+
+.track-page-btn:disabled{
+  opacity: .42;
+  cursor:not-allowed;
+}
+
+.detail-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(140deg, rgba(17,24,39,0.95), rgba(15,23,42,0.92));
+}
+
+.detail-action-btn{
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(30,41,59,0.9);
+  color: #e2e8f0;
+}
+
+.detail-action-btn:hover{
+  border-color: rgba(250,204,21,0.52);
+  color: #fef3c7;
+  background: linear-gradient(180deg, rgba(250,204,21,0.2), rgba(180,83,9,0.18));
+}
+
+.popup-btn{
+  min-width: 92px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(250,204,21,0.3);
+  background: rgba(30,41,59,0.92);
+  color: #f1f5f9;
+}
+
+.popup-btn:hover{
+  border-color: rgba(250,204,21,0.55);
+  color: #fff7d6;
+}
+
+.popup-btn-primary{
+  background: linear-gradient(180deg, #facc15 0%, #d97706 100%);
+  border-color: rgba(250,204,21,0.8);
+  color: #1f2937;
+}
+
+.popup-btn-danger{
+  background: rgba(127,29,29,0.55);
+  border-color: rgba(248,113,113,0.45);
+  color: #fecaca;
+}
+
+.detail-meta-grid{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 10px;
+}
+
+.detail-meta-item{
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.9), rgba(15,23,42,0.88));
+  padding: 10px;
+}
+
+.detail-label{
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #fcd34d;
+}
+
+.detail-value{
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 4px;
+}
+
+@media (max-width: 1200px){
+  .track-summary-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detail-meta-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+
+@media (max-width: 960px){
+  .detail-meta-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+@media (max-width: 768px){
+  .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track-filter-grid{ grid-template-columns: 1fr; }
+  .detail-meta-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 560px){
+=======
   padding: 10px;
   min-height: 78px;
 }
@@ -769,6 +1089,7 @@ tr[style*="f59e0b"]:hover {
 @media (max-width: 768px){
   .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .track-filter-grid{ grid-template-columns: 1fr; }
+>>>>>>> main
   .detail-meta-grid{ grid-template-columns: 1fr; }
 }
 
@@ -1183,33 +1504,62 @@ function hideLoader(){ document.getElementById("loader").classList.add("hidden")
 function cancelUpload(){
   cancelUploadFlag = true;
 }
+function compactPopupMessage(msg){
+  const text = (msg || "").toString().trim();
+  const lower = text.toLowerCase();
+  if(lower.includes("fill all fields")) return "Please complete all fields";
+  if(lower.includes("invalid credentials")) return "Invalid login details";
+  if(lower.includes("submit failed")) return "Order submission failed";
+  if(lower.includes("submitted")) return "Order submitted successfully";
+  if(lower.includes("duplicate")) return "Duplicate item not allowed";
+  if(lower.includes("already ordered") && lower.includes("within the past")) return "This part was ordered recently. Continue?";
+  if(lower.includes("invalid part number")) return "Invalid part number";
+  if(lower.includes("qty cannot be less than 1")) return "Quantity must be at least 1";
+  if(lower.includes("at least one part number")) return "Add at least one part";
+  if(lower.includes("order updated")) return "Order updated";
+  if(lower.includes("order rejected")) return "Order rejected";
+  if(lower.includes("saved")) return "Saved successfully";
+  if(lower.includes("upload complete")) return "Upload completed";
+  if(lower.includes("upload cancelled")) return "Upload cancelled";
+  if(lower.includes("please enter comment")) return "Please enter a comment";
+  if(lower.includes("comment added")) return "Comment posted";
+  if(lower.includes("please select approver")) return "Please select approver";
+  if(lower.includes("approver updated")) return "Approver updated";
+  return text;
+}
 function showPopup(msg, type = "info", actionsHTML = null){
 
   const iconEl = document.getElementById("popupIcon");
+  const titleEl = document.getElementById("popupTitle");
+  const popupEl = document.getElementById("popup");
 
   // ICON STYLE
   if(type === "success"){
-    iconEl.innerHTML = "✅";
-    iconEl.style.background = "rgba(16,185,129,0.15)";
-    iconEl.style.color = "#059669";
+    iconEl.innerHTML = "✓";
+    iconEl.style.background = "rgba(16,185,129,0.18)";
+    iconEl.style.color = "#34d399";
+    titleEl.innerText = "Success";
   }
   else if(type === "error"){
-    iconEl.innerHTML = "❌";
-    iconEl.style.background = "rgba(239,68,68,0.15)";
-    iconEl.style.color = "#b91c1c";
+    iconEl.innerHTML = "✕";
+    iconEl.style.background = "rgba(239,68,68,0.18)";
+    iconEl.style.color = "#fca5a5";
+    titleEl.innerText = "Error";
   }
   else if(type === "warning"){
-    iconEl.innerHTML = "⚠️";
-    iconEl.style.background = "rgba(245,158,11,0.15)";
-    iconEl.style.color = "#b45309";
+    iconEl.innerHTML = "!";
+    iconEl.style.background = "rgba(245,158,11,0.22)";
+    iconEl.style.color = "#fcd34d";
+    titleEl.innerText = "Warning";
   }
   else{
-    iconEl.innerHTML = "ℹ️";
-    iconEl.style.background = "rgba(129,166,198,0.15)";
-    iconEl.style.color = "var(--pc-secondary)";
+    iconEl.innerHTML = "i";
+    iconEl.style.background = "rgba(250,204,21,0.2)";
+    iconEl.style.color = "#facc15";
+    titleEl.innerText = "Info";
   }
 
-  document.getElementById("popupMsg").innerText = msg;
+  document.getElementById("popupMsg").innerText = compactPopupMessage(msg);
 
   // ✅ CUSTOM BUTTONS SUPPORT
   if(actionsHTML){
@@ -1217,19 +1567,32 @@ function showPopup(msg, type = "info", actionsHTML = null){
   } else {
     document.getElementById("popupActions").innerHTML = `
       <button onclick="closePopup()"
-        class="px-5 py-2 rounded-lg font-semibold"
-        style="background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary)); color: white;">
+        class="popup-btn popup-btn-primary">
         OK
       </button>
     `;
   }
+  document.querySelectorAll("#popupActions button").forEach(btn => {
+    if(!btn.className.includes("popup-btn")){
+      btn.classList.add("popup-btn");
+    }
+  });
 
-  document.getElementById("popup").classList.remove("hidden");
+  popupEl.classList.remove("hidden");
+  setTimeout(() => {
+    popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
+  }, 0);
 }
   
 function closePopup(){
   document.getElementById("popup").classList.add("hidden");
 }
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && !document.getElementById("popup").classList.contains("hidden")){
+    closePopup();
+  }
+});
 
 function getUser(){
   try { return JSON.parse(localStorage.getItem("user")); }
@@ -2382,7 +2745,13 @@ const orders = applyTrackDateFilter(allOrders);
 const statusCounts = {};
 orders.forEach(o => {
   const s = getOrderStatusLabel(o);
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+  if(!statusCounts[s]) statusCounts[s] = { count: 0, value: 0 };
+  statusCounts[s].count += 1;
+  statusCounts[s].value += (o.items || []).reduce((sum, x) => sum + getEffectiveValue(x), 0);
+=======
   statusCounts[s] = (statusCounts[s] || 0) + 1;
+>>>>>>> main
 });
 
 const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
@@ -2409,12 +2778,22 @@ let html = `
       <div class="track-summary-grid">
         <div class="track-status-card">
           <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+          <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${orders.length} Orders</div>
+          <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(orders.reduce((sum, o) => sum + (o.items || []).reduce((s, x) => s + getEffectiveValue(x), 0), 0)).toLocaleString("en-IN")}</div>
+=======
           <div class="text-2xl font-black mt-1" style="color:#f8fafc;">${orders.length}</div>
+>>>>>>> main
         </div>
         ${Object.entries(statusCounts).map(([status, count]) => `
           <div class="track-status-card">
             <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+            <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${count.count} Orders</div>
+            <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(count.value).toLocaleString("en-IN")}</div>
+=======
             <div class="text-2xl font-black mt-1" style="color:#f8fafc;">${count}</div>
+>>>>>>> main
           </div>
         `).join("")}
       </div>
@@ -2423,11 +2802,19 @@ let html = `
         <div class="track-filter-grid">
           <div>
             <label for="trackFromDate">From Date</label>
+<<<<<<< codex/add-employeename-and-callid-to-order-summary-taaxm1
+            <input id="trackFromDate" type="date" class="pc-field h-[38px]" value="${TRACK_FROM_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('from', this.value)" />
+          </div>
+          <div>
+            <label for="trackToDate">To Date</label>
+            <input id="trackToDate" type="date" class="pc-field h-[38px]" value="${TRACK_TO_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('to', this.value)" />
+=======
             <input id="trackFromDate" type="date" class="pc-field" value="${TRACK_FROM_DATE}" onchange="updateTrackDateFilter('from', this.value)" />
           </div>
           <div>
             <label for="trackToDate">To Date</label>
             <input id="trackToDate" type="date" class="pc-field" value="${TRACK_TO_DATE}" onchange="updateTrackDateFilter('to', this.value)" />
+>>>>>>> main
           </div>
           <div class="flex items-end">
             <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; loadTrack('track', true)">Reset Filter</button>
