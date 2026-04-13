@@ -95,19 +95,100 @@
 
 
 :root {
-  --pc-primary: #2563eb;
-  --pc-secondary: #0ea5e9;
-  --pc-light: #eaf2ff;
-  --pc-warm: #dbe7f7;
+  --pc-primary: #60a5fa;
+  --pc-secondary: #22d3ee;
+  --pc-light: #0f172a;
+  --pc-warm: #1e293b;
 
-  --pc-bg: #eef3fb;
-  --pc-surface: #ffffff;
-  --pc-border: #c9d7eb;
-  --pc-text: #0f172a;
-  --pc-text-muted: #475569;
-  --pc-success: #16a34a;
-  --pc-warning: #d97706;
-  --pc-danger: #dc2626;
+  --pc-bg: #0b1220;
+  --pc-surface: #111827;
+  --pc-border: #334155;
+  --pc-text: #e5e7eb;
+  --pc-text-muted: #94a3b8;
+  --pc-success: #22c55e;
+  --pc-warning: #f59e0b;
+  --pc-danger: #ef4444;
+  --pc-font-ui: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --pc-font-strong: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+body, button, input, select, textarea, table, th, td {
+  font-family: var(--pc-font-ui);
+}
+
+/* ===== Global high-contrast refactor layer ===== */
+.pc-section{
+  color: var(--pc-text) !important;
+  border-color: #334155 !important;
+  box-shadow: 0 16px 34px rgba(2,6,23,0.45) !important;
+}
+
+.pc-field{
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 0 rgba(255,255,255,0.02) !important;
+}
+
+.pc-field::placeholder{
+  color: #94a3b8 !important;
+}
+
+.pc-field:focus{
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.18) !important;
+}
+
+table{
+  border-color: #334155 !important;
+}
+
+thead th{
+  background: linear-gradient(180deg, #1f2937, #0f172a) !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+tbody td{
+  color: #e2e8f0 !important;
+  border-color: rgba(148,163,184,0.22) !important;
+}
+
+.track-table tbody tr{
+  background: #0f172a !important;
+}
+
+.track-table tbody tr:nth-child(even){
+  background: #111827 !important;
+}
+
+.track-table tbody tr:hover{
+  background: #1e293b !important;
+}
+
+.order-action-btn{
+  border-color: #475569 !important;
+  color: #dbeafe !important;
+  background: linear-gradient(180deg, rgba(30,41,59,0.55), rgba(15,23,42,0.65)) !important;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.35) !important;
+}
+
+.order-action-btn:hover{
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, rgba(37,99,235,0.28), rgba(30,64,175,0.30)) !important;
+  box-shadow: 0 10px 20px rgba(30,64,175,0.32) !important;
+}
+
+#popup > div{
+  background: linear-gradient(180deg, #111827, #0f172a) !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+#popupMsg{
+  color: #e2e8f0 !important;
 }
 
 
@@ -262,7 +343,7 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-field {
-  background: #FFFFFF;
+  background: #0f172a;
   border: 1px solid var(--pc-border);
   color: var(--pc-text);
   border-radius: 12px;
@@ -273,7 +354,7 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-field::placeholder {
-  color: #6B7280;
+  color: #94a3b8;
 }
 
 .pc-field:focus {
@@ -283,7 +364,7 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-section {
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,248,255,0.98));
+  background: linear-gradient(180deg, rgba(17,24,39,0.96), rgba(15,23,42,0.96));
   border: 1px solid var(--pc-border);
   border-radius: 16px;
   padding: 16px;
@@ -292,8 +373,8 @@ input:focus, select:focus, button:focus {
 }
 
 .pc-field option {
-  color: #1F2937;
-  background: #FFFFFF;
+  color: #e5e7eb;
+  background: #0f172a;
 }
     
     
@@ -304,15 +385,15 @@ input:focus, select:focus, button:focus {
 }
 
 .track-table tbody tr {
-  background: #fff;
+  background: #0f172a;
 }
 
 .track-table tbody tr:nth-child(even) {
-  background: #f8fafc;
+  background: #111827;
 }
 
 .track-table tbody tr:hover {
-  background: #eef2ff !important;
+  background: #1e293b !important;
 }
 
 #popup > div {
@@ -339,9 +420,9 @@ table {
 thead th {
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #0f172a;
-  background: linear-gradient(180deg, #eff5ff, #e6efff) !important;
-  border-color: #d8e3f3 !important;
+  color: #e2e8f0;
+  background: linear-gradient(180deg, #1f2937, #111827) !important;
+  border-color: #334155 !important;
 }
 
 tbody tr {
@@ -502,6 +583,157 @@ tr[style*="f59e0b"]:hover {
 .search-bar::placeholder {
   color: #64748b;
   font-weight: 500;
+}
+
+.offer-strip {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid rgba(251,191,36,0.55);
+  background: linear-gradient(90deg, #111827 0%, #1f2937 35%, #0f172a 100%);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.offer-strip::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.22) 32%, transparent 54%);
+  animation: offerShine 3.2s linear infinite;
+  pointer-events:none;
+}
+
+.offer-marquee{
+  display:flex;
+  width:max-content;
+  min-width:100%;
+  animation: offerMarquee 18s linear infinite;
+}
+
+.offer-pill{
+  flex:0 0 auto;
+  margin: 0 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color:#111827;
+  background: linear-gradient(180deg, #fde68a, #f59e0b);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  text-transform: uppercase;
+}
+
+@keyframes offerMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes offerShine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+/* ===== Premium Login Experience ===== */
+.login-shell{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(56,189,248,0.18), transparent 60%),
+    radial-gradient(900px 420px at 110% 10%, rgba(96,165,250,0.12), transparent 58%),
+    linear-gradient(180deg, #060b16 0%, #0b1220 46%, #0d1527 100%);
+}
+
+.login-grid{
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.24);
+  box-shadow: 0 30px 70px rgba(2,6,23,0.55);
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: blur(10px);
+}
+
+.login-aside{
+  padding: 28px 30px;
+  background: linear-gradient(160deg, rgba(30,41,59,0.86), rgba(15,23,42,0.9));
+  border-right: 1px solid rgba(148,163,184,0.18);
+}
+
+.login-card{
+  padding: 28px 26px;
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.96));
+}
+
+.login-title{
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #f8fafc;
+}
+
+.login-subtitle{
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.login-label{
+  display:block;
+  margin: 12px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.login-input{
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.login-input:focus{
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.2);
+  transform: translateY(-1px);
+}
+
+.login-cta{
+  width: 100%;
+  margin-top: 16px;
+  min-height: 46px;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #062236;
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 12px 20px rgba(14,165,233,0.28);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+.login-cta:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(14,165,233,0.38);
+  filter: brightness(1.03);
+}
+
+@media (max-width: 860px){
+  .login-grid{ grid-template-columns: 1fr; }
+  .login-aside{ border-right:0; border-bottom:1px solid rgba(148,163,184,0.18); }
 }
 
 /* filter arrow indicator on all table headers */
@@ -702,37 +934,32 @@ window.onload = () => {
 async function loadLogin(){
 
 document.getElementById("app").innerHTML = `
-<div class="min-h-screen flex items-center justify-center px-4">
-  <div class="w-full max-w-sm p-7 rounded-2xl space-y-5 shadow-2xl"
-       style="background: linear-gradient(180deg, rgba(170,205,220,0.10), rgba(129,166,198,0.10)); border: 1px solid var(--pc-border); backdrop-filter: blur(8px);">
+<div class="login-shell">
+  <main class="login-grid" aria-label="Parts Connect Portal Login">
+    <section class="login-aside">
+      <img src="HDU4w-removebg-preview.png" alt="Parts Connect Portal" class="h-16 w-auto object-contain mb-4" />
+      <h1 class="login-title">Parts Connect Portal</h1>
+      <p class="login-subtitle">Reliable, secure and role-based branch access for order operations.</p>
+      <div class="mt-5 rounded-xl px-4 py-3" style="border:1px solid rgba(148,163,184,0.24); background:rgba(15,23,42,0.45);">
+        <p class="text-xs leading-relaxed" style="color:#cbd5e1;">
+          Sign in to continue with branch-specific access, approvals, tracking and secure workflow actions.
+        </p>
+      </div>
+    </section>
 
-<div class="flex justify-center">
-  <img 
-    src="HDU4w-removebg-preview.png"
-    class="h-16 w-auto object-contain"
-  />
-</div>
+    <section class="login-card">
+      <h2 class="login-title">Secure Login</h2>
+      <p class="login-subtitle">Use your branch and password to continue.</p>
 
-    <p class="text-center text-sm" style="color: var(--pc-text-muted); margin-top: -8px;">
-      Secure branch access
-    </p>
+      <label class="login-label" for="branch">Branch</label>
+      <select id="branch" class="login-input"></select>
 
-    <select id="branch"
-      class="w-full p-2.5 rounded-lg outline-none transition"
-      style="background: #FFFFFF; border: 1px solid #BFAF9D; color: #1F2937;">
-    </select>
+      <label class="login-label" for="password">Password</label>
+      <input id="password" type="password" class="login-input" placeholder="Enter your password" />
 
-    <input id="password" type="password" placeholder="Password"
-      class="w-full p-2.5 rounded-lg outline-none transition"
-      style="background: #FFFFFF; border: 1px solid #BFAF9D; color: #1F2937;" />
-
-    <button onclick="login()"
-      class="w-full py-2.5 rounded-lg font-semibold transition duration-200"
-      style="background: var(--pc-primary); color: #0f1720;">
-      Login
-    </button>
-
-  </div>
+      <button onclick="login()" class="login-cta">Login</button>
+    </section>
+  </main>
 </div>
 `;
 
@@ -790,7 +1017,7 @@ function renderHeader(){
   const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 
   return `
-  <div class="space-y-4">
+  <div class="space-y-0">
 
   <!-- HEADER -->
 <div class="w-full rounded-2xl px-6 py-4 shadow-xl flex justify-between items-center"
@@ -885,14 +1112,14 @@ if(isAdmin){
 document.getElementById("app").innerHTML = `
 <div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
 
-  <div class="space-y-4">
+  <div class="space-y-0">
 
 <!-- HEADER WITH LOGOUT -->
 <div class="w-full rounded-2xl px-6 py-3 flex justify-between items-center backdrop-blur-md"
      style="
-  background: rgba(255,255,255,0.78);
+  background: rgba(15,23,42,0.88);
   border: 1px solid var(--pc-border);
-  box-shadow: 0 8px 18px rgba(15,23,42,0.10);
+  box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
 
 <div class="relative flex items-center w-full">
@@ -1022,6 +1249,19 @@ document.getElementById("app").innerHTML = `
 
 
 
+  </div>
+
+  <div class="offer-strip px-2 py-1 w-full">
+    <div class="offer-marquee items-center gap-3">
+      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
+        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+      </span>
+      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
+        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+      </span>
+    </div>
   </div>
 
   <div id="main" class="w-full"></div>
