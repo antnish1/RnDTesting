@@ -565,8 +565,11 @@ function closePopup(){
 }
 
 function getUser(){
-  try { return JSON.parse(localStorage.getItem("user")); }
-  catch (err) { return null; }
+  try {
+    return JSON.parse(localStorage.getItem("user"));
+  } catch (err) {
+    return null;
+  }
 }
 
 function renderIcons(){
@@ -2421,7 +2424,7 @@ function parseOrderComments(raw){
   try{
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     return Array.isArray(parsed) ? parsed : [];
-  }catch(err){
+  } catch (err) {
     return [];
   }
 }
@@ -2465,7 +2468,7 @@ function getCommentAttachmentHref(url){
     const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
     commentAttachmentHrefCache[url] = blobUrl;
     return blobUrl;
-  }catch(err){
+  } catch (err) {
     return url;
   }
 }
