@@ -600,6 +600,44 @@ tr[style*="f59e0b"]:hover {
   padding: 10px 12px;
 }
 
+.track-summary-grid{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.track-status-card{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
+  padding: 10px;
+  min-height: 78px;
+}
+
+.track-filter-shell{
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(15,23,42,0.62);
+  padding: 10px;
+}
+
+.track-filter-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.track-filter-grid label{
+  display:block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #fcd34d;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
 .track-table-shell{
   border-radius: 18px;
   border: 1px solid rgba(250,204,21,0.22);
@@ -665,6 +703,73 @@ tr[style*="f59e0b"]:hover {
 .track-page-btn:disabled{
   opacity: .42;
   cursor:not-allowed;
+}
+
+.detail-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(250,204,21,0.24);
+  background: linear-gradient(140deg, rgba(17,24,39,0.95), rgba(15,23,42,0.92));
+}
+
+.detail-action-btn{
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: rgba(30,41,59,0.9);
+  color: #e2e8f0;
+}
+
+.detail-action-btn:hover{
+  border-color: rgba(250,204,21,0.52);
+  color: #fef3c7;
+  background: linear-gradient(180deg, rgba(250,204,21,0.2), rgba(180,83,9,0.18));
+}
+
+.detail-meta-grid{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+}
+
+.detail-meta-item{
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(160deg, rgba(17,24,39,0.9), rgba(15,23,42,0.88));
+  padding: 10px;
+}
+
+.detail-label{
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #fcd34d;
+}
+
+.detail-value{
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 4px;
+}
+
+@media (max-width: 1200px){
+  .track-summary-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detail-meta-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 768px){
+  .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track-filter-grid{ grid-template-columns: 1fr; }
+  .detail-meta-grid{ grid-template-columns: 1fr; }
 }
 
 /* 🔥 PLACEHOLDER */
@@ -1039,6 +1144,8 @@ table thead th.sort-desc::after {
 let TABLE_SORT_STATE = null;
     let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
+let TRACK_FROM_DATE = "";
+let TRACK_TO_DATE = "";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -2210,6 +2317,26 @@ loadCreate();
 
 
 // ---------- TRACK ----------
+function applyTrackDateFilter(orders){
+  if(!TRACK_FROM_DATE && !TRACK_TO_DATE) return orders;
+
+  const fromDate = TRACK_FROM_DATE ? new Date(`${TRACK_FROM_DATE}T00:00:00`) : null;
+  const toDate = TRACK_TO_DATE ? new Date(`${TRACK_TO_DATE}T23:59:59`) : null;
+
+  return orders.filter(o => {
+    const created = new Date(o.created_at);
+    if(fromDate && created < fromDate) return false;
+    if(toDate && created > toDate) return false;
+    return true;
+  });
+}
+
+function updateTrackDateFilter(kind, value){
+  if(kind === "from") TRACK_FROM_DATE = value || "";
+  if(kind === "to") TRACK_TO_DATE = value || "";
+  loadTrack("track", true);
+}
+
 async function loadTrack(tab, skipReset = false){
 
 if(!skipReset){
@@ -2247,14 +2374,23 @@ grouped[r.OrderNo] = { ...r, items:[] };
 grouped[r.OrderNo].items.push(r);
 });
 
-const orders = applyOrderSort(
+const allOrders = applyOrderSort(
   Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 ).filter(shouldShowOrder);
+const orders = applyTrackDateFilter(allOrders);
 
+const statusCounts = {};
+orders.forEach(o => {
+  const s = getOrderStatusLabel(o);
+  statusCounts[s] = (statusCounts[s] || 0) + 1;
+});
 
-const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
-const paginatedOrders = orders.slice(start, start + PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+if(CURRENT_PAGE > totalPages){
+  CURRENT_PAGE = totalPages;
+}
+const paginatedStart = (CURRENT_PAGE - 1) * PAGE_SIZE;
+const paginatedOrders = orders.slice(paginatedStart, paginatedStart + PAGE_SIZE);
 
 
 
@@ -2263,20 +2399,38 @@ let html = `
 <div class="track-shell">
   <div id="resultsContainer" class="space-y-4">
     <section class="track-hero">
-      <div class="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <p class="text-[11px] uppercase tracking-[0.12em] font-bold" style="color:#facc15;">Orders Tracking</p>
-          <h2 class="text-xl md:text-2xl font-black mt-1" style="color:#f8fafc;">Track branch order lifecycle in one view</h2>
-          <p class="text-xs mt-1" style="color:var(--pc-text-muted);">Live visibility for status, quantity, value and comments with enterprise-grade clarity.</p>
+      <div class="flex items-center justify-between gap-4 flex-wrap mb-2">
+        <p class="text-[11px] uppercase tracking-[0.12em] font-bold" style="color:#facc15;">Orders Tracking</p>
+        <div class="text-xs px-3 py-1 rounded-full" style="background:rgba(250,204,21,0.12); color:#fef3c7; border:1px solid rgba(250,204,21,0.35);">
+          Showing ${orders.length} orders
         </div>
-        <div class="grid grid-cols-2 gap-2 min-w-[220px]">
-          <div class="track-stat">
-            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
-            <div class="text-lg font-extrabold" style="color:#f8fafc;">${orders.length}</div>
+      </div>
+
+      <div class="track-summary-grid">
+        <div class="track-status-card">
+          <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
+          <div class="text-2xl font-black mt-1" style="color:#f8fafc;">${orders.length}</div>
+        </div>
+        ${Object.entries(statusCounts).map(([status, count]) => `
+          <div class="track-status-card">
+            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
+            <div class="text-2xl font-black mt-1" style="color:#f8fafc;">${count}</div>
           </div>
-          <div class="track-stat">
-            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">This Page</div>
-            <div class="text-lg font-extrabold" style="color:#f8fafc;">${paginatedOrders.length}</div>
+        `).join("")}
+      </div>
+
+      <div class="track-filter-shell">
+        <div class="track-filter-grid">
+          <div>
+            <label for="trackFromDate">From Date</label>
+            <input id="trackFromDate" type="date" class="pc-field" value="${TRACK_FROM_DATE}" onchange="updateTrackDateFilter('from', this.value)" />
+          </div>
+          <div>
+            <label for="trackToDate">To Date</label>
+            <input id="trackToDate" type="date" class="pc-field" value="${TRACK_TO_DATE}" onchange="updateTrackDateFilter('to', this.value)" />
+          </div>
+          <div class="flex items-end">
+            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; loadTrack('track', true)">Reset Filter</button>
           </div>
         </div>
       </div>
@@ -2286,7 +2440,6 @@ let html = `
       <div class="track-table-header">
         <div>
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
-          <div class="text-sm font-semibold" style="color:#f8fafc;">Latest orders, statuses and financial totals</div>
         </div>
         <div class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(250,204,21,0.12); color:#fef3c7; border:1px solid rgba(250,204,21,0.35);">
           Page ${CURRENT_PAGE} of ${totalPages}
@@ -3144,7 +3297,7 @@ const visibleOrderComments = orderComments.filter(c => {
   return true;
 });
 const userCommentsCount = getOrderCommentCount({ items: data, OrderComments: order.OrderComments });
-const commentPalette = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9", "#fee2e2"];
+const commentPalette = ["rgba(250,204,21,0.12)", "rgba(30,41,59,0.95)", "rgba(51,65,85,0.85)", "rgba(71,85,105,0.8)"];
 const commentByColor = {};
 let commentColorIndex = 0;
 const commentsHTML = visibleOrderComments.length
@@ -3154,21 +3307,21 @@ const commentsHTML = visibleOrderComments.length
           <div class="system-action-row hidden py-0.5 text-[12px] border-b border-slate-200/60">
             <div class="flex items-center gap-2 flex-wrap uppercase tracking-[0.02em]">
               <span class="font-semibold" style="color:${getActionEventColor(c.action)};">${escapeHtml(getActionEventTitle(c.action, c.text))}</span>
-              <span class="text-[11px] font-medium" style="color:#64748b;">BY</span>
-              <span class="font-semibold" style="color:#1e3a8a;">${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
-              <span class="ml-auto" style="color:#334155;">${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
+              <span class="text-[11px] font-medium" style="color:#94a3b8;">BY</span>
+              <span class="font-semibold" style="color:#fef3c7;">${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
+              <span class="ml-auto" style="color:#94a3b8;">${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
             </div>
           </div>
         `
         : `
-          <div class="px-3 py-2 rounded-lg text-xs" style="background:${commentByColor[c.by || ""] || (commentByColor[c.by || ""] = commentPalette[(commentColorIndex++) % commentPalette.length])}; border:1px solid var(--pc-border);">
+          <div class="px-3 py-2 rounded-lg text-xs" style="background:${commentByColor[c.by || ""] || (commentByColor[c.by || ""] = commentPalette[(commentColorIndex++) % commentPalette.length])}; border:1px solid rgba(250,204,21,0.2);">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-semibold">${escapeHtml(c.by || "-")}</span>
-              <span style="color: var(--pc-text-muted);">=&gt;</span>
-              <span>"${escapeHtml(c.text || "")}"</span>
+              <span class="font-semibold" style="color:#fef3c7;">${escapeHtml(c.by || "-")}</span>
+              <span style="color: var(--pc-text-muted);">•</span>
+              <span style="color:#e2e8f0;">"${escapeHtml(c.text || "")}"</span>
               <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
               ${c.attachmentName
-                ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${escapeHtml(c.attachmentName)}</a>`
+                ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#facc15;">📎 ${escapeHtml(c.attachmentName)}</a>`
                 : ""}
             </div>
           </div>
@@ -3211,38 +3364,38 @@ if(isSuper){
     <div class="flex gap-2 items-center flex-wrap justify-end">
       ${canSuperActions ? `
         <button onclick="openChangeApproverPopup('${orderNo}', '${order.ApprovedBy || ""}')"
-          class="order-action-btn oa-primary px-3 py-2 rounded-lg font-semibold text-sm">
+          class="detail-action-btn">
           Change Approver
         </button>
 
         <button onclick="approveOrder('${orderNo}')"
-          class="order-action-btn oa-success px-3 py-2 rounded-lg font-semibold text-sm">
+          class="detail-action-btn" style="border-color:rgba(16,185,129,0.35); color:#d1fae5;">
           Approve
         </button>
 
         <button onclick="updateApproval('${orderNo}','Rejected')"
-          class="order-action-btn oa-danger px-3 py-2 rounded-lg font-semibold text-sm">
+          class="detail-action-btn" style="border-color:rgba(239,68,68,0.4); color:#fecaca;">
           Reject
         </button>
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Download
       </button>
 
       <button onclick="printOrderDetails('${orderNo}')"
-        class="order-action-btn oa-teal px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Print
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
-        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Comment
       </button>
 
       <button onclick="goBack()"
-        class="order-action-btn oa-neutral px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Back
       </button>
 
@@ -3262,29 +3415,29 @@ else{
           />
 
           <button onclick="processOrder('${orderNo}')"
-            class="order-action-btn oa-primary px-3 py-2 rounded-lg font-semibold text-sm">
+            class="detail-action-btn">
             Process
           </button>
         </div>
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Download
       </button>
 
       <button onclick="printOrderDetails('${orderNo}')"
-        class="order-action-btn oa-teal px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Print
       </button>
 
       <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
-        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Comment
       </button>
 
       <button onclick="goBack()"
-        class="order-action-btn oa-neutral px-3 py-2 rounded-lg font-semibold text-sm">
+        class="detail-action-btn">
         Back
       </button>
 
@@ -3309,8 +3462,7 @@ document.getElementById("main").innerHTML = `
 <!-- ================= PROCESS BAR (HQ ONLY) ================= -->
 
 
-<div class="px-1.5 py-1 rounded-md"
-  style="background:linear-gradient(90deg, rgba(148,163,184,0.14), rgba(148,163,184,0.05)); border:1px solid rgba(148,163,184,0.22);">
+<div class="detail-toolbar">
 
   <div class="flex justify-start items-center flex-wrap gap-2">
 
@@ -3330,65 +3482,64 @@ ${actionButtons}
         <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
           ORDER SUMMARY
         </span>
-        <span class="text-[18px] font-black tracking-wide" style="color:#1d4ed8; letter-spacing:0.05em; text-shadow:0 1px 0 rgba(255,255,255,0.55);">${orderNo}</span>
+        <span class="text-[18px] font-black tracking-wide" style="color:#facc15; letter-spacing:0.05em;">${orderNo}</span>
         <span class="text-[11px] font-medium" style="color: var(--pc-text-muted);">${formatDateTime(order.created_at)}</span>
       </div>
     </div>
 
-    <div class="grid grid-cols-5 gap-2 text-xs mt-2">
+    <div class="detail-meta-grid text-xs mt-2">
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Order Type :</span>
-        <span class="font-semibold whitespace-nowrap">${order.OrderType || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Order Type</span>
+        <div class="detail-value">${order.OrderType || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Order For :</span>
-        <span class="font-semibold whitespace-nowrap">${order.OrderFor || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Order For</span>
+        <div class="detail-value">${order.OrderFor || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Branch :</span>
-        <span class="font-semibold whitespace-nowrap">${order.Branch || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Branch</span>
+        <div class="detail-value">${order.Branch || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Employee Name :</span>
-        <span class="font-semibold whitespace-nowrap">${order.EmployeeName || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Employee Name</span>
+        <div class="detail-value">${order.EmployeeName || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Call ID :</span>
-        <span class="font-semibold whitespace-nowrap">${order.CallID || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Call ID</span>
+        <div class="detail-value">${order.CallID || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Status :</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Status</span>
         <span class="px-2 py-1 rounded text-xs font-semibold"
                 style="${getStatusChipStyle(orderStatus)}">
                 ${orderStatus}
               </span>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Machine No :</span>
-        <span class="font-semibold whitespace-nowrap">${order.MachineNo || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Machine No</span>
+        <div class="detail-value">${order.MachineNo || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Customer :</span>
-        <span class="font-semibold whitespace-nowrap">${order.CustomerName || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Customer</span>
+        <div class="detail-value">${order.CustomerName || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Machine Type :</span>
-        <span class="font-semibold whitespace-nowrap">${order.WarrantyStatus || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Machine Type</span>
+        <div class="detail-value">${order.WarrantyStatus || "-"}</div>
       </div>
 
-      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5"
-        style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
-        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Approved By :</span>
-        <span class="font-semibold whitespace-nowrap">${order.ApprovedBy || "-"}</span>
+      <div class="detail-meta-item">
+        <span class="detail-label">Approved By</span>
+        <div class="detail-value">${order.ApprovedBy || "-"}</div>
       </div>
 
     </div>
@@ -3401,7 +3552,7 @@ ${actionButtons}
       <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">COMMENTS (${userCommentsCount})</span>
       <button id="toggleLogsBtn" onclick="toggleActionLogs()"
         class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
-        style="background:#1e3a8a;color:#ffffff;border:1px solid #93c5fd; box-shadow:0 4px 10px rgba(30,58,138,0.25);">
+        style="background:rgba(250,204,21,0.2);color:#fef3c7;border:1px solid rgba(250,204,21,0.4);">
         SHOW LOGS
       </button>
     </div>
@@ -3412,7 +3563,7 @@ ${actionButtons}
           <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
           <button type="button" onclick="document.getElementById('commentAttachment').click()"
             class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-sm"
-            style="background:#f1f5f9; border:1px solid var(--pc-border);">
+            style="background:rgba(30,41,59,0.95); border:1px solid rgba(250,204,21,0.35); color:#fef3c7;">
             📎
           </button>
           <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
@@ -3421,7 +3572,7 @@ ${actionButtons}
         <div class="mt-2">
           <button id="postCommentBtn" onclick="addOrderComment('${orderNo}')"
             class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm hidden"
-            style="background:#2563eb;color:white;">
+            style="background:linear-gradient(180deg, #facc15 0%, #d97706 100%);color:#1f2937;">
             Post Comment
           </button>
         </div>
@@ -3442,10 +3593,9 @@ ${actionButtons}
         <button onclick="acceptEditedQty('${orderNo}')"
           class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
           style="
-            background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#1e3a8a'};
-            color:#ffffff;
-            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? '#86efac' : '#93c5fd'};
-            box-shadow:0 4px 10px ${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(30,58,138,0.25)'};
+            background:${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(250,204,21,0.2)'};
+            color:${window.superAcceptedEdits?.[orderNo] ? '#d1fae5' : '#fef3c7'};
+            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? 'rgba(34,197,94,0.45)' : 'rgba(250,204,21,0.4)'};
           ">
           ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
         </button>
@@ -3457,7 +3607,7 @@ ${actionButtons}
       <table class="w-full text-sm border rounded-lg overflow-hidden">
 
         <thead class="text-[11px] uppercase tracking-[0.08em] border-b"
-              style="background:linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); color:#0f172a; border-bottom:1px solid #cbd5e1;">
+              style="background:linear-gradient(180deg, #3f2a03 0%, #1f2937 100%); color:#fef3c7; border-bottom:1px solid rgba(250,204,21,0.32);">
 
           <tr>
             <th class="py-2 text-left">Part</th>
@@ -3478,7 +3628,7 @@ ${actionButtons}
               <div class="mt-1">
                 <select onchange="changePrevQtyDays('${orderNo}', this.value)"
                   class="text-[10px] px-1 py-[2px] rounded border"
-                  style="border-color: var(--pc-border); background:#fff;">
+                  style="border-color: rgba(250,204,21,0.35); background:#0f172a; color:#fef3c7;">
                   <option value="7" ${prevDays === 7 ? "selected" : ""}>7d</option>
                   <option value="15" ${prevDays === 15 ? "selected" : ""}>15d</option>
                   <option value="30" ${prevDays === 30 ? "selected" : ""}>30d</option>
@@ -3500,9 +3650,9 @@ ${actionButtons}
       ${isSuper ? `` : ""}
 
       <div class="text-right mt-4 font-bold"
-           style="color: #0f172a;">
+           style="color: #fef3c7;">
         <span class="inline-block px-4 py-2 rounded-lg"
-          style="background:linear-gradient(135deg, rgba(129,166,198,0.32), rgba(95,136,168,0.24)); border:1px solid var(--pc-border); box-shadow:0 6px 16px rgba(15,23,42,0.15);">
+          style="background:linear-gradient(135deg, rgba(250,204,21,0.18), rgba(217,119,6,0.16)); border:1px solid rgba(250,204,21,0.3); box-shadow:0 6px 16px rgba(15,23,42,0.25);">
           Total Value: ₹ ${Math.round(Number(total || 0)).toLocaleString("en-IN")}
         </span>
       </div>
