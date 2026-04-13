@@ -4331,6 +4331,207 @@ async function applyInventoryThreeTableFlow(stagingRows, reportDate){
     (currentRows || []).map(r => [`${r.branch_code || ""}__${r.item_code || ""}`, Number(r.qty || 0)])
   );
 
+  const changesPayload = [];
+  let upsertedCount = 0;
+  uniqueRows.forEach(r => {
+    const key = `${r.branch_code || ""}__${r.item_code || ""}`;
+    const prevQty = Number(currentMap.get(key) || 0);
+    const newQty = Number(r.qty || 0);
+    if(prevQty !== newQty){
+      changesPayload.push({
+        report_date: reportDate,
+        branch_code: r.branch_code,
+        item_code: r.item_code,
+        prev_qty: prevQty,
+        new_qty: newQty,
+        delta_qty: newQty - prevQty
+      });
+    }
+  });
+
+  for(const r of uniqueRows){
+    const key = `${r.branch_code || ""}__${r.item_code || ""}`;
+    const payload = {
+      report_date: reportDate,
+      branch_code: r.branch_code,
+      item_code: r.item_code,
+      item_name: r.item_name,
+      item_group: r.item_group,
+      uom: r.uom,
+      dnp: r.dnp,
+      qty: Number(r.qty || 0),
+      inv_value: Number(r.inv_value || 0)
+    };
+
+    if(currentMap.has(key)){
+      const { error: updateError } = await db
+        .from("inventory_current")
+        .update(payload)
+        .eq("branch_code", r.branch_code)
+        .eq("item_code", r.item_code);
+      if(updateError) throw updateError;
+    } else {
+      const { error: insertError } = await db
+        .from("inventory_current")
+        .insert(payload);
+      if(insertError) throw insertError;
+    }
+    upsertedCount++;
+  }
+
+  if(changesPayload.length){
+    const { error: changesError } = await db
+      .from("inventory_changes")
+      .insert(changesPayload);
+    if(changesError) throw changesError;
+  }
+
+  return { upserted: upsertedCount, changed: changesPayload.length };
+}
+
+async function processInventoryExcelData(rows, reportDate){
+  if(!Array.isArray(rows) || !rows.length){
+    showPopup("No inventory rows found in file.");
+    return;
+  }
+
+  showLoader();
+  let stagingInserted = false;
+  try{
+    const payload = [];
+    let skipped = 0;
+
+    for(const row of rows){
+      const branch = String(getInventoryValue(row, ["Branch"])).trim();
+      const brCode = String(getInventoryValue(row, ["Br. Code", "Br Code"])).trim();
+      const itemCode = String(getInventoryValue(row, ["Itemcode", "Item Code"])).trim();
+      const itemName = String(getInventoryValue(row, ["ItemName", "Item Name"])).trim();
+      const itemGroup = String(getInventoryValue(row, ["Item Group"])).trim();
+      const bhlhln = String(getInventoryValue(row, ["BHLHLN"])).trim();
+      const rec = String(getInventoryValue(row, ["REC"])).trim();
+      const nsp = String(getInventoryValue(row, ["NSP"])).trim();
+      const uom = String(getInventoryValue(row, ["UOM"])).trim();
+      const dnp = parseInventoryNumber(getInventoryValue(row, ["DNP"]));
+      const openingBalance = parseInventoryNumber(getInventoryValue(row, ["Opening Balance"]));
+      const openingInvVal = parseInventoryNumber(getInventoryValue(row, ["Opening Inv Val"]));
+      const received = parseInventoryNumber(getInventoryValue(row, ["Received"]));
+      const issued = parseInventoryNumber(getInventoryValue(row, ["Issued"]));
+      const closingBalance = parseInventoryNumber(getInventoryValue(row, ["Closing Balance"]));
+      const closingInvVal = parseInventoryNumber(getInventoryValue(row, ["Closing Inv Val"]));
+
+      // Skip grand-total/footer rows and empty rows
+      if(/^grand total$/i.test(branch) || /^grand total$/i.test(itemCode) || (!itemCode && !itemName)){
+        skipped++;
+        continue;
+      }
+
+      payload.push({
+        report_date: reportDate,
+        item_code: itemCode.toUpperCase(),
+        item_name: itemName || null,
+        item_group: itemGroup || null,
+        branch_code: (bhlhln || brCode || branch || "").toUpperCase() || null,
+        rec_flag: rec || null,
+        nsp_flag: nsp || null,
+        uom: uom || null,
+        dnp: dnp,
+        opening_balance: openingBalance,
+        opening_inv_val: openingInvVal,
+        received_qty: received,
+        issued_qty: issued,
+        qty: closingBalance,
+        inv_value: closingInvVal
+      });
+    }
+
+    if(!payload.length){
+      showPopup("No valid inventory data found after filtering totals/blank rows.");
+      return;
+    }
+
+    const { error: deleteBeforeError } = await db
+      .from("inventory_staging")
+      .delete()
+      .eq("report_date", reportDate);
+    if(deleteBeforeError){
+      throw deleteBeforeError;
+    }
+
+    const { error: insertError } = await db
+      .from("inventory_staging")
+      .insert(payload);
+    if(insertError){
+      throw insertError;
+    }
+    stagingInserted = true;
+
+    const stats = await applyInventoryThreeTableFlow(payload, reportDate);
+
+    showPopup(
+      `Inventory Upload Complete ✅\nUploaded: ${payload.length}\nChanged: ${stats.changed}\nCurrent Updated: ${stats.upserted}\nSkipped: ${skipped}`
+    );
+  } catch(err){
+    console.error("Inventory upload failed:", err);
+    const errorText = [err?.message, err?.details, err?.hint].filter(Boolean).join("\n");
+    showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}`);
+  } finally {
+    if(stagingInserted){
+      const { error: cleanupError } = await db
+        .from("inventory_staging")
+        .delete()
+        .eq("report_date", reportDate);
+      if(cleanupError){
+        console.error("Inventory staging cleanup failed:", cleanupError);
+      }
+    }
+    hideLoader();
+  }
+}
+
+function normalizeInventoryHeaderKey(key){
+  return (key || "").toString().replace(/\n/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function getInventoryValue(row, aliases){
+  const entries = Object.entries(row || {});
+  const keyMap = new Map(entries.map(([k]) => [normalizeInventoryHeaderKey(k), k]));
+  for(const alias of aliases){
+    const hit = keyMap.get(normalizeInventoryHeaderKey(alias));
+    if(hit !== undefined) return row[hit];
+  }
+  return "";
+}
+
+function parseInventoryNumber(v){
+  if(v === null || v === undefined || v === "") return 0;
+  const n = Number(String(v).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function applyInventoryThreeTableFlow(stagingRows, reportDate){
+  const uniq = new Map();
+  stagingRows.forEach(r => {
+    const key = `${r.branch_code || ""}__${r.item_code || ""}`;
+    if(!r.branch_code || !r.item_code) return;
+    uniq.set(key, r);
+  });
+  const uniqueRows = [...uniq.values()];
+  if(!uniqueRows.length) return { upserted: 0, changed: 0 };
+
+  const branchCodes = [...new Set(uniqueRows.map(r => r.branch_code))];
+  const itemCodes = [...new Set(uniqueRows.map(r => r.item_code))];
+
+  const { data: currentRows, error: currentError } = await db
+    .from("inventory_current")
+    .select("branch_code,item_code,qty")
+    .in("branch_code", branchCodes)
+    .in("item_code", itemCodes);
+  if(currentError) throw currentError;
+
+  const currentMap = new Map(
+    (currentRows || []).map(r => [`${r.branch_code || ""}__${r.item_code || ""}`, Number(r.qty || 0)])
+  );
+
   const currentPayload = uniqueRows.map(r => ({
     report_date: reportDate,
     branch_code: r.branch_code,
