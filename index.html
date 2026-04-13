@@ -275,7 +275,7 @@ tbody td{
   border-color: #334155 !important;
 }
 
->>>>>>> main
+ main
 #popupMsg{
   color: #e2e8f0 !important;
 }
@@ -495,7 +495,7 @@ input:focus, select:focus, button:focus {
 
 @keyframes popupIn {
   from { opacity: 0; transform: translateY(10px) scale(0.97); }
-=======
+
   animation: popIn 180ms ease-out;
   border-radius: 18px !important;
   border-color: var(--pc-border) !important;
@@ -503,7 +503,7 @@ input:focus, select:focus, button:focus {
 
 @keyframes popIn {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
->>>>>>> main
+ main
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -715,7 +715,7 @@ tr[style*="f59e0b"]:hover {
   padding: 16px;
 }
 
->>>>>>> main
+main
 .track-stat{
   border-radius: 12px;
   border: 1px solid rgba(250,204,21,0.20);
@@ -1089,7 +1089,7 @@ tr[style*="f59e0b"]:hover {
 @media (max-width: 768px){
   .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .track-filter-grid{ grid-template-columns: 1fr; }
->>>>>>> main
+ main
   .detail-meta-grid{ grid-template-columns: 1fr; }
 }
 
@@ -2749,9 +2749,9 @@ orders.forEach(o => {
   if(!statusCounts[s]) statusCounts[s] = { count: 0, value: 0 };
   statusCounts[s].count += 1;
   statusCounts[s].value += (o.items || []).reduce((sum, x) => sum + getEffectiveValue(x), 0);
-=======
+
   statusCounts[s] = (statusCounts[s] || 0) + 1;
->>>>>>> main
+main
 });
 
 const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
