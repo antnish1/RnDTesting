@@ -231,8 +231,8 @@ body {
 }
 
 .menu-btn:hover {
-  color: var(--pc-primary);
-  background: rgba(37,99,235,0.08);
+  color: #facc15;
+  background: rgba(250,204,21,0.10);
 }
 
 .menu-btn:active {
@@ -242,8 +242,9 @@ body {
 
 
 .active-tab {
-  background: rgba(37,99,235,0.12);
-  color: #1d4ed8;
+  background: linear-gradient(180deg, rgba(250,204,21,0.18), rgba(202,138,4,0.14));
+  color: #fef08a;
+  border: 1px solid rgba(250,204,21,0.28);
   box-shadow: none;
 }
 .top-btn {
@@ -263,16 +264,16 @@ body {
 }
 
 .top-btn:hover {
-  color: var(--pc-primary);
-  background: rgba(37,99,235,0.08);
+  color: #facc15;
+  background: rgba(250,204,21,0.10);
   transform: none;
   box-shadow: none;
 }
 
 .active-top-btn {
-  background: rgba(37,99,235,0.12);
-  color: #1d4ed8;
-  border: none;
+  background: linear-gradient(180deg, rgba(250,204,21,0.18), rgba(161,98,7,0.2));
+  color: #fef08a;
+  border: 1px solid rgba(250,204,21,0.28);
 }
 
 .order-action-btn{
@@ -338,8 +339,8 @@ body {
     
 
 input:focus, select:focus, button:focus {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
-  border-color: var(--pc-secondary) !important;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.22);
+  border-color: #facc15 !important;
 }
 
 .pc-field {
@@ -573,10 +574,97 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar:focus {
-  border-color: #3b82f6;
+  border-color: #facc15;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.16), 0 8px 22px rgba(37,99,235,0.14);
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.20), 0 8px 22px rgba(217,119,6,0.14);
   transform: translateY(-1px);
+}
+
+.track-shell{
+  display:grid;
+  gap: 14px;
+}
+
+.track-hero{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.28);
+  background: linear-gradient(145deg, rgba(17,24,39,0.96), rgba(15,23,42,0.98));
+  box-shadow: 0 18px 34px rgba(2,6,23,0.5);
+  padding: 16px;
+}
+
+.track-stat{
+  border-radius: 12px;
+  border: 1px solid rgba(250,204,21,0.20);
+  background: linear-gradient(160deg, rgba(31,41,55,0.85), rgba(15,23,42,0.8));
+  padding: 10px 12px;
+}
+
+.track-table-shell{
+  border-radius: 18px;
+  border: 1px solid rgba(250,204,21,0.22);
+  background: linear-gradient(180deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));
+  box-shadow: 0 22px 42px rgba(2,6,23,0.52);
+  overflow: hidden;
+}
+
+.track-table-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(250,204,21,0.2);
+  background: linear-gradient(180deg, rgba(245,158,11,0.1), rgba(17,24,39,0.5));
+}
+
+.track-table-wrap{
+  overflow-x:auto;
+  padding: 10px 10px 0;
+}
+
+.track-table{
+  min-width: 980px;
+}
+
+.track-table tbody tr{
+  transition: background-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.track-table tbody tr:hover{
+  background: linear-gradient(90deg, rgba(250,204,21,0.12), rgba(30,41,59,0.18)) !important;
+  transform: translateY(-1px);
+}
+
+.track-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(250,204,21,0.18);
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.95));
+}
+
+.track-page-btn{
+  min-width: 108px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(250,204,21,0.38);
+  background: rgba(30,41,59,0.9);
+  color: #fef3c7;
+  font-weight: 700;
+}
+
+.track-page-btn:hover:not(:disabled){
+  background: linear-gradient(180deg, rgba(250,204,21,0.28), rgba(217,119,6,0.22));
+  color: #fff;
+}
+
+.track-page-btn:disabled{
+  opacity: .42;
+  cursor:not-allowed;
 }
 
 /* 🔥 PLACEHOLDER */
@@ -2172,46 +2260,54 @@ const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
 
     
 let html = `
-<div class="space-y-5">
+<div class="track-shell">
+  <div id="resultsContainer" class="space-y-4">
+    <section class="track-hero">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.12em] font-bold" style="color:#facc15;">Orders Tracking</p>
+          <h2 class="text-xl md:text-2xl font-black mt-1" style="color:#f8fafc;">Track branch order lifecycle in one view</h2>
+          <p class="text-xs mt-1" style="color:var(--pc-text-muted);">Live visibility for status, quantity, value and comments with enterprise-grade clarity.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 min-w-[220px]">
+          <div class="track-stat">
+            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
+            <div class="text-lg font-extrabold" style="color:#f8fafc;">${orders.length}</div>
+          </div>
+          <div class="track-stat">
+            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">This Page</div>
+            <div class="text-lg font-extrabold" style="color:#f8fafc;">${paginatedOrders.length}</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
+    <section class="track-table-shell">
+      <div class="track-table-header">
+        <div>
+          <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
+          <div class="text-sm font-semibold" style="color:#f8fafc;">Latest orders, statuses and financial totals</div>
+        </div>
+        <div class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(250,204,21,0.12); color:#fef3c7; border:1px solid rgba(250,204,21,0.35);">
+          Page ${CURRENT_PAGE} of ${totalPages}
+        </div>
+      </div>
 
-
-  <!-- ✅ ADD THIS NEW DIV -->
-  <div id="resultsContainer">
-
-
-
-  <!-- CARD WRAPPER (same as New Order) -->
-  <div class="relative pc-section">
-
-    <!-- FLOAT LABEL -->
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        TRACK ORDERS
-      </span>
-    </div>
-
-    <div class="overflow-x-auto mt-2">
-
-      <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
-
-        <thead class="text-xs uppercase tracking-wider border-b"
-              style="background: var(--pc-warm); color: var(--pc-text);">
-
-          <tr>
-                <th class="px-4 py-3 text-center">Date</th>
-                <th class="px-4 py-3 text-center">Order Type</th>
-                <th class="px-4 py-3 text-left">Order For</th>
-                <th class="px-4 py-3 text-left">Branch</th>
-                <th class="px-4 py-3 text-right">Qty</th>
-                <th class="px-4 py-3 text-right">Value</th>
-                <th class="px-4 py-3 text-center">Order No</th>
-                <th class="px-4 py-3 text-center">Status</th>
-          </tr>
-
-        </thead>
-
-        <tbody>
+      <div class="track-table-wrap">
+        <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+          <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color: #fef3c7; border-color: rgba(250,204,21,0.35);">
+            <tr>
+              <th class="px-4 py-3 text-center">Date</th>
+              <th class="px-4 py-3 text-center">Order Type</th>
+              <th class="px-4 py-3 text-left">Order For</th>
+              <th class="px-4 py-3 text-left">Branch</th>
+              <th class="px-4 py-3 text-right">Qty</th>
+              <th class="px-4 py-3 text-right">Value</th>
+              <th class="px-4 py-3 text-center">Order No</th>
+              <th class="px-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
 `;
 
 paginatedOrders.forEach((o,i)=>{
@@ -2221,7 +2317,7 @@ const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
-class="cursor-pointer transition hover:scale-[1.01]"
+class="cursor-pointer"
 style="${getOrderTypeRowStyle(o.OrderType)}">
 
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
@@ -2256,14 +2352,14 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
   ${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}
 </td>
 
-<td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
+<td class="px-4 py-3 text-right" style="color: #facc15; font-weight:700;">
   ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
 </td>
 
-<td class="px-4 py-3 text-center font-semibold" style="color: var(--pc-primary);">
+<td class="px-4 py-3 text-center font-semibold" style="color: #facc15;">
   ${o.OrderNo}
   ${getOrderCommentCount(o) > 0
-    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+    ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.14);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>`
     : ""}
 </td>
 
@@ -2281,35 +2377,33 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
 html += `
         </tbody>
       </table>
+      </div>
 
-    </div>
+      <div class="track-footer">
+        <div class="text-xs" style="color:var(--pc-text-muted);">
+          Showing <span style="color:#fef3c7; font-weight:700;">${paginatedOrders.length}</span> of
+          <span style="color:#fef3c7; font-weight:700;">${orders.length}</span> orders
+        </div>
 
-<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
+        <div class="flex items-center gap-3">
+          <button onclick="changePage(-1)" class="track-page-btn"
+            ${CURRENT_PAGE === 1 ? "disabled" : ""}>
+            ⬅ Prev
+          </button>
 
-  <button onclick="changePage(-1)"
-    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
-    ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
-    ⬅ Prev
-  </button>
+          <span class="px-3 py-2 rounded-lg text-sm font-bold"
+                style="background:rgba(250,204,21,0.12); color:#fef3c7; border:1px solid rgba(250,204,21,0.32);">
+            Page ${CURRENT_PAGE} / ${totalPages}
+          </span>
 
-  <span class="font-semibold tracking-wide leading-none">
-    Page ${CURRENT_PAGE} / ${totalPages}
-  </span>
-
-  <button onclick="changePage(1)"
-    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
-    style="background: var(--pc-secondary); color:white;"
-    ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
-    Next ➡
-  </button>
-
-</div>
-
-    
+          <button onclick="changePage(1)" class="track-page-btn"
+            ${CURRENT_PAGE >= totalPages ? "disabled" : ""}>
+            Next ➡
+          </button>
+        </div>
+      </div>
+    </section>
   </div>
-
-  </div> <!-- resultsContainer -->
 </div>
 `;
 
@@ -2707,24 +2801,24 @@ function getOrderStatusLabel(order){
 function getStatusChipStyle(status){
   const s = normalizeRowStatus(status);
   const palette = {
-    "PENDING APPROVAL": { bg:"#fff7ed", text:"#9a3412", border:"#fdba74" },
-    "APPROVED": { bg:"#ecfdf5", text:"#065f46", border:"#86efac" },
-    "PROCESSED": { bg:"#eff6ff", text:"#1e3a8a", border:"#93c5fd" },
-    "DISPATCHED": { bg:"#dcfce7", text:"#166534", border:"#86efac" },
-    "PARTIALLY DISPATCHED": { bg:"#fef3c7", text:"#92400e", border:"#fcd34d" },
-    "NOT DESPATCHED": { bg:"#eef2ff", text:"#3730a3", border:"#c4b5fd" },
-    "REJECTED": { bg:"#fef2f2", text:"#991b1b", border:"#fca5a5" }
+    "PENDING APPROVAL": { bg:"rgba(251,191,36,0.16)", text:"#fef3c7", border:"rgba(251,191,36,0.5)" },
+    "APPROVED": { bg:"rgba(16,185,129,0.16)", text:"#d1fae5", border:"rgba(16,185,129,0.42)" },
+    "PROCESSED": { bg:"rgba(245,158,11,0.18)", text:"#fef3c7", border:"rgba(245,158,11,0.46)" },
+    "DISPATCHED": { bg:"rgba(34,197,94,0.18)", text:"#dcfce7", border:"rgba(34,197,94,0.44)" },
+    "PARTIALLY DISPATCHED": { bg:"rgba(217,119,6,0.22)", text:"#ffedd5", border:"rgba(251,191,36,0.45)" },
+    "NOT DESPATCHED": { bg:"rgba(71,85,105,0.35)", text:"#e2e8f0", border:"rgba(148,163,184,0.45)" },
+    "REJECTED": { bg:"rgba(239,68,68,0.18)", text:"#fecaca", border:"rgba(239,68,68,0.4)" }
   };
-  const p = palette[s] || { bg:"#f8fafc", text:"#334155", border:"#cbd5e1" };
+  const p = palette[s] || { bg:"rgba(148,163,184,0.2)", text:"#e2e8f0", border:"rgba(148,163,184,0.4)" };
   return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border}; white-space:nowrap; display:inline-flex; align-items:center; line-height:1.05;`;
 }
 
 function getOrderTypeRowStyle(orderType){
   const type = (orderType || "").toString().trim().toUpperCase();
   if(type === "VOR"){
-    return "background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04)); border-left: 4px solid #f59e0b;";
+    return "background: linear-gradient(90deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-left: 4px solid #f59e0b;";
   }
-  return "background: rgba(15,23,42,0.03); border-left: 4px solid transparent;";
+  return "background: rgba(15,23,42,0.5); border-left: 4px solid transparent;";
 }
 
 function applyOrderSort(orders){
