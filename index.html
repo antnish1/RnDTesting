@@ -4344,22 +4344,20 @@ async function processInventoryExcelData(rows, reportDate){
 
       payload.push({
         report_date: reportDate,
-        branch: branch || null,
-        br_code: brCode || null,
-        itemcode: itemCode.toUpperCase(),
-        itemname: itemName || null,
+        item_code: itemCode.toUpperCase(),
+        item_name: itemName || null,
         item_group: itemGroup || null,
-        bhlhln: bhlhln || null,
-        rec: rec || null,
-        nsp: nsp || null,
+        branch_code: (bhlhln || brCode || branch || "").toUpperCase() || null,
+        rec_flag: rec || null,
+        nsp_flag: nsp || null,
         uom: uom || null,
         dnp: dnp,
         opening_balance: openingBalance,
         opening_inv_val: openingInvVal,
-        received: received,
-        issued: issued,
-        closing_balance: closingBalance,
-        closing_inv_val: closingInvVal
+        received_qty: received,
+        issued_qty: issued,
+        qty: closingBalance,
+        inv_value: closingInvVal
       });
     }
 
@@ -4369,7 +4367,7 @@ async function processInventoryExcelData(rows, reportDate){
     }
 
     const { error: deleteError } = await db
-      .from("inventory")
+      .from("inventory_staging")
       .delete()
       .eq("report_date", reportDate);
     if(deleteError){
@@ -4377,7 +4375,7 @@ async function processInventoryExcelData(rows, reportDate){
     }
 
     const { error: insertError } = await db
-      .from("inventory")
+      .from("inventory_staging")
       .insert(payload);
     if(insertError){
       throw insertError;
