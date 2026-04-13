@@ -783,6 +783,12 @@ tr[style*="f59e0b"]:hover {
   margin-bottom: 4px;
   font-weight: 700;
 }
+
+input[type="date"]::-webkit-calendar-picker-indicator{
+  filter: invert(92%) sepia(32%) saturate(706%) hue-rotate(332deg) brightness(103%) contrast(96%);
+  opacity: 1;
+  cursor: pointer;
+}
 .mgr-branch-table th, .mgr-branch-table td{ padding: 8px 10px; }
 .mgr-branch-detail{
   overflow: hidden;
@@ -1054,17 +1060,17 @@ tr[style*="f59e0b"]:hover {
   position: relative;
   overflow: hidden;
   border-radius: 0 0 10px 10px;
-  border: 1px solid rgba(251,191,36,0.55);
-  background: linear-gradient(90deg, #111827 0%, #1f2937 35%, #0f172a 100%);
-  box-shadow: 0 10px 24px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+  border: 1px solid rgba(251,191,36,0.7);
+  background: linear-gradient(90deg, #1b2432 0%, #243042 45%, #1c2736 100%);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.3), inset 0 1px 0 rgba(255,255,255,0.18);
 }
 
 .offer-strip::before{
   content:"";
   position:absolute;
   inset:0;
-  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.22) 32%, transparent 54%);
-  animation: offerShine 3.2s linear infinite;
+  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.28) 32%, transparent 54%);
+  animation: offerShine 4.8s linear infinite;
   pointer-events:none;
 }
 
@@ -1072,7 +1078,7 @@ tr[style*="f59e0b"]:hover {
   display:flex;
   width:max-content;
   min-width:100%;
-  animation: offerMarquee 18s linear infinite;
+  animation: offerMarquee 22s linear infinite;
 }
 
 .offer-pill{
@@ -1084,7 +1090,7 @@ tr[style*="f59e0b"]:hover {
   font-weight: 800;
   letter-spacing: 0.04em;
   color:#111827;
-  background: linear-gradient(180deg, #fde68a, #f59e0b);
+  background: linear-gradient(180deg, #fde68a, #d97706);
   border: 1px solid rgba(255,255,255,0.35);
   box-shadow: 0 6px 14px rgba(245,158,11,0.35);
   text-transform: uppercase;
@@ -1093,6 +1099,10 @@ tr[style*="f59e0b"]:hover {
 @keyframes offerMarquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+
+.offer-strip:hover .offer-marquee{
+  animation-play-state: paused;
 }
 
 @keyframes offerShine {
@@ -1822,11 +1832,11 @@ document.getElementById("app").innerHTML = `
     <div class="offer-marquee items-center gap-3">
       <span class="offer-pill">🔥 Priority Pitch</span>
       <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
-        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+        BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
       </span>
       <span class="offer-pill">🔥 Priority Pitch</span>
       <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
-        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+        BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
       </span>
     </div>
   </div>
@@ -3130,7 +3140,7 @@ function getOrderStatusLabel(order){
 function getStatusChipStyle(status){
   const s = normalizeRowStatus(status);
   const palette = {
-    "PENDING APPROVAL": { bg:"rgba(251,191,36,0.16)", text:"#fef3c7", border:"rgba(251,191,36,0.5)" },
+    "PENDING APPROVAL": { bg:"rgba(59,130,246,0.2)", text:"#dbeafe", border:"rgba(96,165,250,0.45)" },
     "APPROVED": { bg:"rgba(16,185,129,0.16)", text:"#d1fae5", border:"rgba(16,185,129,0.42)" },
     "PROCESSED": { bg:"rgba(245,158,11,0.18)", text:"#fef3c7", border:"rgba(245,158,11,0.46)" },
     "DISPATCHED": { bg:"rgba(34,197,94,0.18)", text:"#dcfce7", border:"rgba(34,197,94,0.44)" },
@@ -4635,8 +4645,14 @@ function renderManagerDashboard(orders){
     <div class="mgr-shell">
       <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
         <div class="mgr-filter-bar mb-2">
-          <div><label class="mgr-filter-label" for="mgrDashFrom">From Date</label><input id="mgrDashFrom" type="date" class="pc-field h-[38px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" /></div>
-          <div><label class="mgr-filter-label" for="mgrDashTo">To Date</label><input id="mgrDashTo" type="date" class="pc-field h-[38px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" /></div>
+          <div class="flex items-center gap-2">
+            <span class="mgr-filter-label !mb-0">From</span>
+            <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="mgr-filter-label !mb-0">To</span>
+            <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" />
+          </div>
           <button class="track-page-btn" onclick="applyManagerDashboardDateRange()">Apply</button>
           <button class="track-page-btn" onclick="resetManagerDashboardDateRange()">Reset</button>
         </div>
@@ -4649,7 +4665,6 @@ function renderManagerDashboard(orders){
         <button onclick="toggleManagerDashboardFilteredTable()" class="track-page-btn absolute right-4 top-3 text-xs px-3 py-1.5">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
         <div class="flex items-center justify-between gap-3 mb-2 flex-wrap pr-28">
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Filtered Orders ${activeFilter ? `• ${escapeHtml(activeFilter.label)}` : ""}</div>
-          <button onclick="clearManagerDashboardCardFilter()" class="track-page-btn">Clear Filter</button>
         </div>
         <div class="overflow-x-auto ${window.managerDashTableVisible ? "" : "hidden"}">
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
