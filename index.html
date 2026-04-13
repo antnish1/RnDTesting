@@ -1,6 +1,9 @@
     <!DOCTYPE html>
 <html>
 <head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 
   <title>Parts Connect Portal</title>
         <link rel="icon" type="image/png" href="F.ico">
@@ -11,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     
 </head>
 
@@ -92,17 +95,100 @@
 
 
 :root {
-  --pc-primary: #81A6C6;
---pc-secondary: #5F88A8;   /* darker accent for readability */
-  --pc-light: #F3E3D0;
-  --pc-warm: #D2C4B4;
+  --pc-primary: #60a5fa;
+  --pc-secondary: #22d3ee;
+  --pc-light: #0f172a;
+  --pc-warm: #1e293b;
 
-  /* semantic aliases (used later) */
-  --pc-bg: #F3E3D0;        /* page background */
-  --pc-surface: #FFFFFF;   /* cards/surfaces */
-  --pc-border: #D2C4B4;    /* borders */
-  --pc-text: #1F2937;      /* main text */
---pc-text-muted: #4B5563;  /* stronger muted text */
+  --pc-bg: #0b1220;
+  --pc-surface: #111827;
+  --pc-border: #334155;
+  --pc-text: #e5e7eb;
+  --pc-text-muted: #94a3b8;
+  --pc-success: #22c55e;
+  --pc-warning: #f59e0b;
+  --pc-danger: #ef4444;
+  --pc-font-ui: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --pc-font-strong: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+body, button, input, select, textarea, table, th, td {
+  font-family: var(--pc-font-ui);
+}
+
+/* ===== Global high-contrast refactor layer ===== */
+.pc-section{
+  color: var(--pc-text) !important;
+  border-color: #334155 !important;
+  box-shadow: 0 16px 34px rgba(2,6,23,0.45) !important;
+}
+
+.pc-field{
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 1px 0 rgba(255,255,255,0.02) !important;
+}
+
+.pc-field::placeholder{
+  color: #94a3b8 !important;
+}
+
+.pc-field:focus{
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.18) !important;
+}
+
+table{
+  border-color: #334155 !important;
+}
+
+thead th{
+  background: linear-gradient(180deg, #1f2937, #0f172a) !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+tbody td{
+  color: #e2e8f0 !important;
+  border-color: rgba(148,163,184,0.22) !important;
+}
+
+.track-table tbody tr{
+  background: #0f172a !important;
+}
+
+.track-table tbody tr:nth-child(even){
+  background: #111827 !important;
+}
+
+.track-table tbody tr:hover{
+  background: #1e293b !important;
+}
+
+.order-action-btn{
+  border-color: #475569 !important;
+  color: #dbeafe !important;
+  background: linear-gradient(180deg, rgba(30,41,59,0.55), rgba(15,23,42,0.65)) !important;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.35) !important;
+}
+
+.order-action-btn:hover{
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, rgba(37,99,235,0.28), rgba(30,64,175,0.30)) !important;
+  box-shadow: 0 10px 20px rgba(30,64,175,0.32) !important;
+}
+
+#popup > div{
+  background: linear-gradient(180deg, #111827, #0f172a) !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+#popupMsg{
+  color: #e2e8f0 !important;
 }
 
 
@@ -110,6 +196,11 @@
 body {
   font-family: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   letter-spacing: 0.01em;
+  line-height: 1.45;
+  background:
+    radial-gradient(circle at 10% -10%, rgba(37,99,235,0.14), transparent 42%),
+    radial-gradient(circle at 90% -15%, rgba(14,165,233,0.12), transparent 38%),
+    var(--pc-bg);
 }
 
 .pc-icon {
@@ -128,63 +219,36 @@ body {
     
 .menu-btn {
   position: relative;
-  padding: 10px 18px;
-  background: rgba(170, 205, 220, 0.08);
-  border: 1px solid var(--pc-border);
-  border-radius: 10px;
-  color: var(--pc-text);
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--pc-text-muted);
   font-weight: 600;
-  letter-spacing: 0.3px;
-  transition: all 0.22s ease;
+  letter-spacing: 0.1px;
+  transition: color 0.18s ease, background-color 0.18s ease;
+  box-shadow: none;
 }
 
-/* 🔥 HOVER EFFECT */
 .menu-btn:hover {
-  background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));
-  color: #ffffff !important;   /* ✅ FIX */
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(129, 166, 198, 0.28);
+  color: var(--pc-primary);
+  background: rgba(37,99,235,0.08);
 }
-/* 🔥 ACTIVE CLICK */
+
 .menu-btn:active {
-  transform: scale(0.98);
-}
-
-/* 🔥 SUBTLE GLOW */
-.menu-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-}
-
-.menu-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  opacity: 0;
-  transition: opacity 0.25s;
-  box-shadow: 0 0 0 2px rgba(170, 205, 220, 0.28) inset;
-}
-
-.menu-btn:hover::after {
-  opacity: 1;
+  transform: none;
 }
 
 
 
 .active-tab {
-  background: linear-gradient(135deg, var(--pc-secondary), var(--pc-primary));
-  color: #ffffff;   /* ✅ FIX */
-  box-shadow: 0 6px 18px rgba(129, 166, 198, 0.25);
+  background: rgba(37,99,235,0.12);
+  color: #1d4ed8;
+  box-shadow: none;
 }
 .top-btn {
-  padding: 8px 16px;
-  border-radius: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
   font-weight: 600;
 
   display: inline-flex;
@@ -192,90 +256,160 @@ body {
   gap: 6px;
   white-space: nowrap;
 
-  background: rgba(255,255,255,0.7);
-  border: 1px solid rgba(0,0,0,0.08);
-
-  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  transition: color 0.18s ease, background-color 0.18s ease;
+  box-shadow: none;
 }
 
 .top-btn:hover {
-    color: #111827; /* darker text for light bg */
-  background: rgba(255,255,255,0.95);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  color: var(--pc-primary);
+  background: rgba(37,99,235,0.08);
+  transform: none;
+  box-shadow: none;
 }
 
 .active-top-btn {
-  background: linear-gradient(135deg, #5B7FA3, #3E5C76);
-  color: white;
-  border-color: #6E95B8;
-}
-    
-.logout-btn {
-  background: #ef4444;
-  color: white;
+  background: rgba(37,99,235,0.12);
+  color: #1d4ed8;
   border: none;
 }
 
+.order-action-btn{
+  padding: 4px 9px !important;
+  border-radius: 7px !important;
+  border: 1px solid rgba(148,163,184,0.38) !important;
+  background: transparent !important;
+  box-shadow: 0 1px 0 rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.5) !important;
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+  color: var(--pc-text) !important;
+  position: relative;
+  letter-spacing: 0.01em;
+}
+
+.order-action-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.62) !important;
+  background: rgba(15,23,42,0.035) !important;
+  color: var(--pc-primary) !important;
+  border-color: rgba(59,130,246,0.45) !important;
+}
+
+.order-action-btn:active{
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.12) !important;
+}
+
+.order-action-btn::after{
+  content:"";
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:2px;
+  height:1px;
+  background: linear-gradient(90deg, transparent, rgba(37,99,235,0.8), transparent);
+  transform: scaleX(0.2);
+  transform-origin: center;
+  opacity:0;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.order-action-btn:hover::after{
+  transform: scaleX(1);
+  opacity:1;
+}
+
+.oa-primary{ color:#1d4ed8 !important; }
+.oa-success{ color:#166534 !important; }
+.oa-danger{ color:#b91c1c !important; }
+.oa-muted{ color:#334155 !important; }
+.oa-neutral{ color:#0f172a !important; }
+.oa-teal{ color:#0f766e !important; }
+    
 .logout-btn {
-  background: #b85c5c;
-  color: #fff;
-  border: 1px solid #9f4c4c;
+  background: transparent !important;
+  color: #b91c1c !important;
+  border: none !important;
 }
 
 .logout-btn:hover {
-  background: #a54b4b;
+  background: rgba(185,28,28,0.08) !important;
 }
     
 
 input:focus, select:focus, button:focus {
-  box-shadow: 0 0 0 3px rgba(170, 205, 220, 0.35);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
   border-color: var(--pc-secondary) !important;
 }
 
 .pc-field {
-  background: #FFFFFF;
-  border: 1px solid #BFAF9D;
-  color: #1F2937;
-  border-radius: 10px;
-  padding: 10px 12px;
+  background: #0f172a;
+  border: 1px solid var(--pc-border);
+  color: var(--pc-text);
+  border-radius: 12px;
+  padding: 9px 12px;
   width: 100%;
   transition: all 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(15,23,42,0.04);
 }
 
 .pc-field::placeholder {
-  color: #6B7280;
+  color: #94a3b8;
 }
 
 .pc-field:focus {
   outline: none;
   border-color: var(--pc-secondary);
-  box-shadow: 0 0 0 3px rgba(170, 205, 220, 0.25);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.16);
 }
 
 .pc-section {
-  background: linear-gradient(180deg, rgba(170,205,220,0.06), rgba(129,166,198,0.06));
+  background: linear-gradient(180deg, rgba(17,24,39,0.96), rgba(15,23,42,0.96));
   border: 1px solid var(--pc-border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 16px;
   padding-top: 24px;
+  box-shadow: 0 12px 28px rgba(15,23,42,0.08);
 }
 
 .pc-field option {
-  color: #1F2937;
-  background: #FFFFFF;
+  color: #e5e7eb;
+  background: #0f172a;
 }
     
     
 
-/* Smooth UI feel */
-* {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+.track-table thead th {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.track-table tbody tr {
+  background: #0f172a;
+}
+
+.track-table tbody tr:nth-child(even) {
+  background: #111827;
+}
+
+.track-table tbody tr:hover {
+  background: #1e293b !important;
+}
+
+#popup > div {
+  animation: popIn 180ms ease-out;
+  border-radius: 18px !important;
+  border-color: var(--pc-border) !important;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Card hover lift */
 .pc-section:hover {
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 10px 20px rgba(15,23,42,0.10);
 }
 
 /* Table polish */
@@ -286,6 +420,9 @@ table {
 thead th {
   font-weight: 700;
   letter-spacing: 0.04em;
+  color: #e2e8f0;
+  background: linear-gradient(180deg, #1f2937, #111827) !important;
+  border-color: #334155 !important;
 }
 
 tbody tr {
@@ -340,12 +477,12 @@ tbody tr:hover {
 .track-table tbody tr:hover {
   background: linear-gradient(
     135deg,
-    rgba(129, 166, 198, 0.35),
-    rgba(170, 205, 220, 0.35)
+    rgba(37, 99, 235, 0.16),
+    rgba(14, 165, 233, 0.12)
   ) !important;
 
   transform: translateY(-3px) scale(1.015);
-  box-shadow: 0 12px 28px rgba(129, 166, 198, 0.35);
+  box-shadow: 0 12px 28px rgba(37,99,235,0.22);
   z-index: 5;
 }
 
@@ -362,6 +499,12 @@ tbody tr:hover {
 /* 🔥 OPTIONAL: TEXT EMPHASIS ON HOVER */
 .track-table tbody tr:hover td {
   font-weight: 500;
+}
+
+.pc-section .absolute > span,
+.pc-section .absolute > h2 {
+  color: var(--pc-primary) !important;
+  letter-spacing: 0.08em;
 }
 
 
@@ -417,39 +560,230 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: clamp(180px, 28vw, 320px);
-  height: 40px;
-
-  padding: 0 12px 0 36px;    /* space for icon */
-
+  width: clamp(280px, 34vw, 460px);
+  height: 42px;
+  padding: 0 14px 0 40px;
   border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.1);
-
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(8px);
-
+  border: 1px solid #94a3b8;
+  background: #ffffff;
   font-size: 13px;
-  font-weight: 500;
-
-  box-shadow: 
-    inset 0 1px 2px rgba(0,0,0,0.05),
-    0 4px 14px rgba(0,0,0,0.08);
-
-  transition: all 0.25s ease;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.72);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
 }
 
-/* 🔥 FOCUS EFFECT */
 .search-bar:focus {
-  border-color: var(--pc-secondary);
-  box-shadow: 
-    0 0 0 3px rgba(129,166,198,0.25),
-    0 8px 20px rgba(0,0,0,0.12);
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.16), 0 8px 22px rgba(37,99,235,0.14);
+  transform: translateY(-1px);
 }
 
 /* 🔥 PLACEHOLDER */
 .search-bar::placeholder {
-  color: #6b7280;
-  font-weight: 400;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.offer-strip {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid rgba(251,191,36,0.55);
+  background: linear-gradient(90deg, #111827 0%, #1f2937 35%, #0f172a 100%);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.offer-strip::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(120deg, transparent 10%, rgba(250,204,21,0.22) 32%, transparent 54%);
+  animation: offerShine 3.2s linear infinite;
+  pointer-events:none;
+}
+
+.offer-marquee{
+  display:flex;
+  width:max-content;
+  min-width:100%;
+  animation: offerMarquee 18s linear infinite;
+}
+
+.offer-pill{
+  flex:0 0 auto;
+  margin: 0 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color:#111827;
+  background: linear-gradient(180deg, #fde68a, #f59e0b);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  text-transform: uppercase;
+}
+
+@keyframes offerMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes offerShine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+/* ===== Premium Login Experience ===== */
+.login-shell{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(56,189,248,0.18), transparent 60%),
+    radial-gradient(900px 420px at 110% 10%, rgba(96,165,250,0.12), transparent 58%),
+    linear-gradient(180deg, #060b16 0%, #0b1220 46%, #0d1527 100%);
+}
+
+.login-grid{
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.24);
+  box-shadow: 0 30px 70px rgba(2,6,23,0.55);
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: blur(10px);
+}
+
+.login-aside{
+  padding: 28px 30px;
+  background: linear-gradient(160deg, rgba(30,41,59,0.86), rgba(15,23,42,0.9));
+  border-right: 1px solid rgba(148,163,184,0.18);
+  position: relative;
+}
+
+.login-aside::before{
+  content:"";
+  position:absolute;
+  width: 300px;
+  height: 180px;
+  top: -20px;
+  left: -20px;
+  background: radial-gradient(circle, rgba(224,242,254,0.24) 0%, rgba(224,242,254,0.05) 45%, transparent 75%);
+  pointer-events:none;
+}
+
+.login-card{
+  padding: 28px 26px;
+  background: linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.96));
+}
+
+.login-title{
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #f8fafc;
+}
+
+.login-logo-wrap{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248,250,252,0.88), rgba(241,245,249,0.74));
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 12px 26px rgba(2,6,23,0.35), inset 0 1px 0 rgba(255,255,255,0.8);
+  backdrop-filter: blur(6px) brightness(1.05);
+}
+
+.login-logo{
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.38));
+}
+
+.login-subtitle{
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.login-label{
+  display:block;
+  margin: 12px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.login-input{
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.login-input:focus{
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.2);
+  transform: translateY(-1px);
+}
+
+.login-cta{
+  width: 100%;
+  margin-top: 16px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #1a1200;
+  background: linear-gradient(180deg, #f6c21a 0%, #f2b705 45%, #dfa300 100%);
+  border: none;
+  box-shadow: 0 12px 22px rgba(242,183,5,0.30), 0 4px 0 rgba(153,111,0,0.32);
+  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease, background-color .22s ease;
+}
+
+.login-cta:hover{
+  transform: translateY(-2px) scale(1.01);
+  background: linear-gradient(180deg, #efb808 0%, #d9a404 100%);
+  box-shadow: 0 16px 28px rgba(217,164,4,0.38), 0 5px 0 rgba(122,89,0,0.36);
+}
+
+.login-cta:active{
+  transform: translateY(0);
+  background: linear-gradient(180deg, #d29f04 0%, #b88a03 100%);
+  box-shadow: 0 6px 12px rgba(184,138,3,0.28);
+}
+
+.login-cta:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(250,204,21,0.35), 0 12px 22px rgba(242,183,5,0.30);
+}
+
+.login-cta:disabled{
+  background: linear-gradient(180deg, rgba(242,183,5,0.45), rgba(184,138,3,0.45));
+  color: rgba(26,18,0,0.7);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 860px){
+  .login-grid{ grid-template-columns: 1fr; }
+  .login-aside{ border-right:0; border-bottom:1px solid rgba(148,163,184,0.18); }
 }
 
 /* filter arrow indicator on all table headers */
@@ -480,6 +814,7 @@ table thead th.sort-desc::after {
 let TABLE_SORT_STATE = null;
     let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
+const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -569,6 +904,69 @@ function getUser(){
   catch { return null; }
 }
 
+function isSuperLikeRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "super" || role === "manager";
+}
+
+function isManagerRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "manager";
+}
+
+const PART_MASTER_CACHE = new Map();
+const PART_USAGE_30D_CACHE = new Map();
+
+function normalizePartNo(partNo){
+  return (partNo || "").toString().replace(/\s/g, "").toUpperCase();
+}
+
+async function getPartMasterByPartNo(partNo){
+  const normalizedPartNo = normalizePartNo(partNo);
+  if(!normalizedPartNo) return null;
+
+  if(PART_MASTER_CACHE.has(normalizedPartNo)){
+    return PART_MASTER_CACHE.get(normalizedPartNo);
+  }
+
+  const { data } = await db
+    .from("part_master")
+    .select("PartNo, Description, DNP, Cat1")
+    .eq("PartNo", normalizedPartNo)
+    .maybeSingle();
+
+  PART_MASTER_CACHE.set(normalizedPartNo, data || null);
+  return data || null;
+}
+
+async function getLast30QtyByBranchPart(branch, partNo){
+  const normalizedPartNo = normalizePartNo(partNo);
+  const key = `${branch || ""}__${normalizedPartNo}`;
+  if(PART_USAGE_30D_CACHE.has(key)){
+    return PART_USAGE_30D_CACHE.get(key);
+  }
+
+  const last30 = new Date();
+  last30.setDate(last30.getDate() - 30);
+
+  const { data: history } = await db
+    .from("requests")
+    .select("Qty, editedqty")
+    .eq("Branch", branch)
+    .eq("PartNo", normalizedPartNo)
+    .neq("Status", "REJECTED")
+    .neq("ApprovalStatus", "Rejected")
+    .gte("created_at", last30.toISOString());
+
+  let total30 = 0;
+  (history || []).forEach(r => {
+    total30 += getEffectiveQty(r);
+  });
+
+  PART_USAGE_30D_CACHE.set(key, total30);
+  return total30;
+}
+
 function renderIcons(){
   if (window.lucide && typeof window.lucide.createIcons === "function") {
     window.lucide.createIcons();
@@ -586,37 +984,34 @@ window.onload = () => {
 async function loadLogin(){
 
 document.getElementById("app").innerHTML = `
-<div class="min-h-screen flex items-center justify-center px-4">
-  <div class="w-full max-w-sm p-7 rounded-2xl space-y-5 shadow-2xl"
-       style="background: linear-gradient(180deg, rgba(170,205,220,0.10), rgba(129,166,198,0.10)); border: 1px solid var(--pc-border); backdrop-filter: blur(8px);">
+<div class="login-shell">
+  <main class="login-grid" aria-label="Parts Connect Portal Login">
+    <section class="login-aside">
+      <div class="login-logo-wrap mb-5">
+        <img src="HDU4w-removebg-preview.png" alt="Parts Connect Portal" class="login-logo" />
+      </div>
+      <h1 class="login-title">Parts Connect Portal</h1>
+      <p class="login-subtitle">Reliable, secure and role-based branch access for order operations.</p>
+      <div class="mt-5 rounded-xl px-4 py-3" style="border:1px solid rgba(148,163,184,0.24); background:rgba(15,23,42,0.45);">
+        <p class="text-xs leading-relaxed" style="color:#cbd5e1;">
+          Sign in to continue with branch-specific access, approvals, tracking and secure workflow actions.
+        </p>
+      </div>
+    </section>
 
-<div class="flex justify-center">
-  <img 
-    src="HDU4w-removebg-preview.png"
-    class="h-16 w-auto object-contain"
-  />
-</div>
+    <section class="login-card">
+      <h2 class="login-title">Secure Login</h2>
+      <p class="login-subtitle">Use your branch and password to continue.</p>
 
-    <p class="text-center text-sm" style="color: var(--pc-text-muted); margin-top: -8px;">
-      Secure branch access
-    </p>
+      <label class="login-label" for="branch">Branch</label>
+      <select id="branch" class="login-input"></select>
 
-    <select id="branch"
-      class="w-full p-2.5 rounded-lg outline-none transition"
-      style="background: #FFFFFF; border: 1px solid #BFAF9D; color: #1F2937;">
-    </select>
+      <label class="login-label" for="password">Password</label>
+      <input id="password" type="password" class="login-input" placeholder="Enter your password" />
 
-    <input id="password" type="password" placeholder="Password"
-      class="w-full p-2.5 rounded-lg outline-none transition"
-      style="background: #FFFFFF; border: 1px solid #BFAF9D; color: #1F2937;" />
-
-    <button onclick="login()"
-      class="w-full py-2.5 rounded-lg font-semibold transition duration-200"
-      style="background: var(--pc-primary); color: #0f1720;">
-      Login
-    </button>
-
-  </div>
+      <button onclick="login()" class="login-cta">Login</button>
+    </section>
+  </main>
 </div>
 `;
 
@@ -674,7 +1069,7 @@ function renderHeader(){
   const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 
   return `
-  <div class="space-y-4">
+  <div class="space-y-0">
 
   <!-- HEADER -->
 <div class="w-full rounded-2xl px-6 py-4 shadow-xl flex justify-between items-center"
@@ -754,32 +1149,29 @@ function loadBranch(){
 
 const user = getUser();
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
-    const isSuper = user.Role === "super";
+const isSuper = isSuperLikeRole(user);
+const isManager = isManagerRole(user);
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isAdmin){
   window.activeTab = "Approved";
+}else if(isSuper){
+  window.activeTab = isManager ? "Dashboard" : "PendingApproval";
 }else{
   window.activeTab = window.activeTab || "create";
 }
 document.getElementById("app").innerHTML = `
 <div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
 
-  <div class="space-y-4">
+  <div class="space-y-0">
 
 <!-- HEADER WITH LOGOUT -->
 <div class="w-full rounded-2xl px-6 py-3 flex justify-between items-center backdrop-blur-md"
      style="
-  background: linear-gradient(
-    to right,
-    rgba(255,255,255,0.75) 0%,
-    rgba(255,255,255,0.75) 22%,
-    #2f3e4d 40%,
-    #3f556b 100%
-  );
-  border: 1px solid rgba(255,255,255,0.3);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  background: rgba(15,23,42,0.88);
+  border: 1px solid var(--pc-border);
+  box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
 
 <div class="relative flex items-center w-full">
@@ -839,7 +1231,7 @@ document.getElementById("app").innerHTML = `
 </span>
     </button>
 ` : isSuper ? `
-
+    ${isManager ? `` : `
     <button onclick="loadSuper('PendingApproval')" 
     class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
     data-tab="PendingApproval">
@@ -863,6 +1255,7 @@ document.getElementById("app").innerHTML = `
     data-tab="All">
       All Orders
     </button>
+    `}
 
 ` : `
     <button onclick="loadAdmin('Approved')" 
@@ -908,6 +1301,19 @@ document.getElementById("app").innerHTML = `
 
 
 
+  </div>
+
+  <div class="offer-strip px-2 py-1 w-full">
+    <div class="offer-marquee items-center gap-3">
+      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
+        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+      </span>
+      <span class="offer-pill">🔥 Focus Offer</span>
+      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
+        BUY 2 JCB GREASE BUCKETS & GET 6KG GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
+      </span>
+    </div>
   </div>
 
   <div id="main" class="w-full"></div>
@@ -977,6 +1383,7 @@ main.innerHTML = `
         <option>SOP</option>
         <option>ZMAC</option> <!-- ✅ NEW -->
         <option>ZSPL</option>
+        <option>LUBES</option>
       </select>
 
       <select id="orderFor" class="pc-field">
@@ -1131,7 +1538,7 @@ document.getElementById("employeeName").value = user.Name || "";
   const { data, error } = await db
     .from("users")
     .select("Name")
-    .eq("Role", "super");
+    .in("Role", ["super", "manager"]);
 
   if(error){
     console.error("Error loading super users", error);
@@ -1201,7 +1608,7 @@ if(!machineNo) return;
 
 const { data } = await db
 .from("machine_master")
-.select("*")
+.select("CustomerName")
 .eq("MachineNo", machineNo);
 
 if(data && data.length > 0){
@@ -1298,11 +1705,7 @@ if(!partNo){
 }
 
 // FETCH
-const { data } = await db
-.from("part_master")
-.select("*")
-.eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
-.single();
+const data = await getPartMasterByPartNo(partNo);
 
 // ✅ FIX 2: show error only if user typed something wrong
 if(!data){
@@ -1319,23 +1722,7 @@ tr.querySelector(".cat").innerText = data.Cat1;
 // ===== 30 DAY QTY LOGIC =====
 const user = getUser();
 
-const last30 = new Date();
-last30.setDate(last30.getDate() - 30);
-
-const { data: history } = await db
-  .from("requests")
-  .select("Qty")
-  .eq("Branch", user.Branch)
-  .eq("PartNo", partNo)
-  .gte("created_at", last30.toISOString());
-
-let total30 = 0;
-
-if(history){
-  history.forEach(r => {
-    total30 += getEffectiveQty(r);
-  });
-}
+const total30 = await getLast30QtyByBranchPart(user.Branch, partNo);
 
 // SET VALUE
 tr.querySelector(".qty30").innerText = total30;
@@ -1448,6 +1835,13 @@ function triggerRowDelete(){
 
   closePopup();
 }
+
+function changePrevQtyDays(orderNo, days){
+  window.prevQtyDays = Number(days) || 30;
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = false;
+  openOrderView(orderNo);
+}
 // ---------- CALC ----------
 function calc(tr){
 
@@ -1535,13 +1929,13 @@ if(orderFor === "Customer" && (!machineNo || !customerName)){
 }
 
 const rows = document.querySelectorAll("#tbody tr");
-    let hasError = false;
+let hasError = false;
 
 const orderNo = "T" + Math.floor(1000000 + Math.random()*9000000);
 
 const inserts = [];
 
-rows.forEach(r=>{
+for (const r of rows){
 
   if(hasError) return;
 
@@ -1575,7 +1969,9 @@ rows.forEach(r=>{
     }
   }
 
-  if(!part) return;
+  if(!part) continue;
+
+  const qtyLast30 = await getLast30QtyByBranchPart(user.Branch, part);
 
   inserts.push({
     Branch: user.Branch,
@@ -1592,6 +1988,7 @@ rows.forEach(r=>{
 
     PartNo: part,
     Qty: qty,
+    ["30dQty"]: qtyLast30,
     Description: desc,
     DNP: dnp,
     Value: dnp * qty,
@@ -1601,7 +1998,7 @@ rows.forEach(r=>{
     ApprovalStatus: "PendingApproval"
   });
 
-});
+}
 
 if(hasError){
   return;
@@ -1618,6 +2015,7 @@ hideLoader();
 
 if(error) return showPopup("Submit failed");
 
+await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
 showPopup("Submitted ✅ Order No: "+orderNo);
 
 loadCreate();
@@ -1641,7 +2039,7 @@ showLoader();
 
 let query = db
   .from("requests")
-  .select("*")
+  .select(REQUEST_LIST_SELECT)
   .order("created_at", { ascending:false });
 
 // ✅ ONLY FILTER FOR NORMAL USERS
@@ -1664,7 +2062,7 @@ grouped[r.OrderNo].items.push(r);
 
 const orders = applyOrderSort(
   Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-);
+).filter(shouldShowOrder);
 
 
 const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
@@ -1718,88 +2116,14 @@ let html = `
 `;
 
 paginatedOrders.forEach((o,i)=>{
-
-const statuses = o.items.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-
-    
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-
-  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
-    return "PENDING APPROVAL";
-  }
-
-  if(s.includes("PEND")){
-    return "APPROVED";
-  }
-
-  return s;
-});;
-
-let orderStatus = "APPROVED";
-
-// ✅ PRIORITY BASED (TOP → DOWN)
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-else if(statuses.every(s => s === "PENDING APPROVAL")){
-  orderStatus = "PENDING APPROVAL";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "APPROVED";
-}
-  
+const orderStatus = getOrderStatusLabel(o);
 
 const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
 class="cursor-pointer transition hover:scale-[1.01]"
-style="${
-o.OrderType === 'VOR'
-  ? 'background: rgba(245, 158, 11, 0.12); border-left: 4px solid #f59e0b;'
-    : ''
-}">
+style="${getOrderTypeRowStyle(o.OrderType)}">
 
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 <td class="px-4 py-3 text-center">
@@ -1846,24 +2170,7 @@ o.OrderType === 'VOR'
 
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="
-      background:${
-        orderStatus === "DISPATCHED" ? "#d1fae5" :
-          orderStatus === "REJECTED" ? "#fde2e2" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-        orderStatus === "PROCESSED" ? "#fef3c7" :
-        orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        orderStatus === "DISPATCHED" ? "#065f46" :
-          orderStatus === "REJECTED" ? "#7f1d1d" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-        orderStatus === "PROCESSED" ? "#92400e" :
-        orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
-    ">
+    style="${getStatusChipStyle(orderStatus)}">
     ${orderStatus}
   </span>
 </td>
@@ -1878,21 +2185,21 @@ html += `
 
     </div>
 
-<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
+<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
 
   <button onclick="changePage(-1)"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
 
-  <span class="text-sm font-semibold">
+  <span class="font-semibold tracking-wide leading-none">
     Page ${CURRENT_PAGE} / ${totalPages}
   </span>
 
   <button onclick="changePage(1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-secondary); color:white;"
     ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
     Next ➡
@@ -1928,19 +2235,16 @@ async function loadPendingCount(){
 
   if(error) return;
 
-  // ✅ GET UNIQUE ORDER COUNT
-  const uniqueOrders = [...new Set(
-    data
-      .filter(d => {
-        const status = (d.Status || "").toString().trim().toUpperCase();
-        const approval = (d.ApprovalStatus || "").toString().trim().toUpperCase();
-        return (status === "APPROVED" || status === "PENDING")
-          && !isPendingApprovalStatus(d.ApprovalStatus)
-          && approval !== "REJECTED"
-          && (approval === "APPROVED" || approval === "");
-      })
-      .map(d => d.OrderNo)
-  )];
+  const grouped = {};
+  (data || []).forEach(r => {
+    if(!grouped[r.OrderNo]) grouped[r.OrderNo] = [];
+    grouped[r.OrderNo].push(r);
+  });
+
+  // ✅ GET UNIQUE APPROVED ORDER COUNT
+  const uniqueOrders = Object.entries(grouped)
+    .filter(([, items]) => getOrderStatusLabel(items) === "APPROVED")
+    .map(([orderNo]) => orderNo);
   const count = uniqueOrders.length;
 
   const el = document.getElementById("pendingCount");
@@ -1969,7 +2273,7 @@ showLoader();
 const { data } = await db
     
 .from("requests")
-.select("*")
+.select(REQUEST_LIST_SELECT)
 .order("created_at",{ascending:false});
 GLOBAL_DATA = data;
 hideLoader();
@@ -1985,38 +2289,20 @@ grouped[r.OrderNo].items.push(r);
 
 const orders = applyOrderSort(
   Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-);
+).filter(shouldShowOrder);
 
 // FILTER
 let filtered;
 
 if(activeTab === "Approved"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-      return (status === "APPROVED" || status === "PENDING")
-        && !pendingApproval
-        && approval !== "REJECTED"
-        && (approval === "APPROVED" || approval === "");
-    })
-  );
+  filtered = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
 }
 else{
-  // ✅ ALL NON-APPROVED/NON-PENDING-APPROVAL (exclude super-rejected)
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-      const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-      return status !== "APPROVED"
-        && status !== "PENDING"
-        && status !== "PENDING APPROVAL"
-        && !pendingApproval
-        && approval !== "REJECTED";
-    })
-  );
+  // ✅ Processed tab = non-approved workflow states, excluding rejected/pending-approval.
+  filtered = orders.filter(o => {
+    const status = getOrderStatusLabel(o);
+    return status !== "APPROVED" && status !== "PENDING APPROVAL" && status !== "REJECTED";
+  });
 }
 
 
@@ -2069,83 +2355,14 @@ let html = `
 `;
 
 paginatedOrders.forEach((o,i)=>{
-
-const statuses = o.items.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
-  }
-
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
-    return "PENDING APPROVAL";
-  }
-  if(s.includes("PEND")){
-    return "APPROVED";
-  }
-
-  return s;
-});
-
-let orderStatus = "APPROVED";
-
-// ✅ PRIORITY BASED (TOP → DOWN)
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-else if(statuses.every(s => s === "PENDING APPROVAL")){
-  orderStatus = "PENDING APPROVAL";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "APPROVED";
-}
+const orderStatus = getOrderStatusLabel(o);
 
 const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
 html += `
 <tr onclick="openOrderView('${o.OrderNo}')"
 class="cursor-pointer transition hover:scale-[1.01]"
-style="${
-  o.OrderType === 'VOR'
-    ? 'background: rgba(255, 235, 150, 0.35); border-left: 4px solid #f59e0b;'
-    : ''
-}">
+style="${getOrderTypeRowStyle(o.OrderType)}">
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 
 <td class="px-4 py-3 text-center">
@@ -2189,24 +2406,7 @@ style="${
 </td>
 <td class="px-4 py-3 text-center">
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="
-      background:${
-        orderStatus === "DISPATCHED" ? "#d1fae5" :
-          orderStatus === "REJECTED" ? "#fde2e2" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-        orderStatus === "PROCESSED" ? "#fef3c7" :
-        orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        orderStatus === "DISPATCHED" ? "#065f46" :
-          orderStatus === "REJECTED" ? "#7f1d1d" :
-        orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-        orderStatus === "PROCESSED" ? "#92400e" :
-        orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
-    ">
+    style="${getStatusChipStyle(orderStatus)}">
     ${orderStatus}
   </span>
 </td>
@@ -2222,21 +2422,21 @@ html += `
 </div>
 
 
-<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
+<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
 
   <button onclick="changePage(-1)"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
 
-  <span class="text-sm font-semibold">
+  <span class="font-semibold tracking-wide leading-none">
     Page ${CURRENT_PAGE} / ${totalPages}
   </span>
 
   <button onclick="changePage(1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-secondary); color:white;"
     ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
     Next ➡
@@ -2365,16 +2565,67 @@ function getEffectiveValue(row){
   return Number(edited || 0);
 }
 
+function normalizeRowStatus(status){
+  const s = (status || "").toString().trim().toUpperCase();
+
+  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
+    return s.includes("NOT") ? "NOT DESPATCHED" : "DISPATCHED";
+  }
+  if(s.includes("REJECT")) return "REJECTED";
+  if(s.includes("PROCESS")) return "PROCESSED";
+  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING") || s === "PENDINGAPPROVAL"){
+    return "PENDING APPROVAL";
+  }
+  if(s.includes("PEND")) return "APPROVED";
+
+  return s || "PENDING APPROVAL";
+}
+
 function getOrderStatusLabel(order){
-  const statuses = (order?.items || []).map(x => (x.Status || "").toString().trim().toUpperCase());
-  if(statuses.every(s => s === "REJECTED")) return "REJECTED";
+  const items = Array.isArray(order?.items) ? order.items : (Array.isArray(order) ? order : []);
+  if(!items.length) return "PENDING APPROVAL";
+
+  const statuses = items.map(x => normalizeRowStatus(x?.Status));
+  const hasRejected = items.some(x => {
+    const approval = (x?.ApprovalStatus || "").toString().trim().toUpperCase();
+    return normalizeRowStatus(x?.Status) === "REJECTED" || approval === "REJECTED";
+  });
+  const hasPendingApproval = items.some(x =>
+    normalizeRowStatus(x?.Status) === "PENDING APPROVAL" || isPendingApprovalStatus(x?.ApprovalStatus)
+  );
+
+  if(hasRejected) return "REJECTED";
   if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
   if(statuses.includes("DISPATCHED")) return "PARTIALLY DISPATCHED";
   if(statuses.every(s => s === "NOT DESPATCHED")) return "NOT DESPATCHED";
   if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
-  if(statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING")) return "PENDING APPROVAL";
-  if(statuses.some(s => s === "APPROVED" || s === "PENDING")) return "APPROVED";
-  return statuses[0] || "";
+  if(statuses.every(s => s === "PENDING APPROVAL") || hasPendingApproval) return "PENDING APPROVAL";
+  if(statuses.some(s => s === "APPROVED")) return "APPROVED";
+
+  return statuses[0] || "PENDING APPROVAL";
+}
+
+function getStatusChipStyle(status){
+  const s = normalizeRowStatus(status);
+  const palette = {
+    "PENDING APPROVAL": { bg:"#fff7ed", text:"#9a3412", border:"#fdba74" },
+    "APPROVED": { bg:"#ecfdf5", text:"#065f46", border:"#86efac" },
+    "PROCESSED": { bg:"#eff6ff", text:"#1e3a8a", border:"#93c5fd" },
+    "DISPATCHED": { bg:"#dcfce7", text:"#166534", border:"#86efac" },
+    "PARTIALLY DISPATCHED": { bg:"#fef3c7", text:"#92400e", border:"#fcd34d" },
+    "NOT DESPATCHED": { bg:"#eef2ff", text:"#3730a3", border:"#c4b5fd" },
+    "REJECTED": { bg:"#fef2f2", text:"#991b1b", border:"#fca5a5" }
+  };
+  const p = palette[s] || { bg:"#f8fafc", text:"#334155", border:"#cbd5e1" };
+  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border}; white-space:nowrap; display:inline-flex; align-items:center; line-height:1.05;`;
+}
+
+function getOrderTypeRowStyle(orderType){
+  const type = (orderType || "").toString().trim().toUpperCase();
+  if(type === "VOR"){
+    return "background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04)); border-left: 4px solid #f59e0b;";
+  }
+  return "background: rgba(15,23,42,0.03); border-left: 4px solid transparent;";
 }
 
 function applyOrderSort(orders){
@@ -2413,7 +2664,11 @@ function applyOrderSort(orders){
 
 function isPendingApprovalStatus(val){
   const s = (val || "").toString().trim().toUpperCase();
-  return s === "PENDINGAPPROVAL" || s === "PENDING APPROVAL" || s === "APPROVAL PENDING";
+  return s === "PENDINGAPPROVAL" ||
+    s === "PENDING APPROVAL" ||
+    s === "APPROVAL PENDING" ||
+    s === "PENDINGMANAGERAPPROVAL" ||
+    s === "PENDING MANAGER APPROVAL";
 }
 
 function parseOrderComments(raw){
@@ -2426,18 +2681,49 @@ function parseOrderComments(raw){
   }
 }
 
+function isSystemActionComment(comment){
+  return (comment?.type || "").toString().trim().toLowerCase() === "system_action";
+}
+
 function getOrderComments(orderObj){
+  const uniqueComments = (items) => {
+    const seen = new Set();
+    return items.filter(c => {
+      const key = [
+        c?.by || "",
+        c?.text || "",
+        c?.at || "",
+        c?.attachmentName || "",
+        c?.attachmentUrl || ""
+      ].join("|");
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   if(Array.isArray(orderObj?.items)){
     for(const row of orderObj.items){
       const parsed = parseOrderComments(row?.OrderComments);
-      if(parsed.length) return parsed;
+      if(parsed.length) return uniqueComments(parsed);
     }
   }
-  return parseOrderComments(orderObj?.OrderComments);
+  return uniqueComments(parseOrderComments(orderObj?.OrderComments));
+}
+
+function getUserComments(orderObj){
+  return getOrderComments(orderObj).filter(c => !isSystemActionComment(c));
 }
 
 function getOrderCommentCount(orderObj){
-  return getOrderComments(orderObj).length;
+  return getUserComments(orderObj).length;
+}
+
+function shouldShowOrder(orderObj){
+  const items = Array.isArray(orderObj?.items) ? orderObj.items : [];
+  const totalQty = items.reduce((sum, x) => sum + getEffectiveQty(x), 0);
+  const totalValue = items.reduce((sum, x) => sum + getEffectiveValue(x), 0);
+  return !(totalQty === 0 && totalValue === 0);
 }
 
 function getCommentUserBg(by){
@@ -2448,6 +2734,61 @@ function getCommentUserBg(by){
     hash = (hash + name.charCodeAt(i)) % palettes.length;
   }
   return palettes[hash];
+}
+
+function formatDateTimeIST(dateValue){
+  if(!dateValue) return "-";
+  const date = new Date(dateValue);
+  if(Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  }).format(date);
+}
+
+function getActionEventTitle(action, fallbackText = ""){
+  const map = {
+    ORDER_CREATED: "ORDER WAS PLACED",
+    ADMIN_PROCESSED: "ORDER WAS PROCESSED",
+    ADMIN_REJECTED: "ORDER WAS REJECTED",
+    SUPER_APPROVED: "ORDER WAS APPROVED",
+    SUPER_FORWARDED_MANAGER: "ORDER WAS SENT FOR MANAGER APPROVAL",
+    SUPER_REJECTED: "ORDER WAS REJECTED",
+    MANAGER_APPROVED: "ORDER WAS APPROVED",
+    MANAGER_REJECTED: "ORDER WAS REJECTED",
+    APPROVER_CHANGED: "APPROVER WAS CHANGED",
+    SUPER_REMOVED_ROW: "PART WAS REMOVED FOR REVIEW",
+    SUPER_RESET_TO_ORIGINAL: "EDITED QUANTITIES WERE RESET",
+    SUPER_ACCEPTED_EDITS: "EDITED QUANTITIES WERE ACCEPTED",
+    STATUS_UPDATED: "STATUS WAS UPDATED"
+  };
+  if(map[action]) return map[action];
+  return fallbackText || "Action updated";
+}
+
+function getActionEventColor(action){
+  const palette = {
+    ORDER_CREATED: "#1d4ed8",
+    ADMIN_PROCESSED: "#0f766e",
+    STATUS_UPDATED: "#0f766e",
+    SUPER_APPROVED: "#166534",
+    SUPER_FORWARDED_MANAGER: "#1d4ed8",
+    ADMIN_REJECTED: "#b91c1c",
+    SUPER_REJECTED: "#b91c1c",
+    MANAGER_APPROVED: "#166534",
+    MANAGER_REJECTED: "#b91c1c",
+    APPROVER_CHANGED: "#6d28d9",
+    SUPER_ACCEPTED_EDITS: "#92400e",
+    SUPER_RESET_TO_ORIGINAL: "#92400e",
+    SUPER_REMOVED_ROW: "#9f1239"
+  };
+  return palette[action] || "#334155";
 }
 
 const commentAttachmentHrefCache = {};
@@ -2473,14 +2814,16 @@ function getCommentAttachmentHref(url){
 async function openOrderView(orderNo){
 
 const user = getUser();
-const isSuper = user.Role === "super";
+const isSuper = isSuperLikeRole(user);
 
   showLoader();
 
   const { data } = await db
     .from("requests")
     .select("*")
-    .eq("OrderNo", orderNo);
+    .eq("OrderNo", orderNo)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   hideLoader();
 
@@ -2492,84 +2835,54 @@ const isSuper = user.Role === "super";
 
   const total = data.reduce((s,x)=>s+getEffectiveValue(x),0);
 
-let orderStatus = "APPROVED";
+const orderStatus = getOrderStatusLabel(data);
+  const prevDays = Number(window.prevQtyDays) || 30;
+  const partNosForPrev = [...new Set(data.map(r => normalizePartNo(r.PartNo)).filter(Boolean))];
+  const prevQtyMap = {};
+  if(partNosForPrev.length){
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - prevDays);
+    const { data: prevRows } = await db
+      .from("requests")
+      .select("PartNo, Qty, editedqty")
+      .eq("Branch", order.Branch)
+      .in("PartNo", partNosForPrev)
+      .neq("Status", "REJECTED")
+      .neq("ApprovalStatus", "Rejected")
+      .gte("created_at", sinceDate.toISOString())
+      .neq("OrderNo", orderNo);
 
-const statuses = data.map(x => {
-  let s = (x.Status || "").toString().trim().toUpperCase();
-
-  // 🔥 NORMALIZE ALL POSSIBLE VALUES
-  if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    if(s.includes("NOT")){
-      return "NOT DESPATCHED";
-    }
-    return "DISPATCHED";
+    (prevRows || []).forEach(pr => {
+      const key = normalizePartNo(pr.PartNo);
+      prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
+    });
   }
-if(s.includes("REJECT")){
-  return "REJECTED";
-}
-  if(s.includes("PROCESS")){
-    return "PROCESSED";
-  }
-  if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING")){
-    return "PENDING APPROVAL";
-  }
-
-  if(s.includes("PEND")){
-    return "APPROVED";
-  }
-
-
-    
-  return s;
-});
-
-// ✅ ALL DISPATCHED
-
-// ✅ REJECTED (TOP PRIORITY)
-// ✅ PRIORITY BASED (CORRECT FIX)
-
-// 🔴 REJECTED (HIGHEST PRIORITY)
-if(statuses.every(s => s === "REJECTED")){
-  orderStatus = "REJECTED";
-}
-
-// 🟢 DISPATCHED
-else if(statuses.every(s => s === "DISPATCHED")){
-  orderStatus = "DISPATCHED";
-}
-
-// 🟡 PARTIAL DISPATCH
-else if(statuses.includes("DISPATCHED")){
-  orderStatus = "PARTIALLY DISPATCHED";
-}
-
-// 🔵 NOT DISPATCHED
-else if(statuses.every(s => s === "NOT DESPATCHED")){
-  orderStatus = "NOT DESPATCHED";
-}
-
-// 🟠 PROCESSED
-else if(statuses.every(s => s === "PROCESSED")){
-  orderStatus = "PROCESSED";
-}
-else if(statuses.every(s => s === "PENDING APPROVAL")){
-  orderStatus = "PENDING APPROVAL";
-}
-
-// ⚪ DEFAULT
-else{
-  orderStatus = "APPROVED";
-}
+  const canSuperEditQty = isSuper && (
+    orderStatus === "PENDING APPROVAL" ||
+    orderStatus === "APPROVAL PENDING"
+  );
   const superEditState = getSuperEditState(orderNo);
+  if(!window.superPendingEditState) window.superPendingEditState = {};
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  let hasPendingEditedQty = false;
   let partsHTML = data.map((r, idx)=>{
   const rowKey = `${r.PartNo || "PART"}__${idx}`;
   const rowEdit = superEditState[rowKey] || {};
-  const reviewQty = getEffectiveQty(r);
+  const prevQty = prevQtyMap[normalizePartNo(r.PartNo)] || 0;
+  const originalQty = Number(r.Qty || 0);
+  const autoSuggestedQty = Math.max(0, originalQty - prevQty);
+  const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
+  const editQtyForInput = hasPersistedEdit ? Math.max(0, Number(r.editedqty || 0)) : autoSuggestedQty;
+  const reviewQty = (isSuper && canSuperEditQty) ? originalQty : getEffectiveQty(r);
+  if(canSuperEditQty && (editQtyForInput !== originalQty)){
+    hasPendingEditedQty = true;
+  }
   const billedQty = Number(r.BilledQty || 0);
   const isRemoved = !!rowEdit.removed;
+  const isPersistedRemoved = hasPersistedEdit && Number(r.editedqty) === 0;
   const pendingQty = Math.max(0, reviewQty - billedQty);
 
-  if(isSuper && isRemoved){
+  if((canSuperEditQty && isRemoved) || isPersistedRemoved){
     return "";
   }
 
@@ -2577,7 +2890,7 @@ else{
   <tr class="text-xs" style="border-bottom: 1px solid rgba(170,205,220,0.16);">
   
     <td class="p-2">${r.PartNo}</td>
-    <td>${r.Description}</td>
+    <td class="text-left px-2">${r.Description || "-"}</td>
     <td>${reviewQty}</td>
     <td>${r.BilledQty || 0}</td>
         <td style="color:${
@@ -2587,26 +2900,13 @@ else{
         }; font-weight:600;">
           ${pendingQty}
         </td>
-    <td class="px-4 py-3 text-right" style="color: var(--pc-secondary); font-weight:600;">
-  ₹ ${getEffectiveValue(r).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+    <td class="px-4 py-3 text-right whitespace-nowrap" style="color: var(--pc-secondary); font-weight:600;">
+  ₹ ${Math.round(Number(getEffectiveValue(r) || 0)).toLocaleString("en-IN")}
 </td>
   
 <td>
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="
-      background:${
-        r.Status === "DISPATCHED" ? "#d1fae5" :
-        r.Status === "PROCESSED" ? "#fef3c7" :
-        r.Status === "NOT DESPATCHED" ? "#dbeafe" :
-        "#fde2e2"
-      };
-      color:${
-        r.Status === "DISPATCHED" ? "#065f46" :
-        r.Status === "PROCESSED" ? "#92400e" :
-        r.Status === "NOT DESPATCHED" ? "#1e3a8a" :
-        "#7f1d1d"
-      };
-    ">
+    style="${getStatusChipStyle(r.Status)}">
     ${(r.Status || "").toUpperCase()}
   </span>
 </td>
@@ -2617,50 +2917,90 @@ else{
     <td>${formatDate(r.BillingDt)}</td>
     <td>${r.TransportName || "-"}</td>
     <td>${r.Docket || "-"}</td>
-    ${isSuper ? `
+    <td>${prevQty}</td>
+    ${canSuperEditQty ? `
       <td>
         <input type="number" min="0"
-          value="${reviewQty}"
+          value="${editQtyForInput}"
           onchange="saveEditedQty('${orderNo}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}', this.value, '${r.Qty || 0}', '${r.Value || 0}')"
-          class="pc-field w-[90px] text-center" />
+          class="text-center text-xs rounded-md"
+          style="width:56px; padding:4px 4px; border:1px solid #BFAF9D; background:#fff; color:#1F2937;" />
       </td>
-      <td>
-        <button onclick="removeSuperRow('${orderNo}','${rowKey}')"
-          class="px-2 py-1 rounded text-xs font-semibold"
-          style="background:#fee2e2;color:#7f1d1d;">
-          Remove
+      <td class="text-center">
+        <button onclick="confirmRemoveSuperRow('${orderNo}','${rowKey}','${r.id || ""}','${r.PartNo || ""}','${r.created_at || ""}','${r.Qty || 0}','${r.Value || 0}')"
+          class="w-7 h-7 rounded-full text-sm font-bold transition-all duration-200 hover:-translate-y-[1px] hover:rotate-90 active:scale-95 flex items-center justify-center"
+          style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca; box-shadow:0 6px 12px rgba(185,28,28,0.18);"
+          title="Remove row">
+          ✕
         </button>
       </td>
     ` : ""}
     </tr>
     `;
   }).join("");
+  window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
 const isAdmin = user.Branch === "HQ";
-const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments });
-const commentsHTML = orderComments.length
-  ? orderComments.map(c => `
-      <div class="px-3 py-2 rounded-lg text-xs" style="background:${getCommentUserBg(c.by)}; border:1px solid var(--pc-border);">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-semibold">${c.by || "-"}</span>
-          <span style="color: var(--pc-text-muted);">=&gt;</span>
-          <span>"${c.text || ""}"</span>
-          <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${formatDateTime(c.at || "")}</span>
-          ${c.attachmentName
-            ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${c.attachmentName}</a>`
-            : ""}
-        </div>
-      </div>
+const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
+  .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
+const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
+const visibleOrderComments = orderComments.filter(c => {
+  if(c?.action === "SUPER_EDITED_QTY") return false;
+  if(hasManagerApprovedLog && c?.action === "SUPER_FORWARDED_MANAGER") return false;
+  return true;
+});
+const userCommentsCount = getOrderCommentCount({ items: data, OrderComments: order.OrderComments });
+const commentPalette = ["#fef3c7", "#dbeafe", "#dcfce7", "#fce7f3", "#ede9fe", "#e0f2fe", "#f1f5f9", "#fee2e2"];
+const commentByColor = {};
+let commentColorIndex = 0;
+const commentsHTML = visibleOrderComments.length
+  ? visibleOrderComments.map(c => `
+      ${isSystemActionComment(c)
+        ? `
+          <div class="system-action-row hidden py-0.5 text-[12px] border-b border-slate-200/60">
+            <div class="flex items-center gap-2 flex-wrap uppercase tracking-[0.02em]">
+              <span class="font-semibold" style="color:${getActionEventColor(c.action)};">${escapeHtml(getActionEventTitle(c.action, c.text))}</span>
+              <span class="text-[11px] font-medium" style="color:#64748b;">BY</span>
+              <span class="font-semibold" style="color:#1e3a8a;">${escapeHtml((c.by || "UNKNOWN USER").toUpperCase())}</span>
+              <span class="ml-auto" style="color:#334155;">${escapeHtml(formatDateTimeIST(c.at || "").toUpperCase())}</span>
+            </div>
+          </div>
+        `
+        : `
+          <div class="px-3 py-2 rounded-lg text-xs" style="background:${commentByColor[c.by || ""] || (commentByColor[c.by || ""] = commentPalette[(commentColorIndex++) % commentPalette.length])}; border:1px solid var(--pc-border);">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold">${escapeHtml(c.by || "-")}</span>
+              <span style="color: var(--pc-text-muted);">=&gt;</span>
+              <span>"${escapeHtml(c.text || "")}"</span>
+              <span class="ml-auto text-[11px]" style="color: var(--pc-text-muted);">${escapeHtml(formatDateTimeIST(c.at || ""))}</span>
+              ${c.attachmentName
+                ? `<a href="${getCommentAttachmentHref(c.attachmentUrl)}" target="_blank" class="text-[11px] font-medium" style="color:#2563eb;">📎 ${escapeHtml(c.attachmentName)}</a>`
+                : ""}
+            </div>
+          </div>
+        `}
     `).join("")
   : `<div class="text-xs" style="color: var(--pc-text-muted);">No comments yet.</div>`;
 let superApproverOptions = `<option value="">Change Approver</option>`;
+const alreadyForwardedBySuper = isSuper && !isManagerRole(user) && (data || []).some(r => {
+  const approval = (r?.ApprovalStatus || "").toString().trim().toUpperCase();
+  return (approval === "PENDINGMANAGERAPPROVAL" || approval === "PENDING MANAGER APPROVAL")
+    && (r?.ApprovedBySuper || "") === (user?.Name || "");
+});
+if(!window.superAlreadyForwardedToManager) window.superAlreadyForwardedToManager = {};
+window.superAlreadyForwardedToManager[orderNo] = !!alreadyForwardedBySuper;
+
+const canSuperActions = isSuper && (
+  orderStatus === "PENDING APPROVAL" ||
+  orderStatus === "APPROVAL PENDING"
+);
 
 if(isSuper){
   const { data: superUsers } = await db
     .from("users")
     .select("Name")
-    .eq("Role", "super");
+    .in("Role", ["super", "manager"]);
 
   if(superUsers && superUsers.length){
     superApproverOptions += superUsers
@@ -2676,38 +3016,40 @@ let actionButtons = "";
 if(isSuper){
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap justify-end">
-      <div class="flex gap-2 items-center mr-3">
-        <button onclick="sendToApprover('${orderNo}')"
-          class="px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#2563eb;color:white;">
-          Send
+      ${canSuperActions ? `
+        <button onclick="openChangeApproverPopup('${orderNo}', '${order.ApprovedBy || ""}')"
+          class="order-action-btn oa-primary px-3 py-2 rounded-lg font-semibold text-sm">
+          Change Approver
         </button>
-        <select id="changeApprover" class="pc-field w-[190px] text-sm">
-          ${superApproverOptions}
-        </select>
-      </div>
 
-      <button onclick="approveOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#16a34a;color:white;">
-        Approve
-      </button>
+        <button onclick="approveOrder('${orderNo}')"
+          class="order-action-btn oa-success px-3 py-2 rounded-lg font-semibold text-sm">
+          Approve
+        </button>
 
-      <button onclick="updateApproval('${orderNo}','Rejected')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#dc2626;color:white;">
-        Reject
-      </button>
+        <button onclick="updateApproval('${orderNo}','Rejected')"
+          class="order-action-btn oa-danger px-3 py-2 rounded-lg font-semibold text-sm">
+          Reject
+        </button>
+      ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#475569;color:white;">
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
         Download
       </button>
 
+      <button onclick="printOrderDetails('${orderNo}')"
+        class="order-action-btn oa-teal px-3 py-2 rounded-lg font-semibold text-sm">
+        Print
+      </button>
+
+      <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
+        Comment
+      </button>
+
       <button onclick="goBack()"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#e2e8f0;color:#0f172a;">
+        class="order-action-btn oa-neutral px-3 py-2 rounded-lg font-semibold text-sm">
         Back
       </button>
 
@@ -2719,28 +3061,37 @@ else{
     <div class="flex gap-2 items-center flex-wrap">
 
       ${isAdmin ? `
-        <input
-          id="processOrderNo"
-          value="${orderNo}"
-          class="pc-field w-[160px]"
-        />
+        <div class="flex gap-2 items-center">
+          <input
+            id="processOrderNo"
+            value="${orderNo}"
+            class="pc-field w-[120px] h-[38px] text-sm"
+          />
 
-        <button onclick="processOrder('${orderNo}')"
-          class="px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#2563eb;color:white;">
-          Process
-        </button>
+          <button onclick="processOrder('${orderNo}')"
+            class="order-action-btn oa-primary px-3 py-2 rounded-lg font-semibold text-sm">
+            Process
+          </button>
+        </div>
       ` : ""}
 
       <button onclick="downloadOrder('${orderNo}')"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#4b5563;color:white;">
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
         Download
       </button>
 
+      <button onclick="printOrderDetails('${orderNo}')"
+        class="order-action-btn oa-teal px-3 py-2 rounded-lg font-semibold text-sm">
+        Print
+      </button>
+
+      <button id="commentActionBtn" onclick="handleCommentAction('${orderNo}')"
+        class="order-action-btn oa-muted px-3 py-2 rounded-lg font-semibold text-sm">
+        Comment
+      </button>
+
       <button onclick="goBack()"
-        class="px-3 py-2 rounded-lg font-semibold text-sm"
-        style="background:#f3f4f6;color:#111827;">
+        class="order-action-btn oa-neutral px-3 py-2 rounded-lg font-semibold text-sm">
         Back
       </button>
 
@@ -2765,19 +3116,10 @@ document.getElementById("main").innerHTML = `
 <!-- ================= PROCESS BAR (HQ ONLY) ================= -->
 
 
-<div class="relative pc-section">
+<div class="px-1.5 py-1 rounded-md"
+  style="background:linear-gradient(90deg, rgba(148,163,184,0.14), rgba(148,163,184,0.05)); border:1px solid rgba(148,163,184,0.22);">
 
-  <div class="flex justify-between items-center flex-wrap gap-4">
-
-    <!-- ORDER DETAILS -->
-    <div>
-      <p class="text-sm font-semibold" style="color: var(--pc-text);">
-        Order Details
-      </p>
-      <p class="text-xs" style="color: var(--pc-text-muted);">
-        ${orderNo} • ${formatDateTime(order.created_at)}
-      </p>
-    </div>
+  <div class="flex justify-start items-center flex-wrap gap-2">
 
 ${actionButtons}
   </div>
@@ -2791,152 +3133,87 @@ ${actionButtons}
   <div class="relative pc-section">
 
     <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        ORDER SUMMARY
-      </span>
-    </div>
-
-    <div class="grid grid-cols-4 gap-4 text-sm mt-2">
-
-        <div class="flex items-center gap-2">
-          <span class="w-26" style="color: var(--pc-text-muted);">Order Type :</span>
-          <span class="font-semibold">${order.OrderType || "-"}</span>
-        </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Order For :</span>
-    <span class="font-semibold">${order.OrderFor || "-"}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Branch :</span>
-    <span class="font-semibold">${order.Branch}</span>
-  </div>
-
-<div class="flex items-center gap-2">
-  <span class="w-26" style="color: var(--pc-text-muted);">Status :</span>
-
-  <span class="px-2 py-1 rounded text-xs font-semibold"
-          style="
-            background:${
-              orderStatus === "DISPATCHED" ? "#d1fae5" :
-                orderStatus === "REJECTED" ? "#fde2e2" :
-              orderStatus === "PARTIALLY DISPATCHED" ? "#fef3c7" :
-              orderStatus === "PROCESSED" ? "#fef3c7" :
-              orderStatus === "NOT DESPATCHED" ? "#dbeafe" :
-              "#fde2e2"
-            };
-            color:${
-              orderStatus === "DISPATCHED" ? "#065f46" :
-                orderStatus === "REJECTED" ? "#7f1d1d" :
-              orderStatus === "PARTIALLY DISPATCHED" ? "#92400e" :
-              orderStatus === "PROCESSED" ? "#92400e" :
-              orderStatus === "NOT DESPATCHED" ? "#1e3a8a" :
-              "#7f1d1d"
-            };
-          ">
-          ${orderStatus}
-        </span>
-
-      </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Machine No :</span>
-    <span class="font-semibold">${order.MachineNo || "-"}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Customer :</span>
-    <span class="font-semibold">${order.CustomerName || "-"}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Machine Type :</span>
-    <span class="font-semibold">${order.WarrantyStatus || "-"}</span>
-  </div>
-
-  <div class="flex items-center gap-2">
-    <span class="w-26" style="color: var(--pc-text-muted);">Approved By :</span>
-    <span class="font-semibold">${order.ApprovedBy || "-"}</span>
-  </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- ================= PARTS TABLE ================= -->
-  <div class="relative pc-section">
-
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        PART DETAILS
-      </span>
-    </div>
-
-    <div class="overflow-x-auto mt-2">
-
-      <table class="w-full text-sm text-center border rounded-lg overflow-hidden">
-
-        <thead class="text-xs uppercase tracking-wider border-b"
-              style="background: var(--pc-warm); color: var(--pc-text);">
-
-          <tr>
-            <th class="py-2">Part</th>
-            <th>Description</th>
-            <th>Qty</th>
-            <th>Billed</th>
-            <th>Pending</th>
-            <th>Value</th>
-            <th>Status</th>
-            <th>Processed</th>
-            <th>Reg Dt</th>
-            <th>Bill No</th>
-            <th>Billing Dt</th>
-            <th>Transport</th>
-            <th>Docket</th>
-            ${isSuper ? "<th>Edit Qty</th><th>Remove Row</th>" : ""}
-          </tr>
-
-        </thead>
-
-        <tbody>
-          ${partsHTML}
-        </tbody>
-
-      </table>
-
-      ${isSuper ? `<div class="mt-2 text-[11px]" style="color: var(--pc-text-muted);">Super edits are review-only. Original order Qty in DB remains unchanged.</div>` : ""}
-
-      <div class="text-right mt-4 font-bold"
-           style="color: var(--pc-secondary);">
-        Total: ₹ ${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-      </div>
-
-    </div>
-
-  </div>
-
-  <div class="relative pc-section">
-    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
-      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
-        COMMENTS (${orderComments.length})
-      </span>
-    </div>
-
-    <div class="space-y-2 mt-2">
       <div class="flex items-center gap-2">
-        <button onclick="toggleCommentBox()"
-          class="px-3 py-2 rounded-lg font-semibold text-sm"
-          style="background:#334155; color:white;">
-          Add Comment
-        </button>
-        <button id="postCommentBtn" onclick="addOrderComment('${orderNo}')"
-          class="px-3 py-2 rounded-lg font-semibold text-sm hidden"
-          style="background:#2563eb; color:white;">
-          Post Comment
-        </button>
+        <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">
+          ORDER SUMMARY
+        </span>
+        <span class="text-[18px] font-black tracking-wide" style="color:#1d4ed8; letter-spacing:0.05em; text-shadow:0 1px 0 rgba(255,255,255,0.55);">${orderNo}</span>
+        <span class="text-[11px] font-medium" style="color: var(--pc-text-muted);">${formatDateTime(order.created_at)}</span>
       </div>
+    </div>
+
+    <div class="grid grid-cols-5 gap-2 text-xs mt-2">
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Order Type :</span>
+        <span class="font-semibold whitespace-nowrap">${order.OrderType || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Order For :</span>
+        <span class="font-semibold whitespace-nowrap">${order.OrderFor || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Branch :</span>
+        <span class="font-semibold whitespace-nowrap">${order.Branch || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Employee Name :</span>
+        <span class="font-semibold whitespace-nowrap">${order.EmployeeName || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Call ID :</span>
+        <span class="font-semibold whitespace-nowrap">${order.CallID || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Status :</span>
+        <span class="px-2 py-1 rounded text-xs font-semibold"
+                style="${getStatusChipStyle(orderStatus)}">
+                ${orderStatus}
+              </span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Machine No :</span>
+        <span class="font-semibold whitespace-nowrap">${order.MachineNo || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Customer :</span>
+        <span class="font-semibold whitespace-nowrap">${order.CustomerName || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5" style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Machine Type :</span>
+        <span class="font-semibold whitespace-nowrap">${order.WarrantyStatus || "-"}</span>
+      </div>
+
+      <div class="rounded-lg px-2 py-1.5 flex items-center justify-between gap-1.5"
+        style="background:rgba(255,255,255,0.7); border:1px solid var(--pc-border);">
+        <span class="text-[11px] uppercase tracking-wide whitespace-nowrap" style="color: var(--pc-text-muted);">Approved By :</span>
+        <span class="font-semibold whitespace-nowrap">${order.ApprovedBy || "-"}</span>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="relative pc-section">
+    <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">COMMENTS (${userCommentsCount})</span>
+      <button id="toggleLogsBtn" onclick="toggleActionLogs()"
+        class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+        style="background:#1e3a8a;color:#ffffff;border:1px solid #93c5fd; box-shadow:0 4px 10px rgba(30,58,138,0.25);">
+        SHOW LOGS
+      </button>
+    </div>
+
+    <div class="space-y-1.5 mt-2">
       <div id="commentComposer" class="hidden">
         <div class="relative">
           <input id="orderCommentInput" class="pc-field pr-24" type="text" placeholder="Write a comment..." />
@@ -2948,9 +3225,97 @@ ${actionButtons}
           <input id="commentAttachment" type="file" class="hidden" onchange="updateCommentFileName(this)" />
         </div>
         <div id="commentFileName" class="text-[11px] mt-1" style="color: var(--pc-text-muted);">No file selected</div>
+        <div class="mt-2">
+          <button id="postCommentBtn" onclick="addOrderComment('${orderNo}')"
+            class="order-action-btn px-3 py-2 rounded-lg font-semibold text-sm hidden"
+            style="background:#2563eb;color:white;">
+            Post Comment
+          </button>
+        </div>
       </div>
-      <div class="space-y-2">${commentsHTML}</div>
+      <div id="orderCommentsList" class="space-y-1">${commentsHTML}</div>
     </div>
+  </div>
+
+
+  <!-- ================= PARTS TABLE ================= -->
+  <div class="relative pc-section">
+
+    <div class="absolute -top-3 left-4 px-3" style="background: var(--pc-bg);">
+      <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">PART DETAILS</span>
+    </div>
+    ${canSuperEditQty ? `
+      <div class="absolute -top-3 right-4 px-3" style="background: var(--pc-bg);">
+        <button onclick="acceptEditedQty('${orderNo}')"
+          class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
+          style="
+            background:${window.superAcceptedEdits?.[orderNo] ? '#16a34a' : '#1e3a8a'};
+            color:#ffffff;
+            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? '#86efac' : '#93c5fd'};
+            box-shadow:0 4px 10px ${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(30,58,138,0.25)'};
+          ">
+          ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
+        </button>
+      </div>
+    ` : ""}
+
+    <div class="overflow-x-auto mt-2">
+
+      <table class="w-full text-sm border rounded-lg overflow-hidden">
+
+        <thead class="text-[11px] uppercase tracking-[0.08em] border-b"
+              style="background:linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); color:#0f172a; border-bottom:1px solid #cbd5e1;">
+
+          <tr>
+            <th class="py-2 text-left">Part</th>
+            <th class="text-left px-2">Description</th>
+            <th class="text-left">Qty</th>
+            <th class="text-left">Billed</th>
+            <th class="text-left">Pending</th>
+            <th class="text-left">Value</th>
+            <th class="text-left">Status</th>
+            <th class="text-left">Processed</th>
+            <th class="text-left">Reg Dt</th>
+            <th class="text-left">Bill No</th>
+            <th class="text-left">Billing Dt</th>
+            <th class="text-left">Transport</th>
+            <th class="text-left">Docket</th>
+            <th class="px-1 text-left">
+              PrevQty
+              <div class="mt-1">
+                <select onchange="changePrevQtyDays('${orderNo}', this.value)"
+                  class="text-[10px] px-1 py-[2px] rounded border"
+                  style="border-color: var(--pc-border); background:#fff;">
+                  <option value="7" ${prevDays === 7 ? "selected" : ""}>7d</option>
+                  <option value="15" ${prevDays === 15 ? "selected" : ""}>15d</option>
+                  <option value="30" ${prevDays === 30 ? "selected" : ""}>30d</option>
+                  <option value="60" ${prevDays === 60 ? "selected" : ""}>60d</option>
+                </select>
+              </div>
+            </th>
+            ${canSuperEditQty ? "<th class='w-16 text-left'>Edit Qty</th><th class='w-10 text-left'>Remove</th>" : ""}
+          </tr>
+
+        </thead>
+
+        <tbody>
+          ${partsHTML}
+        </tbody>
+
+      </table>
+
+      ${isSuper ? `` : ""}
+
+      <div class="text-right mt-4 font-bold"
+           style="color: #0f172a;">
+        <span class="inline-block px-4 py-2 rounded-lg"
+          style="background:linear-gradient(135deg, rgba(129,166,198,0.32), rgba(95,136,168,0.24)); border:1px solid var(--pc-border); box-shadow:0 6px 16px rgba(15,23,42,0.15);">
+          Total Value: ₹ ${Math.round(Number(total || 0)).toLocaleString("en-IN")}
+        </span>
+      </div>
+
+    </div>
+
   </div>
 
 </div>
@@ -2974,7 +3339,7 @@ let html = `
 <thead class="text-yellow-400 text-center">
 <tr>
 <th>Date</th>
-<th>Branch</th>
+<th class="text-left">Branch</th>
 <th>Machine</th>
 <th>Parts</th>
 <th>Total</th>
@@ -2991,19 +3356,11 @@ const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 html += `
 <tr onclick="toggleHQ(${i})" class="bg-gray-900 hover:bg-gray-800 transition rounded-lg shadow cursor-pointer">
 <td>${formatDateTime(o.created_at)}</td>
-<td class="text-center">${o.Branch}</td>
+<td class="text-left">${o.Branch}</td>
 <td class="text-center">${o.MachineNo}</td>
 <td>${o.items.length}</td>
 <td>₹ ${total}</td>
-<td class="${
-  orderStatus === "DISPATCHED" ? "text-green-400" :
-  orderStatus === "PARTIALLY DISPATCHED" ? "text-yellow-400" :
-  orderStatus === "PROCESSED" ? "text-yellow-400" :
-  orderStatus === "NOT DESPATCHED" ? "text-blue-400" :
-  "text-pink-400"
-}">
-  ${orderStatus}
-</td>
+<td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(orderStatus)}">${orderStatus}</span></td>
 </tr>
 
 
@@ -3062,6 +3419,7 @@ async function processOrder(orderNo){
     return showPopup("Error updating Order ❗");
   }
 
+  await appendOrderActionLog(inputOrderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Unknown User"}.`);
   showPopup("Order Updated & Processed ✅");
 
   loadAdmin("Processed");
@@ -3086,6 +3444,7 @@ async function rejectOrder(orderNo){
     return showPopup("Error rejecting order ❗");
   }
 
+  await appendOrderActionLog(orderNo, "ADMIN_REJECTED", `Order rejected by ${getUser()?.Name || "Unknown User"}.`);
   closePopup();
   showPopup("Order Rejected ❌");
 
@@ -3104,16 +3463,16 @@ const msg = document.getElementById("popupMsg");
 msg.innerHTML = `
 <div class="space-y-4 text-center">
 
-<p class="text-yellow-400 font-semibold">
+<p class="font-semibold" style="color:#b45309;">
 Machine not found ❗
 </p>
 
-<p class="text-sm text-gray-400">
+<p class="text-sm" style="color: var(--pc-text-muted);">
 Enter Customer Name
 </p>
 
 <input id="manualCustomer"
-  class="w-full bg-black border border-gray-600 px-3 py-2 rounded text-center"
+  class="pc-field w-full text-center"
   placeholder="Customer Name"/>
 
 </div>
@@ -3124,12 +3483,14 @@ document.getElementById("popupActions").innerHTML = `
 <div class="flex gap-3 justify-center w-full">
 
 <button onclick="saveNewMachine('${machineNo}')"
-  class="bg-yellow-400 px-5 py-2 text-black rounded min-w-[100px]">
+  class="order-action-btn px-5 py-2 rounded min-w-[100px]"
+  style="background:#16a34a;color:white;">
   Save
 </button>
 
 <button onclick="closePopup()"
-  class="bg-gray-700 px-5 py-2 rounded min-w-[100px]">
+  class="order-action-btn px-5 py-2 rounded min-w-[100px]"
+  style="background:#e2e8f0;color:#0f172a;">
   Cancel
 </button>
 
@@ -3263,6 +3624,7 @@ async function processExcelData(rows){
 
   let updated = 0;
   let skipped = 0;
+  const statusLoggedOrders = new Set();
 
   for(const r of rows){
     console.log("🟡 RAW EXCEL ROW:", r);
@@ -3282,7 +3644,7 @@ async function processExcelData(rows){
     // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
     const { data: existing } = await db
       .from("requests")
-      .select("*")
+      .select("id")
       .eq("OrderNo", orderNo)
       .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
       .maybeSingle();
@@ -3323,6 +3685,15 @@ async function processExcelData(rows){
 
     if(!error){
       updated++;
+      if(!statusLoggedOrders.has(orderNo)){
+        await appendOrderActionLog(
+          orderNo,
+          "STATUS_UPDATED",
+          `Status updated to ${(status || "Processed")} via upload by ${getUser()?.Name || "Unknown User"}.`,
+          { status: status || "Processed" }
+        );
+        statusLoggedOrders.add(orderNo);
+      }
     } else {
       console.error(error);
       skipped++;
@@ -3380,11 +3751,7 @@ async function processPartsUploadFlexible(rows){
       break;
     }
 
-    const { data } = await db
-      .from("part_master")
-      .select("*")
-      .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
-      .maybeSingle();
+    const data = await getPartMasterByPartNo(partNo);
 
     if(!data){
       failed++;
@@ -3538,7 +3905,7 @@ function renderSearchResults(data){
     grouped[r.OrderNo].items.push(r);
   });
 
-  const orders = Object.values(grouped);
+  const orders = Object.values(grouped).filter(shouldShowOrder);
 
   let html = `
   <div class="pc-section">
@@ -3548,16 +3915,18 @@ function renderSearchResults(data){
     </div>
 
     <div class="overflow-x-auto">
-      <table class="track-table w-full text-sm text-center border rounded-lg">
+	      <table class="track-table w-full text-sm text-left border rounded-lg">
 
-        <thead class="text-xs uppercase">
-          <tr>
-            <th>Date</th>
-            <th>Order Type</th>
-            <th>Branch</th>
-            <th>Qty</th>
-            <th>Value</th>
-            <th>Order No</th>
+	        <thead class="text-xs uppercase">
+	          <tr>
+	            <th>Date</th>
+	            <th>Order Type</th>
+	            <th class="text-left">Order For</th>
+	            <th class="text-left">Branch</th>
+	            <th>Qty</th>
+	            <th>Value</th>
+	            <th>Order No</th>
+            <th>Status</th>
           </tr>
         </thead>
 
@@ -3565,12 +3934,17 @@ function renderSearchResults(data){
   `;
 
   orders.forEach(o=>{
+    const tableStatusRaw = getOrderStatusLabel(o);
+    const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
+      tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
+      tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
 
     const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
     html += `
     <tr onclick="openOrderView('${o.OrderNo}')"
-    class="cursor-pointer hover:bg-gray-100">
+    class="cursor-pointer transition hover:scale-[1.01]" style="${getOrderTypeRowStyle(o.OrderType)}">
 
       <td>${formatDateTime(o.created_at)}</td>
       <td>
@@ -3591,15 +3965,24 @@ function renderSearchResults(data){
     ">
     ${o.OrderType || "-"}
   </span>
-</td>
-      <td>${o.Branch || "-"}</td>
-      <td class="px-4 py-3 text-center">${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
+	</td>
+	      <td class="text-left">
+	        ${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}
+	      </td>
+	      <td class="text-left">${o.Branch || "-"}</td>
+		      <td class="px-4 py-3">${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toFixed(2)}</td>
       <td class="font-semibold">
         ${o.OrderNo}
         ${getOrderCommentCount(o) > 0
           ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
           : ""}
+      </td>
+      <td>
+        <span class="px-2 py-1 rounded text-xs font-semibold"
+          style="${getStatusChipStyle(tableStatusRaw)}">
+          ${tableStatus}
+        </span>
       </td>
 
     </tr>
@@ -3613,7 +3996,303 @@ function renderSearchResults(data){
   </div>
   `;
 
-document.getElementById("resultsContainer").innerHTML = html;
+ const targetContainer =
+   document.getElementById("resultsContainer") ||
+   document.getElementById("main");
+
+ if(targetContainer){
+   targetContainer.innerHTML = html;
+ }
+}
+
+
+function renderManagerDashboard(orders){
+  const allOrders = orders || [];
+  const today = new Date().toISOString().slice(0, 10);
+  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
+  window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "PENDING APPROVAL" };
+  window.managerDashTableVisible = window.managerDashTableVisible !== false;
+
+  const fromDate = window.managerDashDateRange.from ? new Date(window.managerDashDateRange.from + "T00:00:00") : null;
+  const toDate = window.managerDashDateRange.to ? new Date(window.managerDashDateRange.to + "T23:59:59") : null;
+
+  const safeOrders = allOrders.filter(o => {
+    const d = new Date(o.created_at || 0);
+    if(fromDate && d < fromDate) return false;
+    if(toDate && d > toDate) return false;
+    return true;
+  });
+
+  const orderValue = (o) => (o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0);
+  const statusKey = (o) => {
+    const s = getOrderStatusLabel(o);
+    if(s === "PARTIALLY DISPATCHED" || s === "DISPATCHED") return "DISPATCHED";
+    return s;
+  };
+  const orderTypeKey = (o) => {
+    const t = (o.OrderType || "").toUpperCase();
+    if(t === "SOP"){
+      return (o.OrderFor || "").toUpperCase() === "CUSTOMER" ? "SOP_CUSTOMER" : "SOP_STOCK";
+    }
+    return t || "OTHER";
+  };
+  const summaryFrom = (list) => ({
+    count: list.length,
+    value: list.reduce((s, o) => s + orderValue(o), 0)
+  });
+  const byStatus = (k) => summaryFrom(safeOrders.filter(o => statusKey(o) === k));
+  const byType = (k) => summaryFrom(safeOrders.filter(o => orderTypeKey(o) === k));
+
+  const statusCards = [
+    { key: "ALL", label: "TOTAL ORDERS", ...summaryFrom(safeOrders), color: "#1e3a8a", bg1:"#dbeafe", bg2:"#eff6ff" },
+    { key: "PENDING APPROVAL", label: "PENDING APPROVAL", ...byStatus("PENDING APPROVAL"), color: "#b45309", bg1:"#fef3c7", bg2:"#fffbeb" },
+    { key: "APPROVED", label: "APPROVED", ...byStatus("APPROVED"), color: "#166534", bg1:"#dcfce7", bg2:"#f0fdf4" },
+    { key: "REJECTED", label: "REJECTED", ...byStatus("REJECTED"), color: "#b91c1c", bg1:"#fee2e2", bg2:"#fff1f2" },
+    { key: "PROCESSED", label: "PROCESSED", ...byStatus("PROCESSED"), color: "#7c3aed", bg1:"#ede9fe", bg2:"#f5f3ff" },
+    { key: "DISPATCHED", label: "DISPATCHED / P.DISPATCHED", ...byStatus("DISPATCHED"), color: "#0f766e", bg1:"#ccfbf1", bg2:"#f0fdfa" }
+  ];
+
+  const typeCards = [
+    { key: "VOR", label: "VOR", ...byType("VOR"), color: "#92400e", bg1:"#ffedd5", bg2:"#fff7ed" },
+    { key: "ZMAC", label: "ZMAC", ...byType("ZMAC"), color: "#4338ca", bg1:"#e0e7ff", bg2:"#eef2ff" },
+    { key: "ZSPL", label: "ZSPL", ...byType("ZSPL"), color: "#0369a1", bg1:"#dbeafe", bg2:"#f0f9ff" },
+    { key: "LUBES", label: "LUBES", ...byType("LUBES"), color: "#166534", bg1:"#dcfce7", bg2:"#f0fdf4" },
+    { key: "SOP_CUSTOMER", label: "SOP CUSTOMER", ...byType("SOP_CUSTOMER"), color: "#0f766e", bg1:"#ccfbf1", bg2:"#f0fdfa" },
+    { key: "SOP_STOCK", label: "SOP STOCK", ...byType("SOP_STOCK"), color: "#334155", bg1:"#e2e8f0", bg2:"#f8fafc" }
+  ];
+
+  const branchMap = {};
+  safeOrders.forEach(o => {
+    const b = o.Branch || "-";
+    if(!branchMap[b]){
+      branchMap[b] = {
+        branch: b,
+        totalOrders: 0, totalValue: 0,
+        pendingCount: 0, pendingValue: 0,
+        approvedCount: 0, approvedValue: 0,
+        rejectedCount: 0, rejectedValue: 0,
+        processedCount: 0, processedValue: 0,
+        dispatchedCount: 0, dispatchedValue: 0
+      };
+    }
+    const row = branchMap[b];
+    const val = orderValue(o);
+    const sk = statusKey(o);
+    row.totalOrders += 1;
+    row.totalValue += val;
+    if(sk === "PENDING APPROVAL"){ row.pendingCount += 1; row.pendingValue += val; }
+    if(sk === "APPROVED"){ row.approvedCount += 1; row.approvedValue += val; }
+    if(sk === "REJECTED"){ row.rejectedCount += 1; row.rejectedValue += val; }
+    if(sk === "PROCESSED"){ row.processedCount += 1; row.processedValue += val; }
+    if(sk === "DISPATCHED"){ row.dispatchedCount += 1; row.dispatchedValue += val; }
+  });
+  const branchRows = Object.values(branchMap).sort((a,b)=> b.totalValue - a.totalValue);
+
+  let selectedOrders = safeOrders;
+  const activeFilter = window.managerDashFilter;
+  if(activeFilter?.type === "status" && activeFilter.key !== "ALL"){
+    selectedOrders = safeOrders.filter(o => statusKey(o) === activeFilter.key);
+  } else if(activeFilter?.type === "type"){
+    selectedOrders = safeOrders.filter(o => orderTypeKey(o) === activeFilter.key);
+  } else if(activeFilter?.type === "branch"){
+    selectedOrders = safeOrders.filter(o => (o.Branch || "-") === activeFilter.key);
+  }
+
+  const cardHtml = (c, type) => {
+    const active = activeFilter && activeFilter.type === type && activeFilter.key === c.key;
+    return `
+      <button onclick="setManagerDashboardCardFilter('${type}','${c.key}','${c.label.replace(/'/g, "\\'")}')"
+        class="text-left rounded-lg p-2.5 border transition-all duration-300 hover:-translate-y-[4px] hover:scale-[1.03]"
+        style="border-color:${active ? c.color : '#bfdbfe'}; background:linear-gradient(135deg, ${c.bg1}, ${c.bg2}); box-shadow:${active ? '0 14px 30px rgba(37,99,235,0.26)' : '0 6px 16px rgba(15,23,42,0.10)'};">
+        <div class="text-[10px] font-semibold tracking-wider" style="color:${c.color};">${c.label}</div>
+        <div class="mt-1 flex items-end justify-between">
+          <div class="text-lg font-black" style="color:#0f172a;">${c.count}</div>
+          <div class="text-[11px] font-semibold" style="color:#334155;">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
+        </div>
+      </button>
+    `;
+  };
+
+  const totalRow = branchRows.reduce((acc, b) => {
+    acc.totalOrders += b.totalOrders; acc.totalValue += b.totalValue;
+    acc.pendingCount += b.pendingCount; acc.pendingValue += b.pendingValue;
+    acc.approvedCount += b.approvedCount; acc.approvedValue += b.approvedValue;
+    acc.rejectedCount += b.rejectedCount; acc.rejectedValue += b.rejectedValue;
+    acc.processedCount += b.processedCount; acc.processedValue += b.processedValue;
+    acc.dispatchedCount += b.dispatchedCount; acc.dispatchedValue += b.dispatchedValue;
+    return acc;
+  }, {
+    totalOrders:0,totalValue:0,pendingCount:0,pendingValue:0,approvedCount:0,approvedValue:0,rejectedCount:0,rejectedValue:0,processedCount:0,processedValue:0,dispatchedCount:0,dispatchedValue:0
+  });
+  const filterBg = activeFilter?.type === "status" ? "linear-gradient(180deg, #eff6ff, #f8fafc)"
+    : activeFilter?.type === "type" ? "linear-gradient(180deg, #f0fdfa, #f8fafc)"
+    : activeFilter?.type === "branch" ? "linear-gradient(180deg, #fff7ed, #f8fafc)"
+    : "linear-gradient(180deg, #f8fafc, #ffffff)";
+  document.getElementById("main").innerHTML = `
+    <div class="space-y-4">
+      <div class="relative pc-section" style="background:linear-gradient(135deg,#dbeafe,#e0f2fe); border-color:#60a5fa; box-shadow:0 10px 24px rgba(30,64,175,0.15);">
+        <div class="absolute -top-3 left-4 px-3" style="background:#ffffff;">
+          <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">MANAGER DASHBOARD</span>
+        </div>
+        <div class="flex items-center justify-end gap-2 text-xs mb-2">
+          <span style="color:#1e3a8a;font-weight:600;">From</span>
+          <input id="mgrDashFrom" type="date" class="pc-field !h-8 !px-2 !text-xs" style="width:132px; min-width:132px;" value="${window.managerDashDateRange.from || ""}" onchange="applyManagerDashboardDateRange()" />
+          <span style="color:#1e3a8a;font-weight:600;">To</span>
+          <input id="mgrDashTo" type="date" class="pc-field !h-8 !px-2 !text-xs" style="width:132px; min-width:132px;" value="${window.managerDashDateRange.to || ""}" onchange="applyManagerDashboardDateRange()" />
+        </div>
+
+        <div class="grid grid-cols-6 gap-2">
+          ${statusCards.map(c => cardHtml(c, "status")).join("")}
+        </div>
+        <div class="grid grid-cols-6 gap-2 mt-2">
+          ${typeCards.map(c => cardHtml(c, "type")).join("")}
+        </div>
+      </div>
+
+      <div class="relative pc-section" style="background:${filterBg}; border-color:var(--pc-border);">
+        <div class="absolute -top-3 left-4 px-3 flex items-center gap-2" style="background:#ffffff;">
+          <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">
+            ${activeFilter ? `FILTERED ORDERS - ${escapeHtml(activeFilter.label)}` : "FILTERED ORDERS - ALL"}
+          </span>
+          <button onclick="toggleManagerDashboardFilteredTable()"
+            class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide transition-all duration-200 hover:-translate-y-[1px]"
+            style="background:#1d4ed8;color:#fff;border:1px solid #60a5fa; box-shadow:0 4px 10px rgba(29,78,216,0.25);">
+            ${window.managerDashTableVisible ? "HIDE FILTERED TABLE" : "SHOW FILTERED TABLE"}
+          </button>
+        </div>
+        <div class="overflow-x-auto mt-2 ${window.managerDashTableVisible ? "" : "hidden"}" id="managerFilteredTableWrap">
+          <table class="track-table w-full table-auto text-sm text-left border rounded-lg overflow-hidden">
+            <thead class="text-xs uppercase tracking-wider border-b" style="background: var(--pc-warm); color: var(--pc-text);">
+              <tr>
+                <th class="px-2">Date</th><th class="px-2">Order Type</th><th class="text-left px-2">Customer</th><th class="text-left px-2">Branch</th><th class="text-center px-2">Qty</th><th class="text-right px-4">Value</th><th class="text-center px-5">Order No</th><th class="px-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedOrders.slice(0, 120).map(o => `
+                <tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer">
+                  <td class="whitespace-nowrap px-2">${formatDateTime(o.created_at)}</td>
+                  <td>
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold"
+                      style="
+                        background:${o.OrderType === 'VOR' ? '#fde68a' : o.OrderType === 'SOP' ? '#dbeafe' : o.OrderType === 'ZMAC' ? '#e0e7ff' : '#ede9fe'};
+                        color:${o.OrderType === 'VOR' ? '#92400e' : o.OrderType === 'SOP' ? '#1e3a8a' : o.OrderType === 'ZMAC' ? '#3730a3' : '#5b21b6'};
+                        box-shadow:${o.OrderType === 'VOR' ? '0 0 0 1px rgba(146,64,14,0.25), 0 2px 6px rgba(146,64,14,0.15)' : 'none'};">
+                      ${o.OrderType || "-"}
+                    </span>
+                  </td>
+                  <td class="text-left px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td>
+                  <td class="text-left px-2 whitespace-nowrap">${o.Branch || "-"}</td>
+                  <td class="text-center px-2 whitespace-nowrap">${(o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0)}</td>
+                  <td class="text-right px-6 whitespace-nowrap">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td>
+                  <td class="font-semibold text-center px-6 whitespace-nowrap">
+                    ${o.OrderNo}
+                    ${getOrderCommentCount(o) > 0
+                      ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
+                      : ""}
+                  </td>
+                  <td><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td>
+                </tr>
+              `).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected filter/date range.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="relative pc-section" style="background:#ffffff; border-color:var(--pc-border);">
+        <div class="absolute -top-3 left-4 px-3" style="background:#ffffff;">
+          <span class="text-xs font-semibold tracking-wider" style="color:#1e3a8a;">BRANCH-WISE STATS</span>
+        </div>
+        <div class="overflow-x-auto mt-2">
+          <table class="track-table w-full text-sm border rounded-xl overflow-hidden" style="background:#ffffff; border-color:#cbd5e1;">
+            <thead class="text-[11px] uppercase tracking-[0.06em] border-b" style="background:linear-gradient(180deg, #f8fafc, #eef2ff); color:#0f172a; border-color:#cbd5e1;">
+              <tr>
+                <th rowspan="2" class="text-left">Branch</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#bfdbfe,#dbeafe);">Live Total</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#fde68a,#fef3c7);">Pending Approval</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#86efac,#dcfce7);">Approved</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#fca5a5,#fee2e2);">Rejected</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#c4b5fd,#ede9fe);">Processed</th>
+                <th colspan="2" class="text-center" style="background:linear-gradient(180deg,#7dd3fc,#e0f2fe);">Dispatched / P.Dispatched</th>
+              </tr>
+              <tr>
+                <th class="text-center" style="background:rgba(147,197,253,0.52);">Orders</th><th class="text-right" style="background:rgba(147,197,253,0.52);">Value</th>
+                <th class="text-center" style="background:rgba(253,224,71,0.5);">Orders</th><th class="text-right" style="background:rgba(253,224,71,0.5);">Value</th>
+                <th class="text-center" style="background:rgba(134,239,172,0.52);">Orders</th><th class="text-right" style="background:rgba(134,239,172,0.52);">Value</th>
+                <th class="text-center" style="background:rgba(252,165,165,0.55);">Orders</th><th class="text-right" style="background:rgba(252,165,165,0.55);">Value</th>
+                <th class="text-center" style="background:rgba(196,181,253,0.55);">Orders</th><th class="text-right" style="background:rgba(196,181,253,0.55);">Value</th>
+                <th class="text-center" style="background:rgba(125,211,252,0.55);">Orders</th><th class="text-right" style="background:rgba(125,211,252,0.55);">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${branchRows.map(b => `
+                <tr onclick="setManagerDashboardBranchFilter('${(b.branch || '').replace(/'/g, "\\'")}')" class="cursor-pointer hover:bg-blue-50 transition-colors">
+                  <td class="text-left font-semibold py-2 px-2">${b.branch}</td>
+                  <td class="text-center" style="background:rgba(219,234,254,0.16);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.totalOrders}</span></td><td class="text-right pr-2" style="background:rgba(219,234,254,0.16);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.totalValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(254,243,199,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.pendingCount}</span></td><td class="text-right pr-2" style="background:rgba(254,243,199,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.pendingValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(220,252,231,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.approvedCount}</span></td><td class="text-right pr-2" style="background:rgba(220,252,231,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.approvedValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(254,226,226,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.rejectedCount}</span></td><td class="text-right pr-2" style="background:rgba(254,226,226,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.rejectedValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(237,233,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.processedCount}</span></td><td class="text-right pr-2" style="background:rgba(237,233,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.processedValue).toLocaleString("en-IN")}</span></td>
+                  <td class="text-center" style="background:rgba(224,242,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">${b.dispatchedCount}</span></td><td class="text-right pr-2" style="background:rgba(224,242,254,0.18);"><span class="px-2 py-0.5 rounded-md bg-white/70">₹ ${Math.round(b.dispatchedValue).toLocaleString("en-IN")}</span></td>
+                </tr>
+              `).join("")}
+              <tr style="background:rgba(30,64,175,0.22);">
+                <td class="text-left font-bold">TOTAL</td>
+                <td class="text-center font-bold">${totalRow.totalOrders}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.totalValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.pendingCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.pendingValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.approvedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.approvedValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.rejectedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.rejectedValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.processedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.processedValue).toLocaleString("en-IN")}</td>
+                <td class="text-center font-bold">${totalRow.dispatchedCount}</td><td class="text-right font-bold">₹ ${Math.round(totalRow.dispatchedValue).toLocaleString("en-IN")}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function applyManagerDashboardDateRange(){
+  window.managerDashDateRange = {
+    from: document.getElementById("mgrDashFrom")?.value || "",
+    to: document.getElementById("mgrDashTo")?.value || ""
+  };
+  loadSuper("Dashboard", true);
+}
+
+function resetManagerDashboardDateRange(){
+  window.managerDashDateRange = { from: "", to: new Date().toISOString().slice(0, 10) };
+  loadSuper("Dashboard", true);
+}
+
+function setManagerDashboardCardFilter(type, key, label){
+  if(
+    window.managerDashFilter &&
+    window.managerDashFilter.type === type &&
+    window.managerDashFilter.key === key
+  ){
+    return;
+  }
+  window.managerDashFilter = { type, key, label };
+  window.managerDashTableVisible = true;
+  loadSuper("Dashboard", true);
+}
+
+function clearManagerDashboardCardFilter(){
+  window.managerDashFilter = null;
+  loadSuper("Dashboard", true);
+}
+
+function toggleManagerDashboardFilteredTable(){
+  window.managerDashTableVisible = !window.managerDashTableVisible;
+  loadSuper("Dashboard", true);
+}
+
+function setManagerDashboardBranchFilter(branch){
+  window.managerDashFilter = { type: "branch", key: branch, label: `BRANCH: ${branch}` };
+  window.managerDashTableVisible = true;
+  loadSuper("Dashboard", true);
 }
 
 
@@ -3635,37 +4314,21 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   showLoader();
 
   const user = getUser();
+  const isManager = isManagerRole(user);
 
-  const { data } = await db
+  let query = db
     .from("requests")
-    .select("*")
-    .eq("ApprovedBy", user.Name)   // 🔥 KEY FILTER
+    .select(REQUEST_LIST_SELECT)
     .order("created_at",{ascending:false});
 
-  // ✅ FORCE STATUS ALIGNMENT FOR NOT-YET-APPROVED ORDERS
-  const pendingApprovalOrderNos = [...new Set(
-    (data || [])
-      .filter(r => isPendingApprovalStatus(r.ApprovalStatus))
-      .map(r => r.OrderNo)
-  )];
-
-  for (const orderNo of pendingApprovalOrderNos){
-    await db
-      .from("requests")
-      .update({ Status: "PENDING APPROVAL", ApprovalStatus: "PendingApproval" })
-      .eq("OrderNo", orderNo);
-  }
-
-  if(pendingApprovalOrderNos.length){
-    const { data: refreshed } = await db
-      .from("requests")
-      .select("*")
-      .eq("ApprovedBy", user.Name)
-      .order("created_at",{ascending:false});
-    GLOBAL_DATA = refreshed || [];
+  if(isManager){
+    // Manager can view all orders in All Orders tab.
   } else {
-    GLOBAL_DATA = data || [];
+    query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
   }
+
+  const { data } = await query;
+  GLOBAL_DATA = data || [];
   hideLoader();
 
   // GROUP
@@ -3686,42 +4349,52 @@ const grouped = {};
 
   const orders = applyOrderSort(
     Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  );
+  ).filter(shouldShowOrder);
+
+  if(isManager && activeTab === "Dashboard"){
+    renderManagerDashboard(orders);
+    return;
+  }
 
   // FILTER TABS
   let filtered;
 
 if(activeTab === "PendingApproval"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      return status === "PENDING APPROVAL" || status === "APPROVAL PENDING" || isPendingApprovalStatus(x.ApprovalStatus);
-    })
-  );
+  filtered = orders.filter(o => {
+    const pending = getOrderStatusLabel(o) === "PENDING APPROVAL";
+    if(!pending) return false;
+    if(isManager) return true;
+    const forwardedByCurrentSuper = o.items.some(x => {
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      return (approval === "PENDINGMANAGERAPPROVAL" || approval === "PENDING MANAGER APPROVAL")
+        && (x.ApprovedBySuper || "") === (user?.Name || "");
+    });
+    return !forwardedByCurrentSuper;
+  });
 }
 else if(activeTab === "Approved"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      return status === "APPROVED" || status === "PENDING";
-    })
-  );
+  filtered = orders.filter(o => {
+    const approved = getOrderStatusLabel(o) === "APPROVED";
+    if(isManager) return approved;
+    const forwardedByCurrentSuper = o.items.some(x => {
+      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
+      return (approval === "PENDINGMANAGERAPPROVAL" || approval === "PENDING MANAGER APPROVAL")
+        && (x.ApprovedBySuper || "") === (user?.Name || "");
+    });
+    return approved || forwardedByCurrentSuper;
+  });
 }
 else if(activeTab === "Rejected"){
-  filtered = orders.filter(o => 
-    o.items.some(x => {
-      const status = (x.Status || "").toString().trim().toUpperCase();
-      const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-      return status === "REJECTED" || approval === "REJECTED";
-    })
-  );
+  filtered = orders.filter(o => getOrderStatusLabel(o) === "REJECTED");
 }
 else if(activeTab === "All"){
-  filtered = orders.filter(o => 
-    o.items.some(x => 
-      x.ApprovedBy === getUser().Name
-    )
-  );
+  filtered = isManager
+    ? orders
+    : orders.filter(o =>
+        o.items.some(x =>
+          x.ApprovedBy === getUser().Name || x.ApprovedBySuper === getUser().Name
+        )
+      );
 }
   else{
     filtered = orders;
@@ -3744,7 +4417,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
       </div>
 
       <div class="overflow-x-auto mt-2">
-        <table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden">
+	        <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
           <thead class="text-xs uppercase tracking-wider border-b"
             style="background: var(--pc-warm); color: var(--pc-text);">
             <tr>
@@ -3753,41 +4426,30 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
             
               <th>Date</th>
               <th>Order Type</th>
-              <th>Customer</th>
-              <th>Branch</th>
+              <th class="text-left">Customer</th>
+              <th class="text-left">Branch</th>
               <th>Qty</th>
               <th>Value</th>
               <th>Order No</th>
-              <th class="px-4 py-3 text-center">Status</th>
+	              <th class="px-4 py-3 text-left">Status</th>
             </tr>
           </thead>
           <tbody>
   `;
 
   paginatedOrders.forEach(o=>{
-
-    const statuses = o.items.map(x => (x.Status || "").toString().trim().toUpperCase());
-    const isRejected = statuses.every(s => s === "REJECTED") || statuses.includes("REJECTED");
-    const isPendingApproval = statuses.every(s => s === "PENDING APPROVAL" || s === "APPROVAL PENDING");
-    const isApproved = statuses.every(s => s === "APPROVED" || s === "PENDING");
-    const tableStatus = isRejected
-      ? "Rejected"
-      : isPendingApproval
-        ? "Pending Approval"
-        : isApproved
-          ? "Approved"
-          : (o.items[0].Status || "Pending Approval");
+    const tableStatusRaw = getOrderStatusLabel(o);
+    const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
+      tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
+      tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
       
     const total = o.items.reduce((s,x)=>s+getEffectiveValue(x),0);
 
     html += `
             <tr onclick="openOrderView('${o.OrderNo}')"
             class="cursor-pointer transition hover:scale-[1.01]"
-            style="${
-              o.OrderType === 'VOR'
-                ? 'background: rgba(245, 158, 11, 0.12); border-left: 4px solid #f59e0b;'
-                : ''
-            }">
+            style="${getOrderTypeRowStyle(o.OrderType)}">
       <td>${formatDateTime(o.created_at)}</td>
       <td>
         <span class="px-2 py-1 rounded-full text-xs font-semibold"
@@ -3808,8 +4470,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
           ${o.OrderType || "-"}
         </span>
       </td>
-      <td>${o.CustomerName || "Stock"}</td>
-      <td>${o.Branch}</td>
+      <td class="text-left">${o.CustomerName || "Stock"}</td>
+	      <td class="text-left">${o.Branch}</td>
       <td>${o.items.reduce((s,x)=>s+getEffectiveQty(x),0)}</td>
       <td>₹ ${total.toLocaleString("en-IN")}</td>
       <td>
@@ -3818,20 +4480,9 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
           ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:#e0e7ff;color:#3730a3;">💬 ${getOrderCommentCount(o)}</span>`
           : ""}
       </td>
-      <td class="px-4 py-3 text-center">
+	      <td class="px-4 py-3 text-left">
       <span class="px-2 py-1 rounded text-xs font-semibold"
-        style="
-          background:${
-            tableStatus === "Approved" ? "#d1fae5" :
-            tableStatus === "Rejected" ? "#fde2e2" :
-            "#fef3c7"
-          };
-          color:${
-            tableStatus === "Approved" ? "#065f46" :
-            tableStatus === "Rejected" ? "#7f1d1d" :
-            "#92400e"
-          };
-        ">
+        style="${getStatusChipStyle(tableStatusRaw)}">
         ${tableStatus}
       </span>
     </td>
@@ -3846,21 +4497,21 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
 
 
-<div class="flex justify-between items-center mt-4 px-3 py-2 rounded-lg" style="background:#dbe7f3; border:1px solid var(--pc-border);">
+<div class="flex justify-between items-center mt-2 px-2 py-0.5 rounded-md text-[11px]" style="background:linear-gradient(90deg, #2f3e4d, #3f556b); border:1px solid #5b748d; color:#f8fafc;">
 
   <button onclick="changePage(-1)"
-    class="px-4 py-2 rounded-lg font-semibold"
-    style="background: var(--pc-surface); border:1px solid var(--pc-border);"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
+    style="background: var(--pc-surface); border:1px solid var(--pc-border); color:#0f172a;"
     ${CURRENT_PAGE === 1 ? "disabled opacity-50 cursor-not-allowed" : ""}>
     ⬅ Prev
   </button>
 
-  <span class="text-sm font-semibold">
+  <span class="font-semibold tracking-wide leading-none">
     Page ${CURRENT_PAGE} / ${totalPages}
   </span>
 
   <button onclick="changePage(1)"
-    class="px-4 py-2 rounded-lg font-semibold"
+    class="px-2.5 py-0.5 rounded font-semibold text-[11px]"
     style="background: var(--pc-secondary); color:white;"
     ${CURRENT_PAGE >= totalPages ? "disabled opacity-50 cursor-not-allowed" : ""}>
     Next ➡
@@ -3924,17 +4575,45 @@ async function openSuperOrder(orderNo){
 }
 
 
+async function getDefaultManagerApprover(excludeName = ""){
+  const query = db
+    .from("users")
+    .select("Name")
+    .eq("Role", "manager");
+
+  const { data, error } = await (excludeName ? query.neq("Name", excludeName) : query);
+  if(error || !data?.length) return "";
+  return data[0].Name || "";
+}
 
 async function updateApproval(orderNo, status){
 
   showLoader();
   const user = getUser();
+  const isManager = isManagerRole(user);
 
   const approvalUpdateData = { ApprovalStatus: status };
   if(status === "Approved"){
-    approvalUpdateData.Status = "Approved";
-    approvalUpdateData.ApprovedBySuper = user.Name || "";
-    approvalUpdateData.ApprovedAt = new Date().toISOString();
+    if(isManager){
+      approvalUpdateData.Status = "Approved";
+      approvalUpdateData.ApprovalStatus = "Approved";
+      approvalUpdateData.ApprovedAt = new Date().toISOString();
+    } else {
+      const managerName = await getDefaultManagerApprover(user?.Name || "");
+      if(managerName){
+        approvalUpdateData.Status = "PENDING APPROVAL";
+        approvalUpdateData.ApprovalStatus = "PendingManagerApproval";
+        approvalUpdateData.ApprovedBy = managerName;
+        approvalUpdateData.ApprovedBySuper = user.Name || "";
+        approvalUpdateData.ApprovedAt = new Date().toISOString();
+      } else {
+        // Fallback: if no manager configured, keep existing single-step behavior.
+        approvalUpdateData.Status = "Approved";
+        approvalUpdateData.ApprovalStatus = "Approved";
+        approvalUpdateData.ApprovedBySuper = user.Name || "";
+        approvalUpdateData.ApprovedAt = new Date().toISOString();
+      }
+    }
   } else if(status === "Rejected"){
     approvalUpdateData.Status = "Rejected";
   }
@@ -3950,13 +4629,66 @@ async function updateApproval(orderNo, status){
     return showPopup("Update failed ❌");
   }
 
+  await appendOrderActionLog(
+    orderNo,
+    status === "Approved"
+      ? (isManager ? "MANAGER_APPROVED" : "SUPER_FORWARDED_MANAGER")
+      : (isManager ? "MANAGER_REJECTED" : "SUPER_REJECTED"),
+    status === "Approved"
+      ? (isManager
+          ? `Order approved by ${user.Name || "Unknown User"}.`
+          : `Order approved by ${user.Name || "Unknown User"} and forwarded to manager.`)
+      : `Order rejected by ${user.Name || "Unknown User"}.`
+  );
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
 }
 
-async function sendToApprover(orderNo){
-  const approver = document.getElementById("changeApprover")?.value;
+async function openChangeApproverPopup(orderNo, currentApprover = ""){
+  const { data: superUsers } = await db
+    .from("users")
+    .select("Name")
+    .in("Role", ["super", "manager"]);
+
+  const options = [`<option value="">Select Approver</option>`]
+    .concat((superUsers || []).map(u =>
+      `<option value="${u.Name}" ${u.Name === currentApprover ? "selected" : ""}>${u.Name}</option>`
+    ))
+    .join("");
+
+  showPopup(
+    "Change Approver",
+    "info",
+    `
+      <div class="flex gap-2 justify-end">
+        <button onclick="sendToApprover('${orderNo}', document.getElementById('popupApproverSelect')?.value)"
+          class="px-4 py-2 rounded-lg font-semibold text-sm"
+          style="background:#1d4ed8;color:#fff;">
+          Send
+        </button>
+        <button onclick="closePopup()"
+          class="px-4 py-2 rounded-lg font-semibold text-sm"
+          style="background:#e2e8f0;color:#0f172a;">
+          Cancel
+        </button>
+      </div>
+    `
+  );
+
+  const popupMsg = document.getElementById("popupMsg");
+  if(popupMsg){
+    popupMsg.innerHTML = `
+      <div class="space-y-2 text-left">
+        <label class="text-xs font-semibold tracking-wide" style="color:var(--pc-text-muted);">APPROVER</label>
+        <select id="popupApproverSelect" class="pc-field text-sm">${options}</select>
+      </div>
+    `;
+  }
+}
+
+async function sendToApprover(orderNo, selectedApprover = ""){
+  const approver = selectedApprover || document.getElementById("changeApprover")?.value;
   if(!approver){
     return showPopup("Please select approver ❗");
   }
@@ -3972,15 +4704,50 @@ async function sendToApprover(orderNo){
     return showPopup("Failed to update approver ❌");
   }
 
+  await appendOrderActionLog(orderNo, "APPROVER_CHANGED", `Approver changed to ${approver} by ${getUser()?.Name || "Unknown User"}.`, { approver });
+  closePopup();
   showPopup("Approver updated ✅");
   openOrderView(orderNo);
 }
 
-function toggleCommentBox(){
+function handleCommentAction(orderNo){
   const composer = document.getElementById("commentComposer");
   const postBtn = document.getElementById("postCommentBtn");
-  composer?.classList.toggle("hidden");
-  postBtn?.classList.toggle("hidden");
+
+  if(!composer) return;
+
+  if(composer.classList.contains("hidden")){
+    composer.classList.remove("hidden");
+    postBtn?.classList.remove("hidden");
+    document.getElementById("orderCommentInput")?.focus();
+    return;
+  }
+  composer.classList.add("hidden");
+  postBtn?.classList.add("hidden");
+}
+
+function toggleActionLogs(){
+  const rows = Array.from(document.querySelectorAll(".system-action-row"));
+  if(!rows.length) return;
+
+  const shouldShow = rows.every(r => r.classList.contains("hidden"));
+  rows.forEach(r => r.classList.toggle("hidden", !shouldShow));
+
+  const btn = document.getElementById("toggleLogsBtn");
+  if(btn){
+    btn.textContent = shouldShow ? "HIDE LOGS" : "SHOW LOGS";
+    if(shouldShow){
+      btn.style.background = "#fef3c7";
+      btn.style.color = "#92400e";
+      btn.style.border = "1px solid #f59e0b";
+      btn.style.boxShadow = "0 4px 10px rgba(180,83,9,0.22)";
+    }else{
+      btn.style.background = "#1e3a8a";
+      btn.style.color = "#ffffff";
+      btn.style.border = "1px solid #93c5fd";
+      btn.style.boxShadow = "0 4px 10px rgba(30,58,138,0.25)";
+    }
+  }
 }
 
 function updateCommentFileName(input){
@@ -4021,13 +4788,95 @@ async function saveEditedQty(orderNo, rowId, partNo, createdAt, value, originalQ
     return showPopup("Failed to save edited qty ❌");
   }
 
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = false;
+
   openOrderView(orderNo);
 }
 
-function removeSuperRow(orderNo, rowKey){
+async function removeSuperRow(orderNo, rowKey, rowId, partNo, createdAt, originalQty, originalValue){
+  showLoader();
+  let query = db
+    .from("requests")
+    .update({ editedqty: 0, editedvalue: 0 });
+
+  if(rowId){
+    query = query.eq("id", rowId);
+  }else{
+    query = query.eq("OrderNo", orderNo).eq("PartNo", partNo);
+    if(createdAt) query = query.eq("created_at", createdAt);
+  }
+
+  await query;
+  hideLoader();
+
+  await appendOrderActionLog(
+    orderNo,
+    "SUPER_REMOVED_ROW",
+    `Part ${partNo || "-"} removed from review by ${getUser()?.Name || "Unknown User"}.`,
+    { partNo, editedqty: 0, editedvalue: 0 }
+  );
+
   const state = getSuperEditState(orderNo);
   state[rowKey] = { ...(state[rowKey] || {}), removed: true };
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = false;
   openOrderView(orderNo);
+}
+
+function confirmRemoveSuperRow(orderNo, rowKey, rowId, partNo, createdAt, originalQty, originalValue){
+  showPopup(
+    "Remove this part row from review? ❗",
+    "warning",
+    `
+      <div class="flex gap-2">
+        <button onclick="removeSuperRow('${orderNo}','${rowKey}','${rowId}','${partNo}','${createdAt}','${originalQty}','${originalValue}'); closePopup();"
+          class="px-4 py-2 rounded-lg font-semibold"
+          style="background:#dc2626;color:white;">
+          Yes, Remove
+        </button>
+        <button onclick="closePopup()"
+          class="px-4 py-2 rounded-lg font-semibold"
+          style="background:#e2e8f0;color:#0f172a;">
+          Cancel
+        </button>
+      </div>
+    `
+  );
+}
+
+async function appendOrderActionLog(orderNo, action, text, meta = {}){
+  try{
+    const user = getUser() || {};
+    const actor = user.Name || "Unknown User";
+    const nowIso = new Date().toISOString();
+
+    const { data: firstRow, error: rowError } = await db
+      .from("requests")
+      .select("id, OrderComments")
+      .eq("OrderNo", orderNo)
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if(rowError || !firstRow?.length) return;
+
+    const existing = getOrderComments({ OrderComments: firstRow[0].OrderComments });
+    existing.push({
+      type: "system_action",
+      action,
+      by: actor,
+      text,
+      at: nowIso,
+      meta
+    });
+
+    await db
+      .from("requests")
+      .update({ OrderComments: JSON.stringify(existing) })
+      .eq("id", firstRow[0].id);
+  }catch(err){
+    console.warn("appendOrderActionLog failed", err);
+  }
 }
 
 async function addOrderComment(orderNo){
@@ -4092,6 +4941,7 @@ async function addOrderComment(orderNo){
 
     const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
   existing.push({
+    type: "user",
     by: user.Name || user.Role || "User",
     text,
     at: new Date().toISOString(),
@@ -4119,25 +4969,337 @@ async function addOrderComment(orderNo){
   if(error){
     return showPopup("Failed to add comment ❌ (Please ensure OrderComments column exists in requests table)");
   }
+  const composer = document.getElementById("commentComposer");
+  const postBtn = document.getElementById("postCommentBtn");
+  composer?.classList.add("hidden");
+  postBtn?.classList.add("hidden");
   showPopup("Comment added ✅");
   openOrderView(orderNo);
 }
 
 async function approveOrder(orderNo){
+  const user = getUser();
+  const isSuper = isSuperLikeRole(user);
+  const alreadyForwarded = !!window.superAlreadyForwardedToManager?.[orderNo];
+  if(isSuper && !isManagerRole(user) && alreadyForwarded){
+    return showPopup("This order is already approved by you and sent for Parts Manager approval.");
+  }
+  const hasPendingEdited = !!window.superPendingEditState?.[orderNo];
+  const accepted = !!window.superAcceptedEdits?.[orderNo];
+
+  if(isSuper && hasPendingEdited && !accepted){
+    return showPopup(
+      "You have not accepted the edited qty. The order will be placed with the original qty.",
+      "warning",
+      `
+        <div class="flex gap-2">
+          <button onclick="approveWithOriginalQty('${orderNo}')"
+            class="px-4 py-2 rounded-lg font-semibold"
+            style="background:#2563eb;color:white;">
+            Approve with Original Qty
+          </button>
+          <button onclick="closePopup()"
+            class="px-4 py-2 rounded-lg font-semibold"
+            style="background:#e2e8f0;color:#0f172a;">
+            Cancel
+          </button>
+        </div>
+      `
+    );
+  }
+
   await updateApproval(orderNo, "Approved");
+}
+
+async function approveWithOriginalQty(orderNo){
+  closePopup();
+  showLoader();
+  await db
+    .from("requests")
+    .update({ editedqty: null, editedvalue: null })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+  await appendOrderActionLog(orderNo, "SUPER_RESET_TO_ORIGINAL", `Edited quantities reset to original by ${getUser()?.Name || "Unknown User"} before approval.`);
+  await updateApproval(orderNo, "Approved");
+}
+
+async function acceptEditedQty(orderNo){
+  showLoader();
+  const { data } = await db
+    .from("requests")
+    .select("id, OrderNo, PartNo, Branch, Qty, DNP, Value, editedqty")
+    .eq("OrderNo", orderNo);
+
+  const rows = data || [];
+  if(rows.length){
+    const prevDays = Number(window.prevQtyDays) || 30;
+    const partNos = [...new Set(rows.map(r => normalizePartNo(r.PartNo)).filter(Boolean))];
+    const prevQtyMap = {};
+
+    if(partNos.length){
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - prevDays);
+      const { data: prevRows } = await db
+        .from("requests")
+        .select("PartNo, Qty, editedqty")
+        .eq("Branch", rows[0].Branch)
+        .in("PartNo", partNos)
+        .neq("Status", "REJECTED")
+        .neq("ApprovalStatus", "Rejected")
+        .gte("created_at", sinceDate.toISOString())
+        .neq("OrderNo", orderNo);
+
+      (prevRows || []).forEach(pr => {
+        const key = normalizePartNo(pr.PartNo);
+        prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
+      });
+    }
+
+    for(const r of rows){
+      const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
+      const prevQty = prevQtyMap[normalizePartNo(r.PartNo)] || 0;
+      const originalQty = Number(r.Qty || 0);
+      const targetEditedQty = hasPersistedEdit
+        ? Math.max(0, Number(r.editedqty || 0))
+        : Math.max(0, originalQty - prevQty);
+
+      const baseValue = Number(r.Value || 0);
+      const unitValue = originalQty > 0 ? (baseValue / originalQty) : Number(r.DNP || 0);
+      const targetEditedValue = Number((unitValue * targetEditedQty).toFixed(2));
+
+      await db
+        .from("requests")
+        .update({ editedqty: targetEditedQty, editedvalue: targetEditedValue })
+        .eq("id", r.id);
+    }
+  }
+  hideLoader();
+
+  if(!window.superAcceptedEdits) window.superAcceptedEdits = {};
+  window.superAcceptedEdits[orderNo] = true;
+  await appendOrderActionLog(orderNo, "SUPER_ACCEPTED_EDITS", `Edited quantities accepted for approval by ${getUser()?.Name || "Unknown User"}.`);
+  showPopup("Edited qty accepted for approval ✅");
+  openOrderView(orderNo);
 }
 
 function goBack(){
   const user = getUser();
-  if(user.Role === "super"){
+  if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
-  } else {
+  } else if(user.Role === "admin" || user.Branch === "HQ"){
     loadAdmin(window.activeTab || "Approved", true);
+  } else {
+    loadTrack("track", true);
   }
 }
 
 function downloadOrder(orderNo){
   downloadOrderExcel(orderNo);
+}
+
+function escapeHtml(value){
+  return (value ?? "")
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getPrintableStatusLabel(status){
+  const s = normalizeRowStatus(status);
+  if(s === "PENDING APPROVAL") return "Pending Approval";
+  if(s === "PARTIALLY DISPATCHED") return "Partially Dispatched";
+  if(s === "NOT DESPATCHED") return "Not Dispatched";
+  return s.charAt(0) + s.slice(1).toLowerCase();
+}
+
+async function printOrderDetails(orderNo){
+  showLoader();
+  const { data, error } = await db
+    .from("requests")
+    .select("*")
+    .eq("OrderNo", orderNo)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  hideLoader();
+
+  if(error || !data || !data.length){
+    return showPopup("Unable to generate print preview ❗");
+  }
+
+  const order = data[0];
+  const comments = getOrderComments({ items: data, OrderComments: order.OrderComments });
+  const totalQty = data.reduce((sum, r) => sum + getEffectiveQty(r), 0);
+  const totalPending = data.reduce((sum, r) => {
+    const pending = Math.max(0, getEffectiveQty(r) - Number(r.BilledQty || 0));
+    return sum + pending;
+  }, 0);
+  const totalValue = data.reduce((sum, r) => sum + getEffectiveValue(r), 0);
+  const overallStatus = getPrintableStatusLabel(getOrderStatusLabel(data));
+
+  const summaryRows = [
+    ["Order Type", order.OrderType || "-"],
+    ["Order For", order.OrderFor || "-"],
+    ["Branch", order.Branch || "-"],
+    ["Employee Name", order.EmployeeName || "-"],
+    ["Call ID", order.CallID || "-"],
+    ["Status", overallStatus],
+    ["Machine No", order.MachineNo || "-"],
+    ["Customer", order.CustomerName || "-"],
+    ["Machine Type", order.WarrantyStatus || "-"],
+    ["Approved By", order.ApprovedBy || "-"]
+  ];
+
+  const partsRowsHtml = data.map(r => {
+    const qty = getEffectiveQty(r);
+    const billed = Number(r.BilledQty || 0);
+    const pending = Math.max(0, qty - billed);
+    return `
+      <tr>
+        <td>${escapeHtml(r.PartNo || "-")}</td>
+        <td class="left">${escapeHtml(r.Description || "-")}</td>
+        <td>${qty}</td>
+        <td>${billed}</td>
+        <td>${pending}</td>
+        <td class="right">₹ ${Number(getEffectiveValue(r) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        <td>${escapeHtml(getPrintableStatusLabel(r.Status))}</td>
+        <td>${escapeHtml(formatDate(r.ProcessedDate))}</td>
+        <td>${escapeHtml(formatDate(r.OrderRegDt))}</td>
+        <td>${escapeHtml(r.BillNo || "-")}</td>
+        <td>${escapeHtml(formatDate(r.BillingDt))}</td>
+        <td>${escapeHtml(r.TransportName || "-")}</td>
+        <td>${escapeHtml(r.Docket || "-")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const commentsHtml = comments.length
+    ? comments.map(c => `
+        <div class="comment-item">
+          <div><strong>${escapeHtml(c.by || "-")}</strong> — ${escapeHtml(c.text || "")}</div>
+          <div class="meta">${escapeHtml(formatDateTime(c.at || ""))}${c.attachmentName ? ` • Attachment: ${escapeHtml(c.attachmentName)}` : ""}</div>
+        </div>
+      `).join("")
+    : `<div class="comment-item">No comments available</div>`;
+
+  const summaryHtml = summaryRows.map(([label, val]) => `
+    <div class="summary-item"><span class="label">${escapeHtml(label)}:</span><span class="value">${escapeHtml(val)}</span></div>
+  `).join("");
+  const logoUrl = new URL("HDU4w-removebg-preview.png", window.location.href).href;
+
+  const printWindow = window.open("", "_blank", "width=900,height=1100");
+  if(!printWindow){
+    return showPopup("Popup blocked. Please allow popups to print/download PDF ❗");
+  }
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Parts Order Details - ${escapeHtml(orderNo)}</title>
+        <style>
+          @page { size: A4 portrait; margin: 14mm; }
+          body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 12px; line-height: 1.35; }
+          .doc { width: 100%; }
+          .head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+          .brand { display:flex; gap:12px; align-items:center; }
+          .brand img { width: 54px; height: auto; object-fit: contain; }
+          .brand h1 { font-size: 18px; margin:0; font-weight: 700; }
+          .brand p { margin:2px 0 0 0; color:#4b5563; font-size:11px; }
+          .title { text-align:right; }
+          .title h2 { margin:0; font-size:18px; letter-spacing:.4px; }
+          .title p { margin:4px 0 0 0; color:#4b5563; }
+          .divider { border-top:1px solid #9ca3af; margin:10px 0 12px; }
+          .meta-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:6px 18px; margin-bottom:10px; }
+          .meta-grid div { display:flex; gap:6px; white-space:nowrap; }
+          .meta-grid .k { color:#374151; font-weight:600; min-width:110px; }
+          .section-title { margin:10px 0 6px; font-size:13px; font-weight:700; border-bottom:1px solid #d1d5db; padding-bottom:4px; }
+          .summary { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:6px 14px; margin-bottom:8px; }
+          .summary-item { display:flex; justify-content:space-between; gap:8px; border:1px solid #e5e7eb; padding:4px 6px; }
+          .summary-item .label { color:#374151; font-weight:600; white-space:nowrap; }
+          .summary-item .value { font-weight:600; text-align:right; width:100%; }
+          table { width:100%; border-collapse:collapse; font-size:10px; }
+          th, td { border:1px solid #d1d5db; padding:4px 5px; text-align:center; vertical-align:middle; }
+          th { font-weight:700; background:#f9fafb; }
+          td.left, th.left { text-align:left; }
+          td.right { text-align:right; }
+          .totals { margin-top:8px; border:1px solid #d1d5db; }
+          .totals div { display:flex; justify-content:space-between; padding:4px 8px; border-bottom:1px solid #e5e7eb; }
+          .totals div:last-child { border-bottom:none; font-weight:700; }
+          .comment-item { border:1px solid #e5e7eb; padding:6px 8px; margin-bottom:5px; }
+          .meta { color:#6b7280; font-size:10px; margin-top:2px; }
+          @media print { .no-print { display:none !important; } }
+        </style>
+      </head>
+      <body>
+        <div class="doc">
+          <div class="head">
+            <div class="brand">
+              <img src="${logoUrl}" alt="Company Logo" />
+              <div>
+                <h1>Parts Connect Portal</h1>
+                <p>Internal Parts Order & Approval Document</p>
+              </div>
+            </div>
+            <div class="title">
+              <h2>Parts Order Details</h2>
+              <p>Order ID: <strong>${escapeHtml(orderNo)}</strong></p>
+            </div>
+          </div>
+          <div class="divider"></div>
+
+          <div class="meta-grid">
+            <div><span class="k">Order Date & Time</span><span>${escapeHtml(formatDateTime(order.created_at))}</span></div>
+            <div><span class="k">Branch</span><span>${escapeHtml(order.Branch || "-")}</span></div>
+            <div><span class="k">Current Status</span><span>${escapeHtml(overallStatus)}</span></div>
+            <div><span class="k">Line Items</span><span>${data.length}</span></div>
+          </div>
+
+          <div class="section-title">Order Summary</div>
+          <div class="summary">${summaryHtml}</div>
+
+          <div class="section-title">Parts Details</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th class="left">Description</th>
+                <th>Qty</th>
+                <th>Billed</th>
+                <th>Pending</th>
+                <th>Value</th>
+                <th>Status</th>
+                <th>Processed</th>
+                <th>Reg Dt</th>
+                <th>Bill No</th>
+                <th>Billing Dt</th>
+                <th>Transport</th>
+                <th>Docket</th>
+              </tr>
+            </thead>
+            <tbody>${partsRowsHtml}</tbody>
+          </table>
+
+          <div class="totals">
+            <div><span>Total Qty</span><span>${totalQty}</span></div>
+            <div><span>Total Pending Qty</span><span>${totalPending}</span></div>
+            <div><span>Total Value</span><span>₹ ${Number(totalValue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
+            <div><span>Number of line items</span><span>${data.length}</span></div>
+          </div>
+
+          <div class="section-title">Comments</div>
+          ${commentsHtml}
+
+          <div class="no-print" style="margin-top:14px; text-align:right;">
+            <button onclick="window.print()" style="padding:8px 12px; border:1px solid #9ca3af; border-radius:6px; background:#f8fafc; cursor:pointer;">Print / Save as PDF</button>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
 }
 
     
@@ -4151,7 +5313,7 @@ function refreshCurrentView(){
 
 if(user.Role === "admin" || user.Branch === "HQ"){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
-} else if(user.Role === "super"){
+} else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
 } else {
   loadTrack("track", true);            // ✅ PASS TRUE
@@ -4177,30 +5339,12 @@ function changePage(direction){
   if(user.Role === "admin" || user.Branch === "HQ"){
 
     if(window.activeTab === "Approved"){
-      orders = orders.filter(o => 
-        o.some(x => {
-          const status = (x.Status || "").toString().trim().toUpperCase();
-          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-          return (status === "APPROVED" || status === "PENDING")
-            && !pendingApproval
-            && approval !== "REJECTED"
-            && (approval === "APPROVED" || approval === "");
-        })
-      );
+      orders = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
     } else {
-      orders = orders.filter(o => 
-        o.some(x => {
-          const status = (x.Status || "").toString().trim().toUpperCase();
-          const approval = (x.ApprovalStatus || "").toString().trim().toUpperCase();
-          const pendingApproval = isPendingApprovalStatus(x.ApprovalStatus);
-          return status !== "APPROVED"
-            && status !== "PENDING"
-            && status !== "PENDING APPROVAL"
-            && !pendingApproval
-            && approval !== "REJECTED";
-        })
-      );
+      orders = orders.filter(o => {
+        const status = getOrderStatusLabel(o);
+        return status !== "APPROVED" && status !== "PENDING APPROVAL" && status !== "REJECTED";
+      });
     }
 
   } else {
@@ -4234,7 +5378,7 @@ function changePage(step){
 
   const user = getUser();
   const isAdmin = user.Role === "admin" || user.Branch === "HQ";
-  const isSuper = user.Role === "super";
+  const isSuper = isSuperLikeRole(user);
 
   if(isAdmin){
     loadAdmin(window.activeTab, true);
