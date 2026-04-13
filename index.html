@@ -4332,11 +4332,13 @@ async function insertInventoryStagingInBatches(rows, batchSize = 500){
   let inserted = 0;
   for(let i=0; i<rows.length; i += batchSize){
     const chunk = rows.slice(i, i + batchSize);
-    const { error } = await db.from("inventory_staging").insert(chunk);
+    const { error } = await db
+      .from("inventory_staging")
+      .upsert(chunk, { onConflict: "report_date,branch_code,item_code" });
     if(error) throw error;
     inserted += chunk.length;
     const pct = 10 + Math.round((inserted / rows.length) * 60);
-    setInventoryProgress(pct, `Uploading to staging... ${inserted}/${rows.length}`);
+    setInventoryProgress(pct, `Syncing staging rows... ${inserted}/${rows.length}`);
   }
   return inserted;
 }
@@ -4425,6 +4427,7 @@ async function processInventoryExcelData(rows, reportDate){
   try{
     const payload = [];
     let skipped = 0;
+    let deduped = 0;
 
     for(const row of rows){
       const branch = String(getInventoryValue(row, ["Branch"])).trim();
@@ -4474,16 +4477,18 @@ async function processInventoryExcelData(rows, reportDate){
       return;
     }
 
-    setInventoryProgress(5, `Prepared ${payload.length} rows. Cleaning existing staging data...`);
-    const { error: deleteBeforeError } = await db
-      .from("inventory_staging")
-      .delete()
-      .eq("report_date", reportDate);
-    if(deleteBeforeError){
-      throw deleteBeforeError;
+    // Deduplicate within same upload by (report_date + branch_code + item_code)
+    const dedupeMap = new Map();
+    for(const row of payload){
+      const key = `${row.report_date}__${row.branch_code || ""}__${row.item_code || ""}`;
+      if(dedupeMap.has(key)) deduped++;
+      dedupeMap.set(key, row); // keep latest row from file
     }
+    const finalPayload = [...dedupeMap.values()];
 
-    await insertInventoryStagingInBatches(payload, 500);
+    setInventoryProgress(5, `Prepared ${finalPayload.length} rows. Syncing staging data...`);
+
+    await insertInventoryStagingInBatches(finalPayload, 500);
     setInventoryProgress(80, "Applying server-side merge (inventory_current + inventory_changes)...");
 
     const { data: rpcData, error: rpcError } = await db.rpc("process_inventory_report", {
@@ -4496,7 +4501,7 @@ async function processInventoryExcelData(rows, reportDate){
     setInventoryProgress(100, "Inventory processing completed.");
 
     showPopup(
-      `Inventory Upload Complete ✅\nUploaded: ${payload.length}\nChanged: ${stats.changed_count ?? stats.changed ?? 0}\nCurrent Updated: ${stats.current_updated ?? stats.upserted ?? payload.length}\nSkipped: ${skipped}`
+      `Inventory Upload Complete ✅\nUploaded: ${finalPayload.length}\nDuplicate Keys Removed: ${deduped}\nChanged: ${stats.changed_count ?? stats.changed ?? 0}\nCurrent Updated: ${stats.current_updated ?? stats.upserted ?? finalPayload.length}\nSkipped: ${skipped}`
     );
   } catch(err){
     console.error("Inventory upload failed:", err);
