@@ -1445,6 +1445,11 @@ function isManagerRole(user){
   return role === "manager";
 }
 
+function isViewerRole(user){
+  const role = (user?.Role || "").toString().trim().toLowerCase();
+  return role === "viewer";
+}
+
 const PART_MASTER_CACHE = new Map();
 const PART_USAGE_30D_CACHE = new Map();
 
@@ -1602,6 +1607,7 @@ function renderHeader(){
 
   const user = getUser();
   const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isViewer = isViewerRole(user);
 
   return `
   <div class="space-y-0">
@@ -1617,13 +1623,18 @@ function renderHeader(){
 
   <div class="flex items-center gap-3">
 
-    ${!isAdmin ? `
+    ${!isAdmin && !isViewer ? `
         <button onclick="loadCreate('create')" 
         class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
         data-tab="create">
         New Order
       </button>
 
+      <button onclick="loadTrack('track')" 
+      class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
+        Track Orders
+      </button>
+    ` : isViewer ? `
       <button onclick="loadTrack('track')" 
       class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
         Track Orders
@@ -1644,12 +1655,17 @@ function renderHeader(){
 
     <div class="flex gap-3">
 
-      ${!isAdmin ? `
+      ${!isAdmin && !isViewer ? `
         <button onclick="loadCreate('create')" 
         class="menu-btn ${window.activeTab==='create' ? 'active-tab' : ''}">
           New Order
         </button>
 
+        <button onclick="loadTrack('track')" 
+        class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
+          Track Orders
+        </button>
+      ` : isViewer ? `
         <button onclick="loadTrack('track')" 
         class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
           Track Orders
@@ -1686,6 +1702,7 @@ const user = getUser();
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
+const isViewer = isViewerRole(user);
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
@@ -1693,6 +1710,8 @@ if(isAdmin){
   window.activeTab = "Approved";
 }else if(isSuper){
   window.activeTab = isManager ? "Dashboard" : "PendingApproval";
+}else if(isViewer){
+  window.activeTab = "track";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -1756,7 +1775,7 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  ${!isAdmin && !isSuper ? `
+  ${!isAdmin && !isSuper && !isViewer ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -1766,6 +1785,15 @@ document.getElementById("app").innerHTML = `
     </span>
     </button>
   
+    <button onclick="loadTrack('track')" 
+    class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
+    data-tab="track">
+<span class="flex items-center gap-2">
+  <i data-lucide="search-check" class="w-4 h-4"></i>
+  Track Orders
+</span>
+    </button>
+` : isViewer ? `
     <button onclick="loadTrack('track')" 
     class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
     data-tab="track">
@@ -1893,7 +1921,10 @@ else if(isSuper){
 else{
   setTimeout(loadPendingCount, 200);
 
-  if(window.activeTab === "track"){
+  if(isViewer){
+    loadTrack("track");
+  }
+  else if(window.activeTab === "track"){
     loadTrack("track");
   }else{
     loadCreate("create");
@@ -2161,6 +2192,14 @@ loadLogin();
 // ---------- CREATE ----------
 function loadCreate(tab){
 stopDocketCameraScanner();
+<<<<<<< codex/show-report-upload-timestamps-in-header-yst814
+if(isViewerRole(getUser())){
+  showPopup("Viewer role can only access Track Orders.");
+  loadTrack("track");
+  return;
+}
+=======
+>>>>>>> main
 
 window.activeTab = "create";
 
@@ -2823,6 +2862,9 @@ window.activeTab = "track";
 updateMenuHighlight();
 
 const user = getUser();
+const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isSuper = isSuperLikeRole(user);
+const isViewer = isViewerRole(user);
 
 showLoader();
 
@@ -2831,8 +2873,8 @@ let query = db
   .select(REQUEST_LIST_SELECT)
   .order("created_at", { ascending:false });
 
-// ✅ ONLY FILTER FOR NORMAL USERS
-if(user.Role !== "headoffice"){
+// ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
+if(!isAdmin && !isSuper && !isViewer){
   query = query.eq("Branch", user.Branch);
 }
 
