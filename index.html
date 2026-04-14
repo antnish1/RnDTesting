@@ -5738,8 +5738,7 @@ async function performManagerInventoryLookup(){
   const { data: inventoryRows, error } = await db
     .from("inventory_staging")
     .select("branch_code, item_code, item_name, item_group, dnp, rec_flag, nsp_flag, uom, received_qty, issued_qty, qty, inv_value, report_date")
-    .eq("item_code", partNo)
-    .eq("report_date", latestDate)
+    .ilike("item_code", `%${partNo}%`)
     .order("report_date", { ascending: false });
   hideLoader();
 
@@ -5748,8 +5747,18 @@ async function performManagerInventoryLookup(){
     return;
   }
 
+  const matchedRows = (inventoryRows || []).filter(r => normalizePartNo(r.item_code || "") === partNo);
+  const workingRows = matchedRows.length ? matchedRows : (inventoryRows || []);
+  const latestDate = (workingRows[0]?.report_date || "").toString().slice(0, 10);
+  if(!latestDate){
+    window.managerInvLookupExpanded = true;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  window.managerInvLookupDate = latestDate;
+
   const latestByBranch = {};
-  (inventoryRows || []).forEach(r => {
+  workingRows.forEach(r => {
     if(((r.report_date || "").toString().slice(0, 10)) !== latestDate) return;
     const code = (r.branch_code || "").toString().trim().toUpperCase();
     if(!code || latestByBranch[code]) return;
@@ -5781,6 +5790,12 @@ async function performManagerInventoryLookup(){
     .sort((a, b) => a.branch.localeCompare(b.branch));
   window.managerInvLookupExpanded = true;
 
+async function setManagerInventoryBranchFilter(branchCode){
+  window.managerInvLookupBranch = branchCode || "ALL";
+  window.managerInvLookupQuery = "";
+  window.managerInvLookupResults = [];
+  window.managerInvLookupExpanded = false;
+  await loadManagerBranchTransactions();
   loadSuper("Dashboard", true);
 }
 
