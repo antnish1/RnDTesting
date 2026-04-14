@@ -1430,9 +1430,73 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+function normalizeUserKey(key){
+  return (key || "").toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function getUserField(user, aliases = []){
+  if(!user || typeof user !== "object") return "";
+
+  const aliasSet = new Set(aliases.map(normalizeUserKey));
+  const keys = Object.keys(user);
+
+  for(const key of keys){
+    if(aliasSet.has(normalizeUserKey(key))){
+      return user[key];
+    }
+  }
+  return "";
+}
+
+function normalizeUserPayload(user){
+  if(!user || typeof user !== "object") return null;
+
+  const normalized = {
+    ...user,
+    id: getUserField(user, ["id", "userid"]),
+    Name: getUserField(user, ["name", "username", "employee"]),
+    Branch: getUserField(user, ["branch", "branck", "branchname"]),
+    Role: getUserField(user, ["role", "userrole"]),
+    Password: getUserField(user, ["password", "pass"])
+  };
+
+  normalized.role = normalized.Role;
+  normalized.branch = normalized.Branch;
+  return normalized;
+}
+
 function getUser(){
-  try { return JSON.parse(localStorage.getItem("user")); }
-  catch { return null; }
+  try {
+    const rawUser = JSON.parse(localStorage.getItem("user"));
+    return normalizeUserPayload(rawUser);
+  }
+  catch {
+    return null;
+  }
+}
+
+function getUserRole(user){
+  const rawRole = getUserField(user, ["role", "userrole"]);
+  return rawRole.toString().trim().toLowerCase();
+}
+
+function getUserBranch(user){
+  const rawBranch = getUserField(user, ["branch", "branck", "branchname"]);
+  return rawBranch.toString().trim();
+}
+
+function getUserName(user){
+  return getUserField(user, ["name", "username", "employee"]).toString().trim();
+}
+
+function getUserId(user){
+  return getUserField(user, ["id", "userid"]);
+}
+
+function isAdminRole(user){
+  const role = getUserRole(user);
+  const branch = getUserBranch(user);
+  return role === "admin" || branch.toUpperCase() === "HQ";
 }
 
 function getUserRole(user){
@@ -1472,12 +1536,15 @@ async function syncUserRoleFromDb(user){
     .select("Role")
     .eq("Branch", getUserBranch(user));
 
-  if(user.id !== undefined && user.id !== null){
-    query = query.eq("id", user.id);
-  }else if(user.Name){
-    query = query.eq("Name", user.Name);
+  const userId = getUserId(user);
+  const userName = getUserName(user);
+
+  if(userId !== undefined && userId !== null && `${userId}` !== ""){
+    query = query.eq("id", userId);
+  }else if(userName){
+    query = query.eq("Name", userName);
   }else{
-    return user;
+    return normalizeUserPayload(user);
   }
 
   const { data, error } = await query.maybeSingle();
@@ -1486,13 +1553,13 @@ async function syncUserRoleFromDb(user){
     return user;
   }
 
-  const latestRole = data?.Role ?? data?.role ?? data?.ROLE;
+  const latestRole = getUserField(data, ["role", "userrole"]);
   if(latestRole){
-    const nextUser = { ...user, Role: latestRole, role: latestRole };
+    const nextUser = normalizeUserPayload({ ...user, Role: latestRole, role: latestRole });
     localStorage.setItem("user", JSON.stringify(nextUser));
     return nextUser;
   }
-  return user;
+  return normalizeUserPayload(user);
 }
 
 const PART_MASTER_CACHE = new Map();
@@ -1615,8 +1682,8 @@ document.addEventListener("keydown", function(e){
 }
     
     
-const { data } = await db.from("users").select("Branch");
-const unique = [...new Set(data.map(d => d.Branch))];
+const { data } = await db.from("users").select("*");
+const unique = [...new Set((data || []).map(d => getUserBranch(d)).filter(Boolean))];
 
 const el = document.getElementById("branch");
 el.innerHTML = `<option value="">Select Branch</option>`;
@@ -1632,18 +1699,19 @@ if(!branch || !password) return showPopup("Fill all fields");
 
 showLoader();
 
-const { data } = await db
+const { data: allUsers } = await db
 .from("users")
-.select("*")
-.eq("Branch", branch)
-.eq("Password", password)
-.single();
+.select("*");
+
+const data = (allUsers || []).map(normalizeUserPayload).find(u =>
+  getUserBranch(u) === branch && (u?.Password || "").toString() === password
+);
 
 hideLoader();
 
 if(!data) return showPopup("Invalid credentials");
 
-localStorage.setItem("user", JSON.stringify(data));
+localStorage.setItem("user", JSON.stringify(normalizeUserPayload(data)));
 loadBranch();
 }
 
