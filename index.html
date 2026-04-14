@@ -4788,6 +4788,27 @@ async function processExcelData(rows){
     console.log("🔩 Excel PartNo:", partNo);
     
     const status = r["Status"]?.toString().trim();
+    const normalizeBillingDateValue = (value) => {
+      if(value === null || value === undefined) return null;
+      const raw = value.toString().trim();
+      if(!raw) return null;
+      if(/^\d+(\.\d+)?$/.test(raw)){
+        const serial = Math.floor(Number(raw));
+        if(!Number.isFinite(serial)) return null;
+        const base = new Date(Date.UTC(1899, 11, 30));
+        base.setUTCDate(base.getUTCDate() + serial);
+        return base.toISOString().slice(0, 10);
+      }
+      const normalized = raw.replace(/\//g, "-");
+      if(/^\d{2}-\d{2}-\d{4}$/.test(normalized)){
+        const [dd, mm, yyyy] = normalized.split("-");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      if(/^\d{4}-\d{2}-\d{2}/.test(normalized)){
+        return normalized.slice(0, 10);
+      }
+      return null;
+    };
 
     // ❗ SKIP INVALID ROWS
     if(!orderNo || !partNo){
@@ -4798,7 +4819,7 @@ async function processExcelData(rows){
     // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
     const { data: existing } = await db
       .from("requests")
-      .select("id")
+      .select("id,Qty")
       .eq("OrderNo", orderNo)
       .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
       .maybeSingle();
@@ -4813,29 +4834,88 @@ async function processExcelData(rows){
       console.log("DB Row:", existing);
     }
 
-    // ✅ UPDATE ONLY MATCHED ROW
+    const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
+    const billedQty = Number(r["Billed Qty"] || 0);
+    const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
+    const deliveryNo = (r["Delivery No"] || "").toString().trim();
+    const billNo = (r["BillNo & Image"] || "").toString().trim();
+    const idempotencyKey = [
+      String(existing.id),
+      orderNo,
+      normalizedPartNo,
+      billedQty.toString(),
+      billingDt || "",
+      deliveryNo.toUpperCase(),
+      billNo.toUpperCase()
+    ].join("|");
+
+    const chunkPayload = {
+      request_row_id: String(existing.id),
+      order_no: orderNo,
+      part_no: normalizedPartNo,
+      billed_qty: billedQty,
+      billing_dt: billingDt,
+      delivery_no: deliveryNo || null,
+      bill_no: billNo || null,
+      docket: (r["Docket"] || "").toString().trim() || null,
+      transport_name: (r["Transport Name"] || "").toString().trim() || null,
+      transport_mode: (r["Transport Mode"] || "").toString().trim() || null,
+      packing_detail: (r["Packing Detail"] || "").toString().trim() || null,
+      eway_bill_no: (r["E-Way Bill No"] || "").toString().trim() || null,
+      gst_invoice_no: (r["GST Invoice No."] || "").toString().trim() || null,
+      status: status || "Processed",
+      processed_date: new Date().toISOString(),
+      idempotency_key: idempotencyKey,
+      source: "status_report_upload"
+    };
+
+    const { error: chunkError } = await db
+      .from("request_billings")
+      .upsert([chunkPayload], { onConflict: "idempotency_key" });
+
+    if(chunkError){
+      console.error(chunkError);
+      skipped++;
+      continue;
+    }
+
+    const { data: billingRows, error: sumError } = await db
+      .from("request_billings")
+      .select("billed_qty")
+      .eq("request_row_id", String(existing.id));
+
+    if(sumError){
+      console.error(sumError);
+      skipped++;
+      continue;
+    }
+
+    const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
+    const orderedQty = Number(existing.Qty || 0);
+    const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
+    const dispatchStatus = pendingQty > 0 ? "PARTIALLY DISPATCHED" : (status || "DISPATCHED");
+
     const { error } = await db
       .from("requests")
       .update({
-        Status: status || "Processed",
-
+        Status: dispatchStatus,
         ProcessedDate: new Date().toISOString(),
-
         OrderRegDt: r["Order Reg. Dt"] || "",
-        DeliveryNo: r["Delivery No"] || "",
-        BillNo: r["BillNo & Image"] || "",
+        DeliveryNo: deliveryNo || "",
+        BillNo: billNo || "",
         BillingDt: r["Billing Dt"] || "",
-        BilledQty: Number(r["Billed Qty"] || 0),
+        BilledQty: billedQty,
+        billed_qty_total: billedQtyTotal,
+        pending_qty: pendingQty,
+        dispatch_status: dispatchStatus,
         TransportName: r["Transport Name"] || "",
         TransportMode: r["Transport Mode"] || "",
         Docket: r["Docket"] || "",
         PackingDetail: r["Packing Detail"] || "",
         EWayBillNo: r["E-Way Bill No"] || "",
         GSTInvoiceNo: r["GST Invoice No."] || ""
-        
       })
-      .eq("OrderNo", orderNo)
-      .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase());
+      .eq("id", existing.id);
 
     if(!error){
       updated++;
@@ -4843,8 +4923,8 @@ async function processExcelData(rows){
         await appendOrderActionLog(
           orderNo,
           "STATUS_UPDATED",
-          `Status updated to ${(status || "Processed")} via upload by ${getUser()?.Name || "Unknown User"}.`,
-          { status: status || "Processed" }
+          `Status updated to ${dispatchStatus} via upload by ${getUser()?.Name || "Unknown User"}.`,
+          { status: dispatchStatus, billed_qty_total: billedQtyTotal, pending_qty: pendingQty }
         );
         statusLoggedOrders.add(orderNo);
       }
@@ -5805,133 +5885,6 @@ async function loadManagerBranchTransactions(){
     return;
   }
   window.managerInvLookupDate = latestDate;
-
-  const { data: latestDateRow, error: latestDateError } = await db
-    .from("inventory_staging")
-    .select("report_date")
-    .eq("item_code", partNo)
-    .order("report_date", { ascending: false })
-    .limit(1);
-
-  if(latestDateError){
-    showPopup(`Inventory lookup failed ❌\n${latestDateError.message || "Unknown error"}`);
-    return;
-  }
-
-  const latestDateRaw = latestDateRow?.[0]?.report_date || "";
-  const latestDate = latestDateRaw ? latestDateRaw.toString().slice(0, 10) : "";
-  if(!latestDate){
-    window.managerInvLookupExpanded = false;
-    loadSuper("Dashboard", true);
-    return;
-  }
-  window.managerInvLookupDate = latestDate;
-
-  const { data, error } = await db
-    .from("inventory_staging")
-    .select("branch_code, item_code, item_name, item_group, dnp, received_qty, issued_qty, qty, inv_value, report_date")
-    .eq("branch_code", selectedCode)
-    .eq("report_date", selectedDate)
-    .order("item_name", { ascending: true });
-
-  if(error){
-    showPopup(`Branch transaction lookup failed ❌\n${error.message || "Unknown error"}`);
-    return;
-  }
-
-  window.managerInvBranchTxnResults = (data || []).filter(r =>
-    Number(r.received_qty || 0) !== 0 || Number(r.issued_qty || 0) !== 0
-  );
-}
-
-function renderManagerInventoryLookupTab(){
-  const rows = window.managerInvLookupResults || [];
-  const activeCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
-  const orderedBranches = [{ code: "ALL", name: "ALL BRANCHES" }]
-    .concat(window.managerInvBranchDirectory || []);
-  const selectedBranch = orderedBranches.find(b => (b.code || "").toUpperCase() === activeCode);
-  const branchTxnRows = window.managerInvBranchTxnResults || [];
-  const showPartResults = window.managerInvLookupExpanded === true;
-  const showBranchResults = !showPartResults && activeCode !== "ALL";
-
-  document.getElementById("main").innerHTML = `
-    <div class="mgr-shell">
-      <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <div class="text-sm font-extrabold uppercase tracking-[0.1em]" style="color:#fcd34d;">Inventory Lookup</div>
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <input id="mgrInvLookupDate" type="date" class="pc-field h-[34px] max-w-[170px]" value="${escapeHtml(window.managerInvLookupDate || new Date().toISOString().slice(0, 10))}" onchange="setManagerInventoryLookupDate(this.value)" onclick="this.showPicker && this.showPicker()" />
-            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
-            <button class="track-page-btn mgr-compact-btn" onclick="performManagerInventoryLookup()">Search</button>
-            <button class="track-page-btn mgr-compact-btn" onclick="closeManagerInventoryLookupTab()">Back</button>
-          </div>
-        </div>
-      </section>
-      <div class="inv-tab-layout">
-        <aside class="inv-branch-sidebar">
-          ${orderedBranches.map(b => `<button class="inv-branch-btn ${(b.code || "ALL") === activeCode ? "active" : ""}" onclick="setManagerInventoryBranchFilter('${b.code}')">${escapeHtml(b.name)}</button>`).join("")}
-        </aside>
-        <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
-          <div class="inv-result-section ${showPartResults ? "expanded" : "collapsed"}">
-            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
-              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
-                <tr>
-                  <th class="px-2">Branch</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows.map(r => `<tr>
-                  <td class="px-2">${escapeHtml(r.branch || "-")}</td>
-                  <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
-                  <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
-                  <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                  <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                  <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                  <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                  <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                </tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found." : "Search by part number to expand this section."}</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-          <div class="mt-4 ${showBranchResults || (!showPartResults && activeCode === "ALL") ? "" : "hidden"}">
-            <div class="text-xs uppercase tracking-[0.1em] font-semibold mb-2" style="color:#fcd34d;">
-              ${activeCode === "ALL" ? "Branch Daily Transactions" : `Branch Daily Transactions • ${escapeHtml(selectedBranch?.name || activeCode)}`}
-            </div>
-            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
-              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
-                <tr>
-                  <th class="px-2">Branch</th><th class="px-2">Itemcode</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${activeCode === "ALL"
-                  ? `<tr><td colspan="9" class="text-center py-4">Select a branch from sidebar to view transactions for ${(window.managerInvLookupDate || "").toString()}.</td></tr>`
-                  : (branchTxnRows.map(r => `<tr>
-                    <td class="px-2">${escapeHtml(selectedBranch?.name || r.branch_code || "-")}</td>
-                    <td class="px-2">${escapeHtml(r.item_code || "-")}</td>
-                    <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
-                    <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
-                    <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                    <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                    <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                    <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                    <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                  </tr>`).join("") || `<tr><td colspan="9" class="text-center py-4">No received/issued movement for ${escapeHtml(selectedBranch?.name || activeCode)} on ${(window.managerInvLookupDate || "").toString()}.</td></tr>`)}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </div>`;
-}
-
-async function loadManagerBranchTransactions(){
-  const selectedCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
-  const selectedDate = (window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
-  window.managerInvBranchTxnResults = [];
-  if(selectedCode === "ALL"){
-    return;
-  }
 
   const { data, error } = await db
     .from("inventory_staging")
