@@ -818,6 +818,26 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   background: rgba(30,41,59,0.92);
   color: #fef3c7;
 }
+.mgr-inv-lookup-btn{
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  border: 1px solid rgba(16,185,129,0.55);
+  color: #ecfdf5;
+  background: linear-gradient(135deg, rgba(5,150,105,0.94), rgba(6,95,70,0.96));
+  box-shadow: 0 8px 16px rgba(5,150,105,0.28);
+  animation: invPulse 1.5s ease-in-out infinite;
+}
+.mgr-inv-lookup-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(5,150,105,0.34);
+}
+@keyframes invPulse{
+  0%,100%{ box-shadow: 0 8px 16px rgba(5,150,105,0.28); }
+  50%{ box-shadow: 0 10px 24px rgba(16,185,129,0.46); }
+}
 .mgr-branch-detail{
   overflow: hidden;
   animation: mgrExpand .22s ease;
@@ -5325,11 +5345,15 @@ function renderSearchResults(data){
 
 function renderManagerDashboard(orders){
   const allOrders = orders || [];
+  const isManager = isManagerRole(getUser());
   const today = new Date().toISOString().slice(0, 10);
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
   window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
+  window.managerInvLookupMode = window.managerInvLookupMode === true;
+  window.managerInvLookupQuery = window.managerInvLookupQuery || "";
+  window.managerInvLookupResults = Array.isArray(window.managerInvLookupResults) ? window.managerInvLookupResults : [];
   const sanitizeUiText = (val) => (val || "")
     .toString()
     .replace(/<{7}.*$/gm, "")
@@ -5450,7 +5474,8 @@ function renderManagerDashboard(orders){
     <div class="mgr-shell">
       <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
         <div class="flex justify-end">
-        <div class="mgr-filter-bar mb-2 w-full max-w-[760px]">
+        <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
+          ${isManager ? `<button class="mgr-inv-lookup-btn" onclick="toggleManagerInventoryLookupMode()">${window.managerInvLookupMode ? "Back to Orders" : "Inventory Lookup"}</button>` : ``}
           <div class="flex items-center gap-2">
             <span class="mgr-filter-label !mb-0">From</span>
             <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
@@ -5470,10 +5495,26 @@ function renderManagerDashboard(orders){
 
       <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
         <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
-          <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Filtered Orders ${activeFilter ? `• ${escapeHtml(sanitizeUiText(activeFilter.label))}` : ""}</div>
+          <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">
+            ${window.managerInvLookupMode ? "Inventory Lookup" : `Filtered Orders ${activeFilter ? `• ${escapeHtml(sanitizeUiText(activeFilter.label))}` : ""}`}
+          </div>
           <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
         </div>
         <div class="overflow-x-auto ${window.managerDashTableVisible ? "" : "hidden"}">
+          ${window.managerInvLookupMode ? `
+            <div class="mb-3 flex items-center gap-2 flex-wrap">
+              <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[38px] min-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Enter Part No" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
+              <button class="track-page-btn" onclick="performManagerInventoryLookup()">Search</button>
+            </div>
+            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
+                <tr><th class="px-2">Branch</th><th class="px-2 text-right">Closing Balance</th></tr>
+              </thead>
+              <tbody>
+                ${(window.managerInvLookupResults || []).map(r => `<tr><td class="px-2">${escapeHtml(r.branch || "-")}</td><td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td></tr>`).join("") || `<tr><td colspan="2" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found for this part." : "Enter part number to lookup inventory by branch."}</td></tr>`}
+              </tbody>
+            </table>
+          ` : `
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
             <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
               <tr><th class="px-2">Date</th><th class="px-2">Type</th><th class="px-2">Customer</th><th class="px-2">Branch</th><th class="px-2 text-center">Qty</th><th class="px-2 text-right">Value</th><th class="px-2">Order No</th><th class="px-2">Status</th></tr>
@@ -5482,6 +5523,7 @@ function renderManagerDashboard(orders){
               ${selectedOrders.slice(0,120).map(o=>`<tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer"><td class="px-2">${formatDateTime(o.created_at)}</td><td class="px-2"><span class="px-2 py-1 rounded-full text-xs font-semibold" style="${getManagerTypeChipStyle(o.OrderType)}">${o.OrderType || "-"}</span></td><td class="px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td><td class="px-2">${o.Branch || "-"}</td><td class="px-2 text-center">${(o.items || []).reduce((s,x)=>s+Number(getEffectiveQty(x) || 0),0)}</td><td class="px-2 text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td><td class="px-2 font-semibold">${o.OrderNo} ${getOrderCommentCount(o) > 0 ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>` : ""}</td><td class="px-2"><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td></tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected range.</td></tr>`}
             </tbody>
           </table>
+          `}
         </div>
       </section>
 
@@ -5560,6 +5602,68 @@ function clearManagerDashboardCardFilter(){
 
 function toggleManagerDashboardFilteredTable(){
   window.managerDashTableVisible = !window.managerDashTableVisible;
+  loadSuper("Dashboard", true);
+}
+
+function toggleManagerInventoryLookupMode(){
+  window.managerInvLookupMode = !window.managerInvLookupMode;
+  if(!window.managerInvLookupMode){
+    window.managerInvLookupQuery = "";
+    window.managerInvLookupResults = [];
+  }
+  loadSuper("Dashboard", true);
+}
+
+async function performManagerInventoryLookup(){
+  const input = document.getElementById("mgrInvLookupPartNo");
+  const partNo = normalizePartNo(input?.value || "");
+  window.managerInvLookupQuery = partNo;
+  window.managerInvLookupResults = [];
+
+  if(!partNo){
+    loadSuper("Dashboard", true);
+    return;
+  }
+
+  showLoader();
+  const { data: inventoryRows, error } = await db
+    .from("inventory_staging")
+    .select("branch_code, qty, report_date")
+    .eq("item_code", partNo)
+    .order("report_date", { ascending: false });
+  hideLoader();
+
+  if(error){
+    showPopup(`Inventory lookup failed ❌\n${error.message || "Unknown error"}`);
+    return;
+  }
+
+  const latestByBranch = {};
+  (inventoryRows || []).forEach(r => {
+    const code = (r.branch_code || "").toString().trim().toUpperCase();
+    if(!code || latestByBranch[code]) return;
+    latestByBranch[code] = Number(r.qty || 0);
+  });
+
+  const { data: branchMappings } = await db
+    .from("branch_mapping")
+    .select("*");
+  const branchNameByCode = {};
+  (branchMappings || []).forEach(m => {
+    const code = (getUserField(m, ["branchcode", "branch_code"]) || "").toString().trim().toUpperCase();
+    const name = (getUserField(m, ["branchname", "branch_name"]) || "").toString().trim();
+    if(code && name && !branchNameByCode[code]){
+      branchNameByCode[code] = name;
+    }
+  });
+
+  window.managerInvLookupResults = Object.entries(latestByBranch)
+    .map(([code, qty]) => ({
+      branch: branchNameByCode[code] || code,
+      qty
+    }))
+    .sort((a, b) => a.branch.localeCompare(b.branch));
+
   loadSuper("Dashboard", true);
 }
 
