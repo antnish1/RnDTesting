@@ -4819,7 +4819,11 @@ async function processExcelData(rows){
     // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
     const { data: existing } = await db
       .from("requests")
+<<<<<<< codex/update-inventory-lookup-functionality-31pudd
       .select("id,Qty,Status")
+=======
+      .select("id,Qty")
+>>>>>>> main
       .eq("OrderNo", orderNo)
       .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
       .maybeSingle();
@@ -4834,12 +4838,15 @@ async function processExcelData(rows){
       console.log("DB Row:", existing);
     }
 
+<<<<<<< codex/update-inventory-lookup-functionality-31pudd
     if(normalizeRowStatus(existing.Status) === "RECEIVED"){
       console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
       skipped++;
       continue;
     }
 
+=======
+>>>>>>> main
     const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
     const billedQty = Number(r["Billed Qty"] || 0);
     const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
@@ -4899,6 +4906,7 @@ async function processExcelData(rows){
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
     const orderedQty = Number(existing.Qty || 0);
     const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
+<<<<<<< codex/update-inventory-lookup-functionality-31pudd
     const normalizedUploadStatus = normalizeRowStatus(status || "");
     const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
     let dispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
@@ -4911,6 +4919,9 @@ async function processExcelData(rows){
     if(pendingQty <= 0 && dispatchStatus === "NOT DISPATCHED"){
       dispatchStatus = "DISPATCHED";
     }
+=======
+    const dispatchStatus = pendingQty > 0 ? "PARTIALLY DISPATCHED" : (status || "DISPATCHED");
+>>>>>>> main
 
     const { error } = await db
       .from("requests")
@@ -5901,6 +5912,7 @@ async function loadManagerBranchTransactions(){
   if(selectedCode === "ALL"){
     return;
   }
+  window.managerInvLookupDate = latestDate;
 
   const { data, error } = await db
     .from("inventory_staging")
