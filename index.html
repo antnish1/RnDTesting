@@ -1430,24 +1430,86 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+function normalizeUserKey(key){
+  return (key || "").toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function getUserField(user, aliases = []){
+  if(!user || typeof user !== "object") return "";
+
+  const aliasSet = new Set(aliases.map(normalizeUserKey));
+  const keys = Object.keys(user);
+
+  for(const key of keys){
+    if(aliasSet.has(normalizeUserKey(key))){
+      return user[key];
+    }
+  }
+  return "";
+}
+
+function normalizeUserPayload(user){
+  if(!user || typeof user !== "object") return null;
+
+  const normalized = {
+    ...user,
+    id: getUserField(user, ["id", "userid"]),
+    Name: getUserField(user, ["name", "username", "employee"]),
+    Branch: getUserField(user, ["branch", "branck", "branchname"]),
+    Role: getUserField(user, ["role", "userrole"]),
+    Password: getUserField(user, ["password", "pass"])
+  };
+
+  normalized.role = normalized.Role;
+  normalized.branch = normalized.Branch;
+  return normalized;
+}
+
 function getUser(){
-  try { return JSON.parse(localStorage.getItem("user")); }
-  catch { return null; }
+  try {
+    const rawUser = JSON.parse(localStorage.getItem("user"));
+    return normalizeUserPayload(rawUser);
+  }
+  catch {
+    return null;
+  }
+}
+
+function getUserRole(user){
+  const rawRole = getUserField(user, ["role", "userrole"]);
+  return rawRole.toString().trim().toLowerCase();
+}
+
+function getUserBranch(user){
+  const rawBranch = getUserField(user, ["branch", "branck", "branchname"]);
+  return rawBranch.toString().trim();
+}
+
+function getUserName(user){
+  return getUserField(user, ["name", "username", "employee"]).toString().trim();
+}
+
+function getUserId(user){
+  return getUserField(user, ["id", "userid"]);
+}
+
+function isAdminRole(user){
+  const role = getUserRole(user);
+  const branch = getUserBranch(user);
+  return role === "admin" || branch.toUpperCase() === "HQ";
 }
 
 function isSuperLikeRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
+  const role = getUserRole(user);
   return role === "super" || role === "manager";
 }
 
 function isManagerRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
-  return role === "manager";
+  return getUserRole(user) === "manager";
 }
 
 function isViewerRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
-  return role === "viewer";
+  return getUserRole(user) === "viewer";
 }
 
 async function syncUserRoleFromDb(user){
@@ -1456,14 +1518,17 @@ async function syncUserRoleFromDb(user){
   let query = db
     .from("users")
     .select("Role")
-    .eq("Branch", user.Branch || "");
+    .eq("Branch", getUserBranch(user));
 
-  if(user.id !== undefined && user.id !== null){
-    query = query.eq("id", user.id);
-  }else if(user.Name){
-    query = query.eq("Name", user.Name);
+  const userId = getUserId(user);
+  const userName = getUserName(user);
+
+  if(userId !== undefined && userId !== null && `${userId}` !== ""){
+    query = query.eq("id", userId);
+  }else if(userName){
+    query = query.eq("Name", userName);
   }else{
-    return user;
+    return normalizeUserPayload(user);
   }
 
   const { data, error } = await query.maybeSingle();
@@ -1472,12 +1537,13 @@ async function syncUserRoleFromDb(user){
     return user;
   }
 
-  if(data?.Role){
-    const nextUser = { ...user, Role: data.Role };
+  const latestRole = getUserField(data, ["role", "userrole"]);
+  if(latestRole){
+    const nextUser = normalizeUserPayload({ ...user, Role: latestRole, role: latestRole });
     localStorage.setItem("user", JSON.stringify(nextUser));
     return nextUser;
   }
-  return user;
+  return normalizeUserPayload(user);
 }
 
 const PART_MASTER_CACHE = new Map();
@@ -1600,8 +1666,8 @@ document.addEventListener("keydown", function(e){
 }
     
     
-const { data } = await db.from("users").select("Branch");
-const unique = [...new Set(data.map(d => d.Branch))];
+const { data } = await db.from("users").select("*");
+const unique = [...new Set((data || []).map(d => getUserBranch(d)).filter(Boolean))];
 
 const el = document.getElementById("branch");
 el.innerHTML = `<option value="">Select Branch</option>`;
@@ -1617,18 +1683,19 @@ if(!branch || !password) return showPopup("Fill all fields");
 
 showLoader();
 
-const { data } = await db
+const { data: allUsers } = await db
 .from("users")
-.select("*")
-.eq("Branch", branch)
-.eq("Password", password)
-.single();
+.select("*");
+
+const data = (allUsers || []).map(normalizeUserPayload).find(u =>
+  getUserBranch(u) === branch && (u?.Password || "").toString() === password
+);
 
 hideLoader();
 
 if(!data) return showPopup("Invalid credentials");
 
-localStorage.setItem("user", JSON.stringify(data));
+localStorage.setItem("user", JSON.stringify(normalizeUserPayload(data)));
 loadBranch();
 }
 
@@ -1636,7 +1703,7 @@ loadBranch();
 function renderHeader(){
 
   const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isAdmin = isAdminRole(user);
   const isViewer = isViewerRole(user);
 
   return `
@@ -1648,7 +1715,7 @@ function renderHeader(){
 
   <h1 class="text-2xl font-bold tracking-wide" style="color: var(--pc-light);">
     PARTS CONNECT PORTAL :
-    <span class="ml-2" style="color: var(--pc-secondary);">${user.Branch}</span>
+    <span class="ml-2" style="color: var(--pc-secondary);">${getUserBranch(user)}</span>
   </h1>
 
   <div class="flex items-center gap-3">
@@ -1733,7 +1800,7 @@ if(!user){
   loadLogin();
   return;
 }
-const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
 const isViewer = isViewerRole(user);
@@ -1761,12 +1828,6 @@ document.getElementById("app").innerHTML = `
   border: 1px solid var(--pc-border);
   box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
-<div class="mb-1 text-[10px] leading-tight tracking-wide uppercase" style="color:var(--pc-text-muted);">
-  STATUS REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().statusReport)}</span>
-  &nbsp;|&nbsp;
-  INVENTORY REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().inventoryReport)}</span>
-</div>
-
 <div class="flex justify-between items-center">
 
 <div class="relative flex items-center w-full">
@@ -1785,7 +1846,7 @@ document.getElementById("app").innerHTML = `
 
   <span class="text-sm font-semibold tracking-widest uppercase"
       style="color: var(--pc-text);">
-  ${user.Branch}
+  ${getUserBranch(user)}
 </span>
 
 </div>
@@ -1893,14 +1954,16 @@ document.getElementById("app").innerHTML = `
   `}
 
 
-    <button onclick="loadDocketScanner()" 
-    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
-    data-tab="scanner">
-    <span class="flex items-center gap-2">
-      <i data-lucide="scan-line" class="w-4 h-4"></i>
-      Docket Scan
-    </span>
-    </button>
+    ${isAdmin ? `
+      <button onclick="loadDocketScanner()"
+      class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+      data-tab="scanner">
+      <span class="flex items-center gap-2">
+        <i data-lucide="scan-line" class="w-4 h-4"></i>
+        Docket Scan
+      </span>
+      </button>
+    ` : ``}
 
     <button onclick="logout()" 
     class="top-btn logout-btn">
@@ -1977,6 +2040,13 @@ function normalizeDocketNo(val){
 }
 
 function loadDocketScanner(){
+  const user = getUser();
+  if(!isAdminRole(user)){
+    showPopup("Docket Scan is available only for admin login.");
+    loadTrack("track", true);
+    return;
+  }
+
   window.activeTab = "scanner";
   updateMenuHighlight();
 
@@ -2561,7 +2631,7 @@ tr.querySelector(".cat").innerText = data.Cat1;
 // ===== 30 DAY QTY LOGIC =====
 const user = getUser();
 
-const total30 = await getLast30QtyByBranchPart(user.Branch, partNo);
+const total30 = await getLast30QtyByBranchPart(getUserBranch(user), partNo);
 
 // SET VALUE
 tr.querySelector(".qty30").innerText = total30;
@@ -2810,10 +2880,10 @@ for (const r of rows){
 
   if(!part) continue;
 
-  const qtyLast30 = await getLast30QtyByBranchPart(user.Branch, part);
+  const qtyLast30 = await getLast30QtyByBranchPart(getUserBranch(user), part);
 
   inserts.push({
-    Branch: user.Branch,
+    Branch: getUserBranch(user),
 
     OrderType: orderType,
     OrderFor: orderFor,
@@ -2894,7 +2964,7 @@ window.activeTab = "track";
 updateMenuHighlight();
 
 const user = getUser();
-const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isViewer = isViewerRole(user);
 
@@ -2907,7 +2977,7 @@ let query = db
 
 // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
 if(!isAdmin && !isSuper && !isViewer){
-  query = query.eq("Branch", user.Branch);
+  query = query.eq("Branch", getUserBranch(user));
 }
 
 const { data } = await query;
@@ -3887,7 +3957,7 @@ const orderStatus = getOrderStatusLabel(data);
   window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
-const isAdmin = user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -6089,7 +6159,7 @@ async function addOrderComment(orderNo){
     const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
   existing.push({
     type: "user",
-    by: user.Name || user.Role || "User",
+    by: user.Name || user.Role || user.role || "User",
     text,
     at: new Date().toISOString(),
     attachmentName,
@@ -6233,7 +6303,7 @@ function goBack(){
   const user = getUser();
   if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
-  } else if(user.Role === "admin" || user.Branch === "HQ"){
+  } else if(isAdminRole(user)){
     loadAdmin(window.activeTab || "Approved", true);
   } else {
     loadTrack("track", true);
@@ -6458,7 +6528,7 @@ function refreshCurrentView(){
 
   const user = getUser();
 
-if(user.Role === "admin" || user.Branch === "HQ"){
+if(isAdminRole(user)){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
 } else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
@@ -6483,7 +6553,7 @@ function changePage(direction){
 
   let orders = Object.values(grouped);
 
-  if(user.Role === "admin" || user.Branch === "HQ"){
+  if(isAdminRole(user)){
 
     if(window.activeTab === "Approved"){
       orders = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
@@ -6496,7 +6566,7 @@ function changePage(direction){
 
   } else {
     orders = orders.filter(o => 
-      o.every(x => x.Branch === user.Branch)
+      o.every(x => x.Branch === getUserBranch(user))
     );
   }
 
@@ -6508,7 +6578,7 @@ function changePage(direction){
   if(CURRENT_PAGE > totalPages) CURRENT_PAGE = totalPages;
 
   // 🔥 THIS IS THE REAL FIX
-  if(user.Role === "admin" || user.Branch === "HQ"){
+  if(isAdminRole(user)){
     loadAdmin(window.activeTab, true);
   } else {
     loadTrack("track", true);
@@ -6524,7 +6594,7 @@ function changePage(step){
   CURRENT_PAGE = newPage;
 
   const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isAdmin = isAdminRole(user);
   const isSuper = isSuperLikeRole(user);
 
   if(isAdmin){
