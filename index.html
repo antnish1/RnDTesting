@@ -1450,6 +1450,36 @@ function isViewerRole(user){
   return role === "viewer";
 }
 
+async function syncUserRoleFromDb(user){
+  if(!user) return null;
+
+  let query = db
+    .from("users")
+    .select("Role")
+    .eq("Branch", user.Branch || "");
+
+  if(user.id !== undefined && user.id !== null){
+    query = query.eq("id", user.id);
+  }else if(user.Name){
+    query = query.eq("Name", user.Name);
+  }else{
+    return user;
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if(error){
+    console.warn("Unable to refresh role from users table:", error.message || error);
+    return user;
+  }
+
+  if(data?.Role){
+    const nextUser = { ...user, Role: data.Role };
+    localStorage.setItem("user", JSON.stringify(nextUser));
+    return nextUser;
+  }
+  return user;
+}
+
 const PART_MASTER_CACHE = new Map();
 const PART_USAGE_30D_CACHE = new Map();
 
@@ -1696,9 +1726,13 @@ function updateMenuHighlight(){
   
   
 // ---------- BRANCH ----------
-function loadBranch(){
+async function loadBranch(){
 
-const user = getUser();
+const user = await syncUserRoleFromDb(getUser());
+if(!user){
+  loadLogin();
+  return;
+}
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
@@ -2192,14 +2226,12 @@ loadLogin();
 // ---------- CREATE ----------
 function loadCreate(tab){
 stopDocketCameraScanner();
-<<<<<<< codex/show-report-upload-timestamps-in-header-yst814
 if(isViewerRole(getUser())){
   showPopup("Viewer role can only access Track Orders.");
   loadTrack("track");
   return;
 }
-=======
->>>>>>> main
+ main
 
 window.activeTab = "create";
 
