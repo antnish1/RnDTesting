@@ -4927,6 +4927,18 @@ async function processInventoryExcelData(rows, reportDate){
   try{
     const payload = [];
     let failed = 0;
+    const normalizeBranchKey = (val) => (val || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
+    const branchCodeByName = new Map();
+    const { data: branchMappings } = await db
+      .from("branch_mapping")
+      .select("*");
+    (branchMappings || []).forEach(m => {
+      const nameKey = normalizeBranchKey(getUserField(m, ["branchname", "branch_name"]));
+      const codeVal = (getUserField(m, ["branchcode", "branch_code"]) || "").toString().trim().toUpperCase();
+      if(nameKey && codeVal && !branchCodeByName.has(nameKey)){
+        branchCodeByName.set(nameKey, codeVal);
+      }
+    });
 
     for(const row of rows){
       const branch = String(getInventoryValue(row, ["Branch"])).trim();
@@ -4952,7 +4964,8 @@ async function processInventoryExcelData(rows, reportDate){
         continue;
       }
 
-      const resolvedBranchCode = (bhlhln || brCode || branch || "").toUpperCase().trim();
+      const mappedBranchCode = branchCodeByName.get(normalizeBranchKey(branch)) || "";
+      const resolvedBranchCode = (bhlhln || brCode || mappedBranchCode || "").toUpperCase().trim();
       if(!resolvedBranchCode || !itemCode){
         failed++;
         continue;
