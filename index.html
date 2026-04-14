@@ -789,10 +789,18 @@ tr[style*="f59e0b"]:hover {
 .mgr-kpi-count{ font-size: 1.35rem; font-weight: 900; line-height: 1; color:#f8fafc; }
 .mgr-kpi-value{ font-size: 0.86rem; font-weight: 800; color:#fde68a; margin-top: 16px; }
 .mgr-filter-bar{
-  display:grid;
-  grid-template-columns: 1fr 1fr auto auto;
+  display:flex;
   gap: 10px;
   align-items:end;
+  justify-content:flex-end;
+  flex-wrap: wrap;
+}
+.mgr-header-bar{
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  align-items:flex-start;
+  margin-bottom: 10px;
 }
 .mgr-filter-label{
   font-size: 11px;
@@ -819,11 +827,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   color: #fef3c7;
 }
 .mgr-inv-lookup-btn{
-  padding: 6px 10px;
+  padding: 7px 12px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: .03em;
+  min-width: 122px;
   border: 1px solid rgba(16,185,129,0.55);
   color: #ecfdf5;
   background: linear-gradient(135deg, rgba(5,150,105,0.94), rgba(6,95,70,0.96));
@@ -843,13 +852,52 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   animation: mgrExpand .22s ease;
 }
 @keyframes mgrExpand { from { opacity:0; max-height:0; } to { opacity:1; max-height:140px; } }
+.inv-tab-layout{
+  display:grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 14px;
+}
+.inv-branch-sidebar{
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.32);
+  background: rgba(15,23,42,0.72);
+  padding: 10px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+.inv-branch-btn{
+  width:100%;
+  text-align:left;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,0.28);
+  background: rgba(30,41,59,0.66);
+  color:#e2e8f0;
+  font-size:12px;
+  font-weight:700;
+  padding:8px 9px;
+  margin-bottom:6px;
+}
+.inv-branch-btn.active{
+  border-color: rgba(250,204,21,0.55);
+  background: rgba(250,204,21,0.16);
+  color:#fde68a;
+}
+.inv-result-section{ overflow: hidden; }
+.inv-result-section.collapsed{ max-height: 0; opacity: 0; pointer-events: none; }
+.inv-result-section.expanded{
+  max-height: 680px;
+  opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
 
 @media (max-width: 1200px){
   .mgr-kpi-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
 }
 @media (max-width: 768px){
   .mgr-kpi-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .mgr-filter-bar{ grid-template-columns: 1fr; }
+  .mgr-filter-bar{ justify-content:flex-start; }
+  .mgr-header-bar{ flex-direction: column; }
+  .inv-tab-layout{ grid-template-columns: 1fr; }
 }
 
 .detail-toolbar{
@@ -1135,11 +1183,24 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  color:#111827;
-  background: linear-gradient(180deg, #fde68a, #d97706);
-  border: 1px solid rgba(255,255,255,0.35);
-  box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  color:#fef3c7;
+  background: linear-gradient(180deg, #111827, #1f2937);
+  border: 1px solid rgba(250,204,21,0.72);
+  box-shadow: 0 6px 14px rgba(15,23,42,0.45);
   text-transform: uppercase;
+}
+.offer-note{
+  flex:0 0 auto;
+  margin: 0 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(250,204,21,0.75);
+  background: rgba(15,23,42,0.86);
+  color:#fde68a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 @keyframes offerMarquee {
@@ -1149,6 +1210,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .offer-strip:hover .offer-marquee{
   animation-play-state: paused;
+}
+.mgr-compact-btn{
+  padding: 5px 9px !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+  line-height: 1 !important;
 }
 
 @keyframes offerShine {
@@ -1842,12 +1909,12 @@ if(isAdmin){
   window.activeTab = window.activeTab || "create";
 }
 document.getElementById("app").innerHTML = `
-<div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
+<div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5 overflow-x-hidden">
 
   <div class="space-y-0">
 
 <!-- HEADER WITH LOGOUT -->
-<div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md"
+<div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md mx-[-1rem] md:mx-0"
      style="
   background: rgba(15,23,42,0.88);
   border: 1px solid var(--pc-border);
@@ -1997,16 +2064,20 @@ ${!isAdmin && !isSuper && !isViewer ? `
 
   </div>
 
-  <div class="offer-strip px-2 py-2 w-full">
+  <div class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0">
     <div class="offer-marquee items-center gap-3">
-      <span class="offer-pill">🔥 Priority Pitch</span>
-      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
-        BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
-      </span>
-      <span class="offer-pill">🔥 Priority Pitch</span>
-      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
-        BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
-      </span>
+      <span class="offer-pill">⚠ Mandatory</span>
+      <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
+      <span class="offer-pill">✅ UW Service</span>
+      <span class="offer-note">Ensure 100% adherence to grease quotation in all UW service calls.</span>
+      <span class="offer-pill">🔥 Pitch Every Time</span>
+      <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
+      <span class="offer-pill">⚠ Mandatory</span>
+      <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
+      <span class="offer-pill">✅ UW Service</span>
+      <span class="offer-note">Ensure 100% adherence to grease quotation in all UW service calls.</span>
+      <span class="offer-pill">🔥 Pitch Every Time</span>
+      <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
     </div>
   </div>
 
@@ -5351,9 +5422,14 @@ function renderManagerDashboard(orders){
   window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
   window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
-  window.managerInvLookupMode = window.managerInvLookupMode === true;
-  window.managerInvLookupQuery = window.managerInvLookupQuery || "";
+  window.managerInventoryTabOpen = window.managerInventoryTabOpen === true;
+  window.managerInvLookupQuery = (window.managerInvLookupQuery || "").toString();
   window.managerInvLookupResults = Array.isArray(window.managerInvLookupResults) ? window.managerInvLookupResults : [];
+  window.managerInvLookupBranch = (window.managerInvLookupBranch || "ALL").toString();
+  window.managerInvLookupExpanded = window.managerInvLookupExpanded === true;
+  window.managerInvBranchDirectory = Array.isArray(window.managerInvBranchDirectory) ? window.managerInvBranchDirectory : [];
+  window.managerInvLookupDate = (window.managerInvLookupDate || today).toString();
+  window.managerInvBranchTxnResults = Array.isArray(window.managerInvBranchTxnResults) ? window.managerInvBranchTxnResults : [];
   const sanitizeUiText = (val) => (val || "")
     .toString()
     .replace(/<{7}.*$/gm, "")
@@ -5470,23 +5546,30 @@ function renderManagerDashboard(orders){
     return "background:rgba(148,163,184,0.2); color:#e2e8f0; border:1px solid rgba(255,255,255,0.15);";
   };
 
+  if(window.managerInventoryTabOpen){
+    renderManagerInventoryLookupTab();
+    return;
+  }
+
   document.getElementById("main").innerHTML = `
     <div class="mgr-shell">
       <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
-        <div class="flex justify-end">
-        <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
-          ${isManager ? `<button class="mgr-inv-lookup-btn" onclick="toggleManagerInventoryLookupMode()">${window.managerInvLookupMode ? "Back to Orders" : "Inventory Lookup"}</button>` : ``}
-          <div class="flex items-center gap-2">
-            <span class="mgr-filter-label !mb-0">From</span>
-            <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
+        <div class="mgr-header-bar">
+          <div>
+            ${isManager ? `<button class="mgr-inv-lookup-btn" onclick="openManagerInventoryLookupTab()">Inventory Lookup</button>` : ``}
           </div>
-          <div class="flex items-center gap-2">
-            <span class="mgr-filter-label !mb-0">To</span>
-            <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" />
+          <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
+            <div class="flex items-center gap-2">
+              <span class="mgr-filter-label !mb-0">From</span>
+              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="mgr-filter-label !mb-0">To</span>
+              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" />
+            </div>
+            <button class="track-page-btn" onclick="applyManagerDashboardDateRange()">Apply</button>
+            <button class="track-page-btn" onclick="resetManagerDashboardDateRange()">Reset</button>
           </div>
-          <button class="track-page-btn" onclick="applyManagerDashboardDateRange()">Apply</button>
-          <button class="track-page-btn" onclick="resetManagerDashboardDateRange()">Reset</button>
-        </div>
         </div>
 
         <div class="mgr-kpi-grid">${statusCards.map(cardHtml).join("")}</div>
@@ -5496,25 +5579,11 @@ function renderManagerDashboard(orders){
       <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
         <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">
-            ${window.managerInvLookupMode ? "Inventory Lookup" : `Filtered Orders ${activeFilter ? `• ${escapeHtml(sanitizeUiText(activeFilter.label))}` : ""}`}
+            ${`Filtered Orders ${activeFilter ? `• ${escapeHtml(sanitizeUiText(activeFilter.label))}` : ""}`}
           </div>
           <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
         </div>
         <div class="overflow-x-auto ${window.managerDashTableVisible ? "" : "hidden"}">
-          ${window.managerInvLookupMode ? `
-            <div class="mb-3 flex items-center gap-2 flex-wrap">
-              <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[38px] min-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Enter Part No" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
-              <button class="track-page-btn" onclick="performManagerInventoryLookup()">Search</button>
-            </div>
-            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
-              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
-                <tr><th class="px-2">Branch</th><th class="px-2 text-right">Closing Balance</th></tr>
-              </thead>
-              <tbody>
-                ${(window.managerInvLookupResults || []).map(r => `<tr><td class="px-2">${escapeHtml(r.branch || "-")}</td><td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td></tr>`).join("") || `<tr><td colspan="2" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found for this part." : "Enter part number to lookup inventory by branch."}</td></tr>`}
-              </tbody>
-            </table>
-          ` : `
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
             <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
               <tr><th class="px-2">Date</th><th class="px-2">Type</th><th class="px-2">Customer</th><th class="px-2">Branch</th><th class="px-2 text-center">Qty</th><th class="px-2 text-right">Value</th><th class="px-2">Order No</th><th class="px-2">Status</th></tr>
@@ -5523,7 +5592,6 @@ function renderManagerDashboard(orders){
               ${selectedOrders.slice(0,120).map(o=>`<tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer"><td class="px-2">${formatDateTime(o.created_at)}</td><td class="px-2"><span class="px-2 py-1 rounded-full text-xs font-semibold" style="${getManagerTypeChipStyle(o.OrderType)}">${o.OrderType || "-"}</span></td><td class="px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td><td class="px-2">${o.Branch || "-"}</td><td class="px-2 text-center">${(o.items || []).reduce((s,x)=>s+Number(getEffectiveQty(x) || 0),0)}</td><td class="px-2 text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td><td class="px-2 font-semibold">${o.OrderNo} ${getOrderCommentCount(o) > 0 ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>` : ""}</td><td class="px-2"><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td></tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected range.</td></tr>`}
             </tbody>
           </table>
-          `}
         </div>
       </section>
 
@@ -5605,22 +5673,40 @@ function toggleManagerDashboardFilteredTable(){
   loadSuper("Dashboard", true);
 }
 
-function toggleManagerInventoryLookupMode(){
-  window.managerInvLookupMode = !window.managerInvLookupMode;
-  if(!window.managerInvLookupMode){
-    window.managerInvLookupQuery = "";
-    window.managerInvLookupResults = [];
-  }
-  loadSuper("Dashboard", true);
+function openManagerInventoryLookupTab(){
+  window.managerInventoryTabOpen = true;
+  loadManagerInventoryBranchDirectory().finally(() => loadSuper("Dashboard", true));
+}
+
+async function loadManagerInventoryBranchDirectory(){
+  const { data: branchMappings } = await db
+    .from("branch_mapping")
+    .select("*");
+  const dedupMap = new Map();
+  (branchMappings || []).forEach(m => {
+    const code = (getUserField(m, ["branchcode", "branch_code"]) || "").toString().trim().toUpperCase();
+    const rawName = (getUserField(m, ["branchname", "branch_name"]) || "").toString().trim();
+    if(!code || !rawName) return;
+    const name = code === "DFM003" ? "JABALPUR PARTS" : rawName;
+    if(!dedupMap.has(code)){
+      dedupMap.set(code, name);
+    }
+  });
+  window.managerInvBranchDirectory = Array.from(dedupMap.entries())
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([code, name]) => ({ code, name }));
 }
 
 async function performManagerInventoryLookup(){
   const input = document.getElementById("mgrInvLookupPartNo");
   const partNo = normalizePartNo(input?.value || "");
+  window.managerInvBranchTxnResults = [];
+  window.managerInvLookupBranch = "ALL";
   window.managerInvLookupQuery = partNo;
   window.managerInvLookupResults = [];
 
   if(!partNo){
+    window.managerInvLookupExpanded = false;
     loadSuper("Dashboard", true);
     return;
   }
@@ -5628,8 +5714,8 @@ async function performManagerInventoryLookup(){
   showLoader();
   const { data: inventoryRows, error } = await db
     .from("inventory_staging")
-    .select("branch_code, qty, report_date")
-    .eq("item_code", partNo)
+    .select("branch_code, item_code, item_name, item_group, dnp, rec_flag, nsp_flag, uom, received_qty, issued_qty, qty, inv_value, report_date")
+    .ilike("item_code", `%${partNo}%`)
     .order("report_date", { ascending: false });
   hideLoader();
 
@@ -5638,33 +5724,176 @@ async function performManagerInventoryLookup(){
     return;
   }
 
+  const matchedRows = (inventoryRows || []).filter(r => normalizePartNo(r.item_code || "") === partNo);
+  const workingRows = matchedRows.length ? matchedRows : (inventoryRows || []);
+  const latestDate = (workingRows[0]?.report_date || "").toString().slice(0, 10);
+  if(!latestDate){
+    window.managerInvLookupExpanded = true;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  window.managerInvLookupDate = latestDate;
+
   const latestByBranch = {};
-  (inventoryRows || []).forEach(r => {
+  workingRows.forEach(r => {
+    if(((r.report_date || "").toString().slice(0, 10)) !== latestDate) return;
     const code = (r.branch_code || "").toString().trim().toUpperCase();
     if(!code || latestByBranch[code]) return;
-    latestByBranch[code] = Number(r.qty || 0);
+    latestByBranch[code] = r;
   });
 
-  const { data: branchMappings } = await db
-    .from("branch_mapping")
-    .select("*");
+  await loadManagerInventoryBranchDirectory();
   const branchNameByCode = {};
-  (branchMappings || []).forEach(m => {
-    const code = (getUserField(m, ["branchcode", "branch_code"]) || "").toString().trim().toUpperCase();
-    const name = (getUserField(m, ["branchname", "branch_name"]) || "").toString().trim();
-    if(code && name && !branchNameByCode[code]){
-      branchNameByCode[code] = name;
-    }
+  (window.managerInvBranchDirectory || []).forEach(b => {
+    branchNameByCode[b.code] = b.name;
   });
 
   window.managerInvLookupResults = Object.entries(latestByBranch)
-    .map(([code, qty]) => ({
+    .map(([code, row]) => ({
       branch: branchNameByCode[code] || code,
-      qty
+      branch_code: code,
+      item_code: row.item_code || partNo,
+      item_name: row.item_name || "",
+      item_group: row.item_group || "",
+      dnp: row.dnp,
+      rec_flag: row.rec_flag || "",
+      nsp_flag: row.nsp_flag || "",
+      uom: row.uom || "",
+      received_qty: row.received_qty,
+      issued_qty: row.issued_qty,
+      qty: row.qty,
+      inv_value: row.inv_value
     }))
     .sort((a, b) => a.branch.localeCompare(b.branch));
+  window.managerInvLookupExpanded = true;
 
   loadSuper("Dashboard", true);
+}
+
+function closeManagerInventoryLookupTab(){
+  window.managerInventoryTabOpen = false;
+  loadSuper("Dashboard", true);
+}
+
+async function setManagerInventoryLookupDate(value){
+  window.managerInvLookupDate = value || new Date().toISOString().slice(0, 10);
+  await loadManagerBranchTransactions();
+  loadSuper("Dashboard", true);
+}
+
+async function setManagerInventoryBranchFilter(branchCode){
+  window.managerInvLookupBranch = branchCode || "ALL";
+  window.managerInvLookupQuery = "";
+  window.managerInvLookupResults = [];
+  window.managerInvLookupExpanded = false;
+  await loadManagerBranchTransactions();
+  loadSuper("Dashboard", true);
+}
+
+async function loadManagerBranchTransactions(){
+  const selectedCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
+  const selectedDate = (window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
+  window.managerInvBranchTxnResults = [];
+  if(selectedCode === "ALL"){
+    return;
+  }
+
+  const { data, error } = await db
+    .from("inventory_staging")
+    .select("branch_code, item_code, item_name, item_group, dnp, received_qty, issued_qty, qty, inv_value, report_date")
+    .eq("branch_code", selectedCode)
+    .eq("report_date", selectedDate)
+    .order("item_name", { ascending: true });
+
+  if(error){
+    showPopup(`Branch transaction lookup failed ❌\n${error.message || "Unknown error"}`);
+    return;
+  }
+
+  window.managerInvBranchTxnResults = (data || []).filter(r =>
+    Number(r.received_qty || 0) !== 0 || Number(r.issued_qty || 0) !== 0
+  );
+}
+
+function renderManagerInventoryLookupTab(){
+  const rows = window.managerInvLookupResults || [];
+  const activeCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
+  const orderedBranches = [{ code: "ALL", name: "ALL BRANCHES" }]
+    .concat(window.managerInvBranchDirectory || []);
+  const selectedBranch = orderedBranches.find(b => (b.code || "").toUpperCase() === activeCode);
+  const branchTxnRows = window.managerInvBranchTxnResults || [];
+  const showPartResults = window.managerInvLookupExpanded === true;
+  const showBranchResults = !showPartResults && activeCode !== "ALL";
+
+  document.getElementById("main").innerHTML = `
+    <div class="mgr-shell">
+      <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="text-sm font-extrabold uppercase tracking-[0.1em]" style="color:#fcd34d;">Inventory Lookup</div>
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <input id="mgrInvLookupDate" type="date" class="pc-field h-[34px] max-w-[170px]" value="${escapeHtml(window.managerInvLookupDate || new Date().toISOString().slice(0, 10))}" onchange="setManagerInventoryLookupDate(this.value)" onclick="this.showPicker && this.showPicker()" />
+            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
+            <button class="track-page-btn mgr-compact-btn" onclick="performManagerInventoryLookup()">Search</button>
+            <button class="track-page-btn mgr-compact-btn" onclick="closeManagerInventoryLookupTab()">Back</button>
+          </div>
+        </div>
+      </section>
+      <div class="inv-tab-layout">
+        <aside class="inv-branch-sidebar">
+          ${orderedBranches.map(b => `<button class="inv-branch-btn ${(b.code || "ALL") === activeCode ? "active" : ""}" onclick="setManagerInventoryBranchFilter('${b.code}')">${escapeHtml(b.name)}</button>`).join("")}
+        </aside>
+        <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
+          <div class="inv-result-section ${showPartResults ? "expanded" : "collapsed"}">
+            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
+                <tr>
+                  <th class="px-2">Branch</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => `<tr>
+                  <td class="px-2">${escapeHtml(r.branch || "-")}</td>
+                  <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
+                  <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
+                  <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                </tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found." : "Search by part number to expand this section."}</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4 ${showBranchResults || (!showPartResults && activeCode === "ALL") ? "" : "hidden"}">
+            <div class="text-xs uppercase tracking-[0.1em] font-semibold mb-2" style="color:#fcd34d;">
+              ${activeCode === "ALL" ? "Branch Daily Transactions" : `Branch Daily Transactions • ${escapeHtml(selectedBranch?.name || activeCode)}`}
+            </div>
+            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
+                <tr>
+                  <th class="px-2">Branch</th><th class="px-2">Itemcode</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${activeCode === "ALL"
+                  ? `<tr><td colspan="9" class="text-center py-4">Select a branch from sidebar to view transactions for ${(window.managerInvLookupDate || "").toString()}.</td></tr>`
+                  : (branchTxnRows.map(r => `<tr>
+                    <td class="px-2">${escapeHtml(selectedBranch?.name || r.branch_code || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_code || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
+                    <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  </tr>`).join("") || `<tr><td colspan="9" class="text-center py-4">No received/issued movement for ${escapeHtml(selectedBranch?.name || activeCode)} on ${(window.managerInvLookupDate || "").toString()}.</td></tr>`)}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>`;
 }
 
 function setManagerDashboardBranchFilter(branch){
