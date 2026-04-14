@@ -5405,6 +5405,8 @@ function renderManagerDashboard(orders){
   window.managerInvLookupBranch = (window.managerInvLookupBranch || "ALL").toString();
   window.managerInvLookupExpanded = window.managerInvLookupExpanded === true;
   window.managerInvBranchDirectory = Array.isArray(window.managerInvBranchDirectory) ? window.managerInvBranchDirectory : [];
+  window.managerInvLookupDate = (window.managerInvLookupDate || today).toString();
+  window.managerInvBranchTxnResults = Array.isArray(window.managerInvBranchTxnResults) ? window.managerInvBranchTxnResults : [];
   const sanitizeUiText = (val) => (val || "")
     .toString()
     .replace(/<{7}.*$/gm, "")
@@ -5675,7 +5677,10 @@ async function loadManagerInventoryBranchDirectory(){
 async function performManagerInventoryLookup(){
   const input = document.getElementById("mgrInvLookupPartNo");
   const partNo = normalizePartNo(input?.value || "");
+  const dateInput = document.getElementById("mgrInvLookupDate");
+  const selectedDate = (dateInput?.value || window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
   window.managerInvLookupQuery = partNo;
+  window.managerInvLookupDate = selectedDate;
   window.managerInvLookupResults = [];
 
   if(!partNo){
@@ -5689,6 +5694,7 @@ async function performManagerInventoryLookup(){
     .from("inventory_staging")
     .select("branch_code, item_code, item_name, item_group, dnp, rec_flag, nsp_flag, uom, received_qty, issued_qty, qty, inv_value, report_date")
     .eq("item_code", partNo)
+    .eq("report_date", selectedDate)
     .order("report_date", { ascending: false });
   hideLoader();
 
@@ -5737,9 +5743,45 @@ function closeManagerInventoryLookupTab(){
   loadSuper("Dashboard", true);
 }
 
-function setManagerInventoryBranchFilter(branchCode){
-  window.managerInvLookupBranch = branchCode || "ALL";
+async function setManagerInventoryLookupDate(value){
+  window.managerInvLookupDate = value || new Date().toISOString().slice(0, 10);
+  if(window.managerInvLookupQuery){
+    await performManagerInventoryLookup();
+    return;
+  }
+  await loadManagerBranchTransactions();
   loadSuper("Dashboard", true);
+}
+
+async function setManagerInventoryBranchFilter(branchCode){
+  window.managerInvLookupBranch = branchCode || "ALL";
+  await loadManagerBranchTransactions();
+  loadSuper("Dashboard", true);
+}
+
+async function loadManagerBranchTransactions(){
+  const selectedCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
+  const selectedDate = (window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
+  window.managerInvBranchTxnResults = [];
+  if(selectedCode === "ALL"){
+    return;
+  }
+
+  const { data, error } = await db
+    .from("inventory_staging")
+    .select("branch_code, item_code, item_name, item_group, dnp, received_qty, issued_qty, qty, inv_value, report_date")
+    .eq("branch_code", selectedCode)
+    .eq("report_date", selectedDate)
+    .order("item_name", { ascending: true });
+
+  if(error){
+    showPopup(`Branch transaction lookup failed ❌\n${error.message || "Unknown error"}`);
+    return;
+  }
+
+  window.managerInvBranchTxnResults = (data || []).filter(r =>
+    Number(r.received_qty || 0) !== 0 || Number(r.issued_qty || 0) !== 0
+  );
 }
 
 function renderManagerInventoryLookupTab(){
@@ -5747,10 +5789,8 @@ function renderManagerInventoryLookupTab(){
   const activeCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
   const orderedBranches = [{ code: "ALL", name: "ALL BRANCHES" }]
     .concat(window.managerInvBranchDirectory || []);
-
-  const visibleRows = activeCode === "ALL"
-    ? rows
-    : rows.filter(r => (r.branch_code || "").toUpperCase() === activeCode);
+  const selectedBranch = orderedBranches.find(b => (b.code || "").toUpperCase() === activeCode);
+  const branchTxnRows = window.managerInvBranchTxnResults || [];
 
   document.getElementById("main").innerHTML = `
     <div class="mgr-shell">
@@ -5765,7 +5805,13 @@ function renderManagerInventoryLookupTab(){
           ${orderedBranches.map(b => `<button class="inv-branch-btn ${(b.code || "ALL") === activeCode ? "active" : ""}" onclick="setManagerInventoryBranchFilter('${b.code}')">${escapeHtml(b.name)}</button>`).join("")}
         </aside>
         <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
-          <div class="text-xs uppercase tracking-[0.1em] font-semibold mb-2" style="color:#fcd34d;">Search Part Inventory</div>
+          <div class="mb-2 flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-xs uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Search Part Inventory</div>
+            <div class="flex items-center gap-2">
+              <span class="mgr-filter-label !mb-0">Date</span>
+              <input id="mgrInvLookupDate" type="date" class="pc-field h-[34px] max-w-[170px]" value="${escapeHtml(window.managerInvLookupDate || new Date().toISOString().slice(0, 10))}" onchange="setManagerInventoryLookupDate(this.value)" onclick="this.showPicker && this.showPicker()" />
+            </div>
+          </div>
           <div class="mb-3 flex items-center gap-2 flex-wrap">
             <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
             <button class="track-page-btn" onclick="performManagerInventoryLookup()">Search</button>
@@ -5774,25 +5820,47 @@ function renderManagerInventoryLookupTab(){
             <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
               <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
                 <tr>
-                  <th class="px-2">Branch</th><th class="px-2">Br. Code</th><th class="px-2">Itemcode</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2">REC</th><th class="px-2">NSP</th><th class="px-2">UOM</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
+                  <th class="px-2">Branch</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
                 </tr>
               </thead>
               <tbody>
-                ${visibleRows.map(r => `<tr>
+                ${rows.map(r => `<tr>
                   <td class="px-2">${escapeHtml(r.branch || "-")}</td>
-                  <td class="px-2">${escapeHtml(r.branch_code || "-")}</td>
-                  <td class="px-2">${escapeHtml(r.item_code || "-")}</td>
                   <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
                   <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
                   <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                  <td class="px-2">${escapeHtml(r.rec_flag || "-")}</td>
-                  <td class="px-2">${escapeHtml(r.nsp_flag || "-")}</td>
-                  <td class="px-2">${escapeHtml(r.uom || "-")}</td>
                   <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
                   <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
                   <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
                   <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                </tr>`).join("") || `<tr><td colspan="13" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found." : "Search by part number to expand this section."}</td></tr>`}
+                </tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found." : "Search by part number to expand this section."}</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4">
+            <div class="text-xs uppercase tracking-[0.1em] font-semibold mb-2" style="color:#fcd34d;">
+              ${activeCode === "ALL" ? "Branch Daily Transactions" : `Branch Daily Transactions • ${escapeHtml(selectedBranch?.name || activeCode)}`}
+            </div>
+            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
+                <tr>
+                  <th class="px-2">Branch</th><th class="px-2">Itemcode</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${activeCode === "ALL"
+                  ? `<tr><td colspan="9" class="text-center py-4">Select a branch from sidebar to view transactions for ${(window.managerInvLookupDate || "").toString()}.</td></tr>`
+                  : (branchTxnRows.map(r => `<tr>
+                    <td class="px-2">${escapeHtml(selectedBranch?.name || r.branch_code || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_code || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
+                    <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  </tr>`).join("") || `<tr><td colspan="9" class="text-center py-4">No received/issued movement for ${escapeHtml(selectedBranch?.name || activeCode)} on ${(window.managerInvLookupDate || "").toString()}.</td></tr>`)}
               </tbody>
             </table>
           </div>
