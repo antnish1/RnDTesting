@@ -1435,19 +1435,33 @@ function getUser(){
   catch { return null; }
 }
 
+function getUserRole(user){
+  const rawRole = user?.Role ?? user?.role ?? user?.ROLE ?? "";
+  return rawRole.toString().trim().toLowerCase();
+}
+
+function getUserBranch(user){
+  const rawBranch = user?.Branch ?? user?.branch ?? user?.BRANCH ?? user?.BRANCK ?? "";
+  return rawBranch.toString().trim();
+}
+
+function isAdminRole(user){
+  const role = getUserRole(user);
+  const branch = getUserBranch(user);
+  return role === "admin" || branch === "HQ";
+}
+
 function isSuperLikeRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
+  const role = getUserRole(user);
   return role === "super" || role === "manager";
 }
 
 function isManagerRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
-  return role === "manager";
+  return getUserRole(user) === "manager";
 }
 
 function isViewerRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
-  return role === "viewer";
+  return getUserRole(user) === "viewer";
 }
 
 async function syncUserRoleFromDb(user){
@@ -1456,7 +1470,7 @@ async function syncUserRoleFromDb(user){
   let query = db
     .from("users")
     .select("Role")
-    .eq("Branch", user.Branch || "");
+    .eq("Branch", getUserBranch(user));
 
   if(user.id !== undefined && user.id !== null){
     query = query.eq("id", user.id);
@@ -1472,8 +1486,9 @@ async function syncUserRoleFromDb(user){
     return user;
   }
 
-  if(data?.Role){
-    const nextUser = { ...user, Role: data.Role };
+  const latestRole = data?.Role ?? data?.role ?? data?.ROLE;
+  if(latestRole){
+    const nextUser = { ...user, Role: latestRole, role: latestRole };
     localStorage.setItem("user", JSON.stringify(nextUser));
     return nextUser;
   }
@@ -1636,7 +1651,7 @@ loadBranch();
 function renderHeader(){
 
   const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isAdmin = isAdminRole(user);
   const isViewer = isViewerRole(user);
 
   return `
@@ -1648,7 +1663,7 @@ function renderHeader(){
 
   <h1 class="text-2xl font-bold tracking-wide" style="color: var(--pc-light);">
     PARTS CONNECT PORTAL :
-    <span class="ml-2" style="color: var(--pc-secondary);">${user.Branch}</span>
+    <span class="ml-2" style="color: var(--pc-secondary);">${getUserBranch(user)}</span>
   </h1>
 
   <div class="flex items-center gap-3">
@@ -1733,7 +1748,7 @@ if(!user){
   loadLogin();
   return;
 }
-const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
 const isViewer = isViewerRole(user);
@@ -1785,7 +1800,7 @@ document.getElementById("app").innerHTML = `
 
   <span class="text-sm font-semibold tracking-widest uppercase"
       style="color: var(--pc-text);">
-  ${user.Branch}
+  ${getUserBranch(user)}
 </span>
 
 </div>
@@ -2561,7 +2576,7 @@ tr.querySelector(".cat").innerText = data.Cat1;
 // ===== 30 DAY QTY LOGIC =====
 const user = getUser();
 
-const total30 = await getLast30QtyByBranchPart(user.Branch, partNo);
+const total30 = await getLast30QtyByBranchPart(getUserBranch(user), partNo);
 
 // SET VALUE
 tr.querySelector(".qty30").innerText = total30;
@@ -2810,10 +2825,10 @@ for (const r of rows){
 
   if(!part) continue;
 
-  const qtyLast30 = await getLast30QtyByBranchPart(user.Branch, part);
+  const qtyLast30 = await getLast30QtyByBranchPart(getUserBranch(user), part);
 
   inserts.push({
-    Branch: user.Branch,
+    Branch: getUserBranch(user),
 
     OrderType: orderType,
     OrderFor: orderFor,
@@ -2894,7 +2909,7 @@ window.activeTab = "track";
 updateMenuHighlight();
 
 const user = getUser();
-const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isViewer = isViewerRole(user);
 
@@ -2907,7 +2922,7 @@ let query = db
 
 // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
 if(!isAdmin && !isSuper && !isViewer){
-  query = query.eq("Branch", user.Branch);
+  query = query.eq("Branch", getUserBranch(user));
 }
 
 const { data } = await query;
@@ -3887,7 +3902,7 @@ const orderStatus = getOrderStatusLabel(data);
   window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
-const isAdmin = user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -6089,7 +6104,7 @@ async function addOrderComment(orderNo){
     const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
   existing.push({
     type: "user",
-    by: user.Name || user.Role || "User",
+    by: user.Name || user.Role || user.role || "User",
     text,
     at: new Date().toISOString(),
     attachmentName,
@@ -6233,7 +6248,7 @@ function goBack(){
   const user = getUser();
   if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
-  } else if(user.Role === "admin" || user.Branch === "HQ"){
+  } else if(isAdminRole(user)){
     loadAdmin(window.activeTab || "Approved", true);
   } else {
     loadTrack("track", true);
@@ -6458,7 +6473,7 @@ function refreshCurrentView(){
 
   const user = getUser();
 
-if(user.Role === "admin" || user.Branch === "HQ"){
+if(isAdminRole(user)){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
 } else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
@@ -6483,7 +6498,7 @@ function changePage(direction){
 
   let orders = Object.values(grouped);
 
-  if(user.Role === "admin" || user.Branch === "HQ"){
+  if(isAdminRole(user)){
 
     if(window.activeTab === "Approved"){
       orders = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
@@ -6496,7 +6511,7 @@ function changePage(direction){
 
   } else {
     orders = orders.filter(o => 
-      o.every(x => x.Branch === user.Branch)
+      o.every(x => x.Branch === getUserBranch(user))
     );
   }
 
@@ -6508,7 +6523,7 @@ function changePage(direction){
   if(CURRENT_PAGE > totalPages) CURRENT_PAGE = totalPages;
 
   // 🔥 THIS IS THE REAL FIX
-  if(user.Role === "admin" || user.Branch === "HQ"){
+  if(isAdminRole(user)){
     loadAdmin(window.activeTab, true);
   } else {
     loadTrack("track", true);
@@ -6524,7 +6539,7 @@ function changePage(step){
   CURRENT_PAGE = newPage;
 
   const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isAdmin = isAdminRole(user);
   const isSuper = isSuperLikeRole(user);
 
   if(isAdmin){
