@@ -2224,9 +2224,14 @@ loadLogin();
 }
 
 // ---------- CREATE ----------
-function loadCreate(tab){
+async function loadCreate(tab){
 stopDocketCameraScanner();
-if(isViewerRole(getUser())){
+const latestUser = await syncUserRoleFromDb(getUser());
+if(!latestUser){
+  loadLogin();
+  return;
+}
+if(isViewerRole(latestUser)){
   showPopup("Viewer role can only access Track Orders.");
   loadTrack("track");
   return;
@@ -2367,7 +2372,7 @@ renderIcons();
     
 addRow();
 // AUTO FILL EMPLOYEE NAME
-const user = getUser();
+const user = latestUser;
 document.getElementById("employeeName").value = user.Name || "";
 
 // 🔥 LOAD SUPER USERS INTO APPROVED BY DROPDOWN
@@ -2892,7 +2897,11 @@ window.activeTab = "track";
 // ✅ Re-render header so highlight updates
 updateMenuHighlight();
 
-const user = getUser();
+const user = await syncUserRoleFromDb(getUser());
+if(!user){
+  loadLogin();
+  return;
+}
 const isAdmin = user.Role === "admin" || user.Branch === "HQ";
 const isSuper = isSuperLikeRole(user);
 const isViewer = isViewerRole(user);
