@@ -5703,6 +5703,7 @@ async function performManagerInventoryLookup(){
   window.managerInvBranchTxnResults = [];
   window.managerInvLookupBranch = "ALL";
   window.managerInvLookupQuery = partNo;
+  window.managerInvLookupDate = selectedDate;
   window.managerInvLookupResults = [];
 
   if(!partNo){
@@ -5710,6 +5711,28 @@ async function performManagerInventoryLookup(){
     loadSuper("Dashboard", true);
     return;
   }
+  window.managerInvLookupDate = latestDate;
+
+  const { data: latestDateRow, error: latestDateError } = await db
+    .from("inventory_staging")
+    .select("report_date")
+    .eq("item_code", partNo)
+    .order("report_date", { ascending: false })
+    .limit(1);
+
+  if(latestDateError){
+    showPopup(`Inventory lookup failed ❌\n${latestDateError.message || "Unknown error"}`);
+    return;
+  }
+
+  const latestDateRaw = latestDateRow?.[0]?.report_date || "";
+  const latestDate = latestDateRaw ? latestDateRaw.toString().slice(0, 10) : "";
+  if(!latestDate){
+    window.managerInvLookupExpanded = false;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  window.managerInvLookupDate = latestDate;
 
   showLoader();
   const { data: inventoryRows, error } = await db
@@ -5767,6 +5790,12 @@ async function performManagerInventoryLookup(){
     .sort((a, b) => a.branch.localeCompare(b.branch));
   window.managerInvLookupExpanded = true;
 
+async function setManagerInventoryBranchFilter(branchCode){
+  window.managerInvLookupBranch = branchCode || "ALL";
+  window.managerInvLookupQuery = "";
+  window.managerInvLookupResults = [];
+  window.managerInvLookupExpanded = false;
+  await loadManagerBranchTransactions();
   loadSuper("Dashboard", true);
 }
 
