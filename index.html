@@ -1189,6 +1189,19 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   box-shadow: 0 6px 14px rgba(245,158,11,0.35);
   text-transform: uppercase;
 }
+.offer-note{
+  flex:0 0 auto;
+  margin: 0 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(254,240,138,0.72);
+  background: rgba(245,158,11,0.24);
+  color:#fef9c3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
 
 @keyframes offerMarquee {
   from { transform: translateX(0); }
@@ -1197,6 +1210,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .offer-strip:hover .offer-marquee{
   animation-play-state: paused;
+}
+.mgr-compact-btn{
+  padding: 5px 9px !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+  line-height: 1 !important;
 }
 
 @keyframes offerShine {
@@ -1890,12 +1909,12 @@ if(isAdmin){
   window.activeTab = window.activeTab || "create";
 }
 document.getElementById("app").innerHTML = `
-<div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
+<div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5 overflow-x-hidden">
 
   <div class="space-y-0">
 
 <!-- HEADER WITH LOGOUT -->
-<div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md"
+<div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md mx-[-1rem] md:mx-0"
      style="
   background: rgba(15,23,42,0.88);
   border: 1px solid var(--pc-border);
@@ -2045,16 +2064,20 @@ ${!isAdmin && !isSuper && !isViewer ? `
 
   </div>
 
-  <div class="offer-strip px-2 py-2 w-full">
+  <div class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0">
     <div class="offer-marquee items-center gap-3">
-      <span class="offer-pill">🔥 Priority Pitch</span>
-      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
-        BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
-      </span>
-      <span class="offer-pill">🔥 Priority Pitch</span>
-      <span class="text-[11px] md:text-xs font-semibold tracking-wide whitespace-nowrap" style="color:#fef3c7;">
-        BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION
-      </span>
+      <span class="offer-pill">⚠ Mandatory</span>
+      <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
+      <span class="offer-pill">✅ UW Service</span>
+      <span class="offer-note">Ensure 100% adherence to grease quotation in all UW service calls.</span>
+      <span class="offer-pill">🔥 Pitch Every Time</span>
+      <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
+      <span class="offer-pill">⚠ Mandatory</span>
+      <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
+      <span class="offer-pill">✅ UW Service</span>
+      <span class="offer-note">Ensure 100% adherence to grease quotation in all UW service calls.</span>
+      <span class="offer-pill">🔥 Pitch Every Time</span>
+      <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
     </div>
   </div>
 
@@ -5677,8 +5700,8 @@ async function loadManagerInventoryBranchDirectory(){
 async function performManagerInventoryLookup(){
   const input = document.getElementById("mgrInvLookupPartNo");
   const partNo = normalizePartNo(input?.value || "");
-  const dateInput = document.getElementById("mgrInvLookupDate");
-  const selectedDate = (dateInput?.value || window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
+  window.managerInvBranchTxnResults = [];
+  window.managerInvLookupBranch = "ALL";
   window.managerInvLookupQuery = partNo;
   window.managerInvLookupDate = selectedDate;
   window.managerInvLookupResults = [];
@@ -5689,12 +5712,32 @@ async function performManagerInventoryLookup(){
     return;
   }
 
+  const { data: latestDateRow, error: latestDateError } = await db
+    .from("inventory_staging")
+    .select("report_date")
+    .eq("item_code", partNo)
+    .order("report_date", { ascending: false })
+    .limit(1);
+
+  if(latestDateError){
+    showPopup(`Inventory lookup failed ❌\n${latestDateError.message || "Unknown error"}`);
+    return;
+  }
+
+  const latestDate = latestDateRow?.[0]?.report_date || "";
+  if(!latestDate){
+    window.managerInvLookupExpanded = false;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  window.managerInvLookupDate = latestDate;
+
   showLoader();
   const { data: inventoryRows, error } = await db
     .from("inventory_staging")
     .select("branch_code, item_code, item_name, item_group, dnp, rec_flag, nsp_flag, uom, received_qty, issued_qty, qty, inv_value, report_date")
     .eq("item_code", partNo)
-    .eq("report_date", selectedDate)
+    .eq("report_date", latestDate)
     .order("report_date", { ascending: false });
   hideLoader();
 
@@ -5733,7 +5776,7 @@ async function performManagerInventoryLookup(){
       inv_value: row.inv_value
     }))
     .sort((a, b) => a.branch.localeCompare(b.branch));
-  window.managerInvLookupExpanded = window.managerInvLookupResults.length > 0;
+  window.managerInvLookupExpanded = true;
 
   loadSuper("Dashboard", true);
 }
@@ -5745,16 +5788,15 @@ function closeManagerInventoryLookupTab(){
 
 async function setManagerInventoryLookupDate(value){
   window.managerInvLookupDate = value || new Date().toISOString().slice(0, 10);
-  if(window.managerInvLookupQuery){
-    await performManagerInventoryLookup();
-    return;
-  }
   await loadManagerBranchTransactions();
   loadSuper("Dashboard", true);
 }
 
 async function setManagerInventoryBranchFilter(branchCode){
   window.managerInvLookupBranch = branchCode || "ALL";
+  window.managerInvLookupQuery = "";
+  window.managerInvLookupResults = [];
+  window.managerInvLookupExpanded = false;
   await loadManagerBranchTransactions();
   loadSuper("Dashboard", true);
 }
@@ -5791,13 +5833,20 @@ function renderManagerInventoryLookupTab(){
     .concat(window.managerInvBranchDirectory || []);
   const selectedBranch = orderedBranches.find(b => (b.code || "").toUpperCase() === activeCode);
   const branchTxnRows = window.managerInvBranchTxnResults || [];
+  const showPartResults = window.managerInvLookupExpanded === true;
+  const showBranchResults = !showPartResults && activeCode !== "ALL";
 
   document.getElementById("main").innerHTML = `
     <div class="mgr-shell">
       <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <div class="text-sm font-extrabold uppercase tracking-[0.1em]" style="color:#fcd34d;">Inventory Lookup</div>
-          <button class="track-page-btn" onclick="closeManagerInventoryLookupTab()">Back to Dashboard</button>
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <input id="mgrInvLookupDate" type="date" class="pc-field h-[34px] max-w-[170px]" value="${escapeHtml(window.managerInvLookupDate || new Date().toISOString().slice(0, 10))}" onchange="setManagerInventoryLookupDate(this.value)" onclick="this.showPicker && this.showPicker()" />
+            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
+            <button class="track-page-btn mgr-compact-btn" onclick="performManagerInventoryLookup()">Search</button>
+            <button class="track-page-btn mgr-compact-btn" onclick="closeManagerInventoryLookupTab()">Back</button>
+          </div>
         </div>
       </section>
       <div class="inv-tab-layout">
@@ -5805,18 +5854,7 @@ function renderManagerInventoryLookupTab(){
           ${orderedBranches.map(b => `<button class="inv-branch-btn ${(b.code || "ALL") === activeCode ? "active" : ""}" onclick="setManagerInventoryBranchFilter('${b.code}')">${escapeHtml(b.name)}</button>`).join("")}
         </aside>
         <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
-          <div class="mb-2 flex items-center justify-between gap-3 flex-wrap">
-            <div class="text-xs uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Search Part Inventory</div>
-            <div class="flex items-center gap-2">
-              <span class="mgr-filter-label !mb-0">Date</span>
-              <input id="mgrInvLookupDate" type="date" class="pc-field h-[34px] max-w-[170px]" value="${escapeHtml(window.managerInvLookupDate || new Date().toISOString().slice(0, 10))}" onchange="setManagerInventoryLookupDate(this.value)" onclick="this.showPicker && this.showPicker()" />
-            </div>
-          </div>
-          <div class="mb-3 flex items-center gap-2 flex-wrap">
-            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
-            <button class="track-page-btn" onclick="performManagerInventoryLookup()">Search</button>
-          </div>
-          <div class="inv-result-section ${(window.managerInvLookupExpanded && window.managerInvLookupQuery) ? "expanded" : "collapsed"}">
+          <div class="inv-result-section ${showPartResults ? "expanded" : "collapsed"}">
             <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
               <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
                 <tr>
@@ -5837,7 +5875,7 @@ function renderManagerInventoryLookupTab(){
               </tbody>
             </table>
           </div>
-          <div class="mt-4">
+          <div class="mt-4 ${showBranchResults || (!showPartResults && activeCode === "ALL") ? "" : "hidden"}">
             <div class="text-xs uppercase tracking-[0.1em] font-semibold mb-2" style="color:#fcd34d;">
               ${activeCode === "ALL" ? "Branch Daily Transactions" : `Branch Daily Transactions • ${escapeHtml(selectedBranch?.name || activeCode)}`}
             </div>
