@@ -1,0 +1,63 @@
+name: supabase-backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2,14 * * *" # 02:00 and 14:00 UTC daily
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare backup folder
+        run: |
+          TS="$(date -u +'%Y%m%dT%H%M%SZ')"
+          DIR="backups/${TS}"
+          mkdir -p "$DIR"
+          echo "BACKUP_DIR=$DIR" >> $GITHUB_ENV
+          echo "BACKUP_TS=$TS" >> $GITHUB_ENV
+
+      - name: Backup roles
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f "${BACKUP_DIR}/roles.sql"
+
+      - name: Backup schema
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "${BACKUP_DIR}/schema.sql"
+
+      - name: Backup data
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f "${BACKUP_DIR}/data.sql"
+
+      - name: Backup requests table only
+        run: |
+          docker run --rm postgres:16 bash -lc \
+            "pg_dump \"$SUPABASE_DB_URL\" --data-only --table=public.requests --column-inserts" \
+            > "${BACKUP_DIR}/requests_data.sql"
+
+      - name: Compress backups
+        run: |
+          tar -czf "supabase-backup-${BACKUP_TS}.tar.gz" -C backups "${BACKUP_TS}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ env.BACKUP_TS }}
+          path: |
+            backups/${{ env.BACKUP_TS }}
+            supabase-backup-${{ env.BACKUP_TS }}.tar.gz
+          retention-days: 90
