@@ -602,17 +602,33 @@ tr[style*="f59e0b"]:hover {
 }
 
 .track-summary-grid{
-  display:grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  display:flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
 }
 
 .track-status-card{
   border-radius: 12px;
   border: 1px solid rgba(250,204,21,0.22);
   background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
-  padding: 8px 10px;
-  min-height: 70px;
+  padding: 7px 9px;
+  min-height: 58px;
+  min-width: 155px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.track-status-card:hover{
+  border-color: rgba(250,204,21,0.48);
+  box-shadow: 0 9px 18px rgba(2,6,23,0.35);
+  transform: translateY(-1px);
+}
+
+.track-status-card-active{
+  border-color: rgba(250,204,21,0.8);
+  box-shadow: 0 0 0 1px rgba(250,204,21,0.38), 0 10px 20px rgba(245,158,11,0.2);
 }
 
 .track-filter-shell{
@@ -901,7 +917,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 }
 
 @media (max-width: 1200px){
-  .track-summary-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .detail-meta-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
 }
 
@@ -910,7 +925,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 }
 
 @media (max-width: 768px){
-  .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .track-filter-grid{ grid-template-columns: 1fr; }
   .detail-meta-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
@@ -1299,10 +1313,11 @@ table thead th.sort-desc::after {
 <script>
  let GLOBAL_DATA = []; // stores current table data
 let TABLE_SORT_STATE = null;
-    let CURRENT_PAGE = 1;
+let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
+let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -1731,11 +1746,6 @@ function renderHeader(){
       class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
         Track Orders
       </button>
-    ` : isViewer ? `
-      <button onclick="loadTrack('track')" 
-      class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
-        Track Orders
-      </button>
     ` : ``}
 
     <button onclick="logout()" 
@@ -1758,11 +1768,6 @@ function renderHeader(){
           New Order
         </button>
 
-        <button onclick="loadTrack('track')" 
-        class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
-          Track Orders
-        </button>
-      ` : isViewer ? `
         <button onclick="loadTrack('track')" 
         class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
           Track Orders
@@ -1870,7 +1875,7 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  ${!isAdmin && !isSuper && !isViewer ? `
+${!isAdmin && !isSuper && !isViewer ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -1880,15 +1885,6 @@ document.getElementById("app").innerHTML = `
     </span>
     </button>
   
-    <button onclick="loadTrack('track')" 
-    class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
-    data-tab="track">
-<span class="flex items-center gap-2">
-  <i data-lucide="search-check" class="w-4 h-4"></i>
-  Track Orders
-</span>
-    </button>
-` : isViewer ? `
     <button onclick="loadTrack('track')" 
     class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
     data-tab="track">
@@ -2952,6 +2948,12 @@ function updateTrackDateFilter(kind, value){
   loadTrack("track", true);
 }
 
+function setTrackStatusFilter(statusKey){
+  TRACK_STATUS_FILTER = statusKey || "ALL";
+  CURRENT_PAGE = 1;
+  loadTrack("track", true);
+}
+
 async function loadTrack(tab, skipReset = false){
 stopDocketCameraScanner();
 
@@ -2996,15 +2998,19 @@ grouped[r.OrderNo].items.push(r);
 const allOrders = applyOrderSort(
   Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 ).filter(shouldShowOrder);
-const orders = applyTrackDateFilter(allOrders);
+const dateFilteredOrders = applyTrackDateFilter(allOrders);
 
 const statusCounts = {};
-orders.forEach(o => {
+dateFilteredOrders.forEach(o => {
   const s = getOrderStatusLabel(o);
   if(!statusCounts[s]) statusCounts[s] = { count: 0, value: 0 };
   statusCounts[s].count += 1;
   statusCounts[s].value += (o.items || []).reduce((sum, x) => sum + getEffectiveValue(x), 0);
 });
+
+const orders = TRACK_STATUS_FILTER === "ALL"
+  ? dateFilteredOrders
+  : dateFilteredOrders.filter(o => getOrderStatusLabel(o) === TRACK_STATUS_FILTER);
 
 const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
 if(CURRENT_PAGE > totalPages){
@@ -3028,16 +3034,20 @@ let html = `
       </div>
 
       <div class="track-summary-grid">
-        <div class="track-status-card">
-          <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
-          <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${orders.length} Orders</div>
-          <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(orders.reduce((sum, o) => sum + (o.items || []).reduce((s, x) => s + getEffectiveValue(x), 0), 0)).toLocaleString("en-IN")}</div>
+        <div class="track-status-card ${TRACK_STATUS_FILTER === "ALL" ? "track-status-card-active" : ""}" onclick="setTrackStatusFilter('ALL')">
+          <div class="flex items-start justify-between gap-2">
+            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total</div>
+            <div class="text-xl font-black leading-none" style="color:#f8fafc;">${dateFilteredOrders.length}</div>
+          </div>
+          <div class="text-sm font-bold mt-2 leading-none" style="color:#fde68a;">₹ ${Math.round(dateFilteredOrders.reduce((sum, o) => sum + (o.items || []).reduce((s, x) => s + getEffectiveValue(x), 0), 0)).toLocaleString("en-IN")}</div>
         </div>
         ${Object.entries(statusCounts).map(([status, count]) => `
-          <div class="track-status-card">
-            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
-            <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${count.count} Orders</div>
-            <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(count.value).toLocaleString("en-IN")}</div>
+          <div class="track-status-card ${TRACK_STATUS_FILTER === status ? "track-status-card-active" : ""}" onclick="setTrackStatusFilter('${status.replace(/'/g, "\\'")}')">
+            <div class="flex items-start justify-between gap-2">
+              <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
+              <div class="text-xl font-black leading-none" style="color:#f8fafc;">${count.count}</div>
+            </div>
+            <div class="text-sm font-bold mt-2 leading-none" style="color:#fde68a;">₹ ${Math.round(count.value).toLocaleString("en-IN")}</div>
           </div>
         `).join("")}
       </div>
@@ -3053,7 +3063,7 @@ let html = `
             <input id="trackToDate" type="date" class="pc-field h-[38px]" value="${TRACK_TO_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('to', this.value)" />
           </div>
           <div class="flex items-end">
-            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; loadTrack('track', true)">Reset Filter</button>
+            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; TRACK_STATUS_FILTER='ALL'; loadTrack('track', true)">Reset Filter</button>
           </div>
         </div>
       </div>
@@ -3063,6 +3073,7 @@ let html = `
       <div class="track-table-header">
         <div>
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
+          ${TRACK_STATUS_FILTER !== "ALL" ? `<div class="text-[10px] mt-1 font-semibold" style="color:#fde68a;">Filtered by: ${TRACK_STATUS_FILTER}</div>` : ``}
         </div>
         <div class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(250,204,21,0.12); color:#fef3c7; border:1px solid rgba(250,204,21,0.35);">
           Page ${CURRENT_PAGE} of ${totalPages}
