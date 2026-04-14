@@ -602,17 +602,33 @@ tr[style*="f59e0b"]:hover {
 }
 
 .track-summary-grid{
-  display:grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  display:flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
 }
 
 .track-status-card{
   border-radius: 12px;
   border: 1px solid rgba(250,204,21,0.22);
   background: linear-gradient(160deg, rgba(17,24,39,0.92), rgba(15,23,42,0.9));
-  padding: 8px 10px;
-  min-height: 70px;
+  padding: 7px 9px;
+  min-height: 58px;
+  min-width: 155px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.track-status-card:hover{
+  border-color: rgba(250,204,21,0.48);
+  box-shadow: 0 9px 18px rgba(2,6,23,0.35);
+  transform: translateY(-1px);
+}
+
+.track-status-card-active{
+  border-color: rgba(250,204,21,0.8);
+  box-shadow: 0 0 0 1px rgba(250,204,21,0.38), 0 10px 20px rgba(245,158,11,0.2);
 }
 
 .track-filter-shell{
@@ -901,7 +917,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 }
 
 @media (max-width: 1200px){
-  .track-summary-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .detail-meta-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
 }
 
@@ -910,7 +925,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 }
 
 @media (max-width: 768px){
-  .track-summary-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .track-filter-grid{ grid-template-columns: 1fr; }
   .detail-meta-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
@@ -1299,10 +1313,11 @@ table thead th.sort-desc::after {
 <script>
  let GLOBAL_DATA = []; // stores current table data
 let TABLE_SORT_STATE = null;
-    let CURRENT_PAGE = 1;
+let CURRENT_PAGE = 1;
 const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
+let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -1430,24 +1445,86 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+function normalizeUserKey(key){
+  return (key || "").toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function getUserField(user, aliases = []){
+  if(!user || typeof user !== "object") return "";
+
+  const aliasSet = new Set(aliases.map(normalizeUserKey));
+  const keys = Object.keys(user);
+
+  for(const key of keys){
+    if(aliasSet.has(normalizeUserKey(key))){
+      return user[key];
+    }
+  }
+  return "";
+}
+
+function normalizeUserPayload(user){
+  if(!user || typeof user !== "object") return null;
+
+  const normalized = {
+    ...user,
+    id: getUserField(user, ["id", "userid"]),
+    Name: getUserField(user, ["name", "username", "employee"]),
+    Branch: getUserField(user, ["branch", "branck", "branchname"]),
+    Role: getUserField(user, ["role", "userrole"]),
+    Password: getUserField(user, ["password", "pass"])
+  };
+
+  normalized.role = normalized.Role;
+  normalized.branch = normalized.Branch;
+  return normalized;
+}
+
 function getUser(){
-  try { return JSON.parse(localStorage.getItem("user")); }
-  catch { return null; }
+  try {
+    const rawUser = JSON.parse(localStorage.getItem("user"));
+    return normalizeUserPayload(rawUser);
+  }
+  catch {
+    return null;
+  }
+}
+
+function getUserRole(user){
+  const rawRole = getUserField(user, ["role", "userrole"]);
+  return rawRole.toString().trim().toLowerCase();
+}
+
+function getUserBranch(user){
+  const rawBranch = getUserField(user, ["branch", "branck", "branchname"]);
+  return rawBranch.toString().trim();
+}
+
+function getUserName(user){
+  return getUserField(user, ["name", "username", "employee"]).toString().trim();
+}
+
+function getUserId(user){
+  return getUserField(user, ["id", "userid"]);
+}
+
+function isAdminRole(user){
+  const role = getUserRole(user);
+  const branch = getUserBranch(user);
+  return role === "admin" || branch.toUpperCase() === "HQ";
 }
 
 function isSuperLikeRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
+  const role = getUserRole(user);
   return role === "super" || role === "manager";
 }
 
 function isManagerRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
-  return role === "manager";
+  return getUserRole(user) === "manager";
 }
 
 function isViewerRole(user){
-  const role = (user?.Role || "").toString().trim().toLowerCase();
-  return role === "viewer";
+  return getUserRole(user) === "viewer";
 }
 
 async function syncUserRoleFromDb(user){
@@ -1456,14 +1533,17 @@ async function syncUserRoleFromDb(user){
   let query = db
     .from("users")
     .select("Role")
-    .eq("Branch", user.Branch || "");
+    .eq("Branch", getUserBranch(user));
 
-  if(user.id !== undefined && user.id !== null){
-    query = query.eq("id", user.id);
-  }else if(user.Name){
-    query = query.eq("Name", user.Name);
+  const userId = getUserId(user);
+  const userName = getUserName(user);
+
+  if(userId !== undefined && userId !== null && `${userId}` !== ""){
+    query = query.eq("id", userId);
+  }else if(userName){
+    query = query.eq("Name", userName);
   }else{
-    return user;
+    return normalizeUserPayload(user);
   }
 
   const { data, error } = await query.maybeSingle();
@@ -1472,12 +1552,13 @@ async function syncUserRoleFromDb(user){
     return user;
   }
 
-  if(data?.Role){
-    const nextUser = { ...user, Role: data.Role };
+  const latestRole = getUserField(data, ["role", "userrole"]);
+  if(latestRole){
+    const nextUser = normalizeUserPayload({ ...user, Role: latestRole, role: latestRole });
     localStorage.setItem("user", JSON.stringify(nextUser));
     return nextUser;
   }
-  return user;
+  return normalizeUserPayload(user);
 }
 
 const PART_MASTER_CACHE = new Map();
@@ -1600,8 +1681,8 @@ document.addEventListener("keydown", function(e){
 }
     
     
-const { data } = await db.from("users").select("Branch");
-const unique = [...new Set(data.map(d => d.Branch))];
+const { data } = await db.from("users").select("*");
+const unique = [...new Set((data || []).map(d => getUserBranch(d)).filter(Boolean))];
 
 const el = document.getElementById("branch");
 el.innerHTML = `<option value="">Select Branch</option>`;
@@ -1617,18 +1698,19 @@ if(!branch || !password) return showPopup("Fill all fields");
 
 showLoader();
 
-const { data } = await db
+const { data: allUsers } = await db
 .from("users")
-.select("*")
-.eq("Branch", branch)
-.eq("Password", password)
-.single();
+.select("*");
+
+const data = (allUsers || []).map(normalizeUserPayload).find(u =>
+  getUserBranch(u) === branch && (u?.Password || "").toString() === password
+);
 
 hideLoader();
 
 if(!data) return showPopup("Invalid credentials");
 
-localStorage.setItem("user", JSON.stringify(data));
+localStorage.setItem("user", JSON.stringify(normalizeUserPayload(data)));
 loadBranch();
 }
 
@@ -1636,7 +1718,7 @@ loadBranch();
 function renderHeader(){
 
   const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isAdmin = isAdminRole(user);
   const isViewer = isViewerRole(user);
 
   return `
@@ -1648,7 +1730,7 @@ function renderHeader(){
 
   <h1 class="text-2xl font-bold tracking-wide" style="color: var(--pc-light);">
     PARTS CONNECT PORTAL :
-    <span class="ml-2" style="color: var(--pc-secondary);">${user.Branch}</span>
+    <span class="ml-2" style="color: var(--pc-secondary);">${getUserBranch(user)}</span>
   </h1>
 
   <div class="flex items-center gap-3">
@@ -1660,11 +1742,6 @@ function renderHeader(){
         New Order
       </button>
 
-      <button onclick="loadTrack('track')" 
-      class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
-        Track Orders
-      </button>
-    ` : isViewer ? `
       <button onclick="loadTrack('track')" 
       class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
         Track Orders
@@ -1691,11 +1768,6 @@ function renderHeader(){
           New Order
         </button>
 
-        <button onclick="loadTrack('track')" 
-        class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
-          Track Orders
-        </button>
-      ` : isViewer ? `
         <button onclick="loadTrack('track')" 
         class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
           Track Orders
@@ -1733,7 +1805,7 @@ if(!user){
   loadLogin();
   return;
 }
-const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
 const isViewer = isViewerRole(user);
@@ -1761,12 +1833,6 @@ document.getElementById("app").innerHTML = `
   border: 1px solid var(--pc-border);
   box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
-<div class="mb-1 text-[10px] leading-tight tracking-wide uppercase" style="color:var(--pc-text-muted);">
-  STATUS REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().statusReport)}</span>
-  &nbsp;|&nbsp;
-  INVENTORY REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().inventoryReport)}</span>
-</div>
-
 <div class="flex justify-between items-center">
 
 <div class="relative flex items-center w-full">
@@ -1785,7 +1851,7 @@ document.getElementById("app").innerHTML = `
 
   <span class="text-sm font-semibold tracking-widest uppercase"
       style="color: var(--pc-text);">
-  ${user.Branch}
+  ${getUserBranch(user)}
 </span>
 
 </div>
@@ -1809,7 +1875,7 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  ${!isAdmin && !isSuper && !isViewer ? `
+${!isAdmin && !isSuper && !isViewer ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -1827,16 +1893,7 @@ document.getElementById("app").innerHTML = `
   Track Orders
 </span>
     </button>
-` : isViewer ? `
-    <button onclick="loadTrack('track')" 
-    class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
-    data-tab="track">
-<span class="flex items-center gap-2">
-  <i data-lucide="search-check" class="w-4 h-4"></i>
-  Track Orders
-</span>
-    </button>
-` : isSuper ? `
+` : isViewer ? `` : isSuper ? `
     ${isManager ? `` : `
     <button onclick="loadSuper('PendingApproval')" 
     class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
@@ -1893,14 +1950,16 @@ document.getElementById("app").innerHTML = `
   `}
 
 
-    <button onclick="loadDocketScanner()" 
-    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
-    data-tab="scanner">
-    <span class="flex items-center gap-2">
-      <i data-lucide="scan-line" class="w-4 h-4"></i>
-      Docket Scan
-    </span>
-    </button>
+    ${isAdmin ? `
+      <button onclick="loadDocketScanner()"
+      class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+      data-tab="scanner">
+      <span class="flex items-center gap-2">
+        <i data-lucide="scan-line" class="w-4 h-4"></i>
+        Docket Scan
+      </span>
+      </button>
+    ` : ``}
 
     <button onclick="logout()" 
     class="top-btn logout-btn">
@@ -1977,6 +2036,13 @@ function normalizeDocketNo(val){
 }
 
 function loadDocketScanner(){
+  const user = getUser();
+  if(!isAdminRole(user)){
+    showPopup("Docket Scan is available only for admin login.");
+    loadTrack("track", true);
+    return;
+  }
+
   window.activeTab = "scanner";
   updateMenuHighlight();
 
@@ -2231,8 +2297,6 @@ if(isViewerRole(getUser())){
   loadTrack("track");
   return;
 }
- main
-
 window.activeTab = "create";
 
 // ✅ Re-render header so highlight updates
@@ -2561,7 +2625,7 @@ tr.querySelector(".cat").innerText = data.Cat1;
 // ===== 30 DAY QTY LOGIC =====
 const user = getUser();
 
-const total30 = await getLast30QtyByBranchPart(user.Branch, partNo);
+const total30 = await getLast30QtyByBranchPart(getUserBranch(user), partNo);
 
 // SET VALUE
 tr.querySelector(".qty30").innerText = total30;
@@ -2810,10 +2874,10 @@ for (const r of rows){
 
   if(!part) continue;
 
-  const qtyLast30 = await getLast30QtyByBranchPart(user.Branch, part);
+  const qtyLast30 = await getLast30QtyByBranchPart(getUserBranch(user), part);
 
   inserts.push({
-    Branch: user.Branch,
+    Branch: getUserBranch(user),
 
     OrderType: orderType,
     OrderFor: orderFor,
@@ -2882,6 +2946,12 @@ function updateTrackDateFilter(kind, value){
   loadTrack("track", true);
 }
 
+function setTrackStatusFilter(statusKey){
+  TRACK_STATUS_FILTER = statusKey || "ALL";
+  CURRENT_PAGE = 1;
+  loadTrack("track", true);
+}
+
 async function loadTrack(tab, skipReset = false){
 stopDocketCameraScanner();
 
@@ -2894,7 +2964,7 @@ window.activeTab = "track";
 updateMenuHighlight();
 
 const user = getUser();
-const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isViewer = isViewerRole(user);
 
@@ -2907,7 +2977,7 @@ let query = db
 
 // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
 if(!isAdmin && !isSuper && !isViewer){
-  query = query.eq("Branch", user.Branch);
+  query = query.eq("Branch", getUserBranch(user));
 }
 
 const { data } = await query;
@@ -2926,15 +2996,19 @@ grouped[r.OrderNo].items.push(r);
 const allOrders = applyOrderSort(
   Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 ).filter(shouldShowOrder);
-const orders = applyTrackDateFilter(allOrders);
+const dateFilteredOrders = applyTrackDateFilter(allOrders);
 
 const statusCounts = {};
-orders.forEach(o => {
+dateFilteredOrders.forEach(o => {
   const s = getOrderStatusLabel(o);
   if(!statusCounts[s]) statusCounts[s] = { count: 0, value: 0 };
   statusCounts[s].count += 1;
   statusCounts[s].value += (o.items || []).reduce((sum, x) => sum + getEffectiveValue(x), 0);
 });
+
+const orders = TRACK_STATUS_FILTER === "ALL"
+  ? dateFilteredOrders
+  : dateFilteredOrders.filter(o => getOrderStatusLabel(o) === TRACK_STATUS_FILTER);
 
 const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
 if(CURRENT_PAGE > totalPages){
@@ -2958,16 +3032,20 @@ let html = `
       </div>
 
       <div class="track-summary-grid">
-        <div class="track-status-card">
-          <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total Orders</div>
-          <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${orders.length} Orders</div>
-          <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(orders.reduce((sum, o) => sum + (o.items || []).reduce((s, x) => s + getEffectiveValue(x), 0), 0)).toLocaleString("en-IN")}</div>
+        <div class="track-status-card ${TRACK_STATUS_FILTER === "ALL" ? "track-status-card-active" : ""}" onclick="setTrackStatusFilter('ALL')">
+          <div class="flex items-start justify-between gap-2">
+            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">Total</div>
+            <div class="text-xl font-black leading-none" style="color:#f8fafc;">${dateFilteredOrders.length}</div>
+          </div>
+          <div class="text-sm font-bold mt-2 leading-none" style="color:#fde68a;">₹ ${Math.round(dateFilteredOrders.reduce((sum, o) => sum + (o.items || []).reduce((s, x) => s + getEffectiveValue(x), 0), 0)).toLocaleString("en-IN")}</div>
         </div>
         ${Object.entries(statusCounts).map(([status, count]) => `
-          <div class="track-status-card">
-            <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
-            <div class="text-base font-extrabold mt-1" style="color:#f8fafc;">${count.count} Orders</div>
-            <div class="text-xs font-semibold" style="color:#fde68a;">₹ ${Math.round(count.value).toLocaleString("en-IN")}</div>
+          <div class="track-status-card ${TRACK_STATUS_FILTER === status ? "track-status-card-active" : ""}" onclick="setTrackStatusFilter('${status.replace(/'/g, "\\'")}')">
+            <div class="flex items-start justify-between gap-2">
+              <div class="text-[10px] uppercase tracking-wider" style="color:#fcd34d;">${status}</div>
+              <div class="text-xl font-black leading-none" style="color:#f8fafc;">${count.count}</div>
+            </div>
+            <div class="text-sm font-bold mt-2 leading-none" style="color:#fde68a;">₹ ${Math.round(count.value).toLocaleString("en-IN")}</div>
           </div>
         `).join("")}
       </div>
@@ -2983,7 +3061,7 @@ let html = `
             <input id="trackToDate" type="date" class="pc-field h-[38px]" value="${TRACK_TO_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('to', this.value)" />
           </div>
           <div class="flex items-end">
-            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; loadTrack('track', true)">Reset Filter</button>
+            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; TRACK_STATUS_FILTER='ALL'; loadTrack('track', true)">Reset Filter</button>
           </div>
         </div>
       </div>
@@ -2993,6 +3071,7 @@ let html = `
       <div class="track-table-header">
         <div>
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
+          ${TRACK_STATUS_FILTER !== "ALL" ? `<div class="text-[10px] mt-1 font-semibold" style="color:#fde68a;">Filtered by: ${TRACK_STATUS_FILTER}</div>` : ``}
         </div>
         <div class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(250,204,21,0.12); color:#fef3c7; border:1px solid rgba(250,204,21,0.35);">
           Page ${CURRENT_PAGE} of ${totalPages}
@@ -3217,16 +3296,6 @@ const paginatedOrders = filtered.slice(start, start + PAGE_SIZE);
 let html = `
 <div class="admin-shell">
   <div id="resultsContainer" class="space-y-4">
-    <section class="admin-strip">
-      <div class="admin-tabs-summary">
-        <div>
-          <p class="text-[11px] uppercase tracking-[0.1em] font-bold" style="color:#fcd34d;">HQ Admin Panel</p>
-          <h3 class="text-base font-extrabold" style="color:#f8fafc;">${activeTab.toUpperCase()} Orders</h3>
-        </div>
-        <div class="admin-chip">Total: ${filtered.length}</div>
-      </div>
-    </section>
-
     <section class="track-table-shell">
       <div class="track-table-header">
         <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
@@ -3887,7 +3956,7 @@ const orderStatus = getOrderStatusLabel(data);
   window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
-const isAdmin = user.Branch === "HQ";
+const isAdmin = isAdminRole(user);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -6089,7 +6158,7 @@ async function addOrderComment(orderNo){
     const existing = getOrderComments({ items: allRowsForComments.data || [], OrderComments: targetRow.OrderComments });
   existing.push({
     type: "user",
-    by: user.Name || user.Role || "User",
+    by: user.Name || user.Role || user.role || "User",
     text,
     at: new Date().toISOString(),
     attachmentName,
@@ -6233,7 +6302,7 @@ function goBack(){
   const user = getUser();
   if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
-  } else if(user.Role === "admin" || user.Branch === "HQ"){
+  } else if(isAdminRole(user)){
     loadAdmin(window.activeTab || "Approved", true);
   } else {
     loadTrack("track", true);
@@ -6458,7 +6527,7 @@ function refreshCurrentView(){
 
   const user = getUser();
 
-if(user.Role === "admin" || user.Branch === "HQ"){
+if(isAdminRole(user)){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
 } else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
@@ -6483,7 +6552,7 @@ function changePage(direction){
 
   let orders = Object.values(grouped);
 
-  if(user.Role === "admin" || user.Branch === "HQ"){
+  if(isAdminRole(user)){
 
     if(window.activeTab === "Approved"){
       orders = orders.filter(o => getOrderStatusLabel(o) === "APPROVED");
@@ -6496,7 +6565,7 @@ function changePage(direction){
 
   } else {
     orders = orders.filter(o => 
-      o.every(x => x.Branch === user.Branch)
+      o.every(x => x.Branch === getUserBranch(user))
     );
   }
 
@@ -6508,7 +6577,7 @@ function changePage(direction){
   if(CURRENT_PAGE > totalPages) CURRENT_PAGE = totalPages;
 
   // 🔥 THIS IS THE REAL FIX
-  if(user.Role === "admin" || user.Branch === "HQ"){
+  if(isAdminRole(user)){
     loadAdmin(window.activeTab, true);
   } else {
     loadTrack("track", true);
@@ -6524,7 +6593,7 @@ function changePage(step){
   CURRENT_PAGE = newPage;
 
   const user = getUser();
-  const isAdmin = user.Role === "admin" || user.Branch === "HQ";
+  const isAdmin = isAdminRole(user);
   const isSuper = isSuperLikeRole(user);
 
   if(isAdmin){
