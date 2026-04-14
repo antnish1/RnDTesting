@@ -1,0 +1,90 @@
+name: supabase-backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2,14 * * *" # 02:00 and 14:00 UTC
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Prepare backup folder
+        run: |
+          TS="$(date -u +'%Y%m%dT%H%M%SZ')"
+          DIR="backups/${TS}"
+          mkdir -p "$DIR"
+          echo "BACKUP_DIR=$DIR" >> $GITHUB_ENV
+          echo "BACKUP_TS=$TS" >> $GITHUB_ENV
+
+      # Full logical backup
+      - name: Backup roles
+        run: |
+          supabase db dump \
+            --db-url "$SUPABASE_DB_URL" \
+            --role-only \
+            -f "${BACKUP_DIR}/roles.sql"
+
+      - name: Backup schema
+        run: |
+          supabase db dump \
+            --db-url "$SUPABASE_DB_URL" \
+            -f "${BACKUP_DIR}/schema.sql"
+
+      - name: Backup data
+        run: |
+          supabase db dump \
+            --db-url "$SUPABASE_DB_URL" \
+            --data-only \
+            --use-copy \
+            -f "${BACKUP_DIR}/data.sql"
+
+      # requests table only (SQL)
+      - name: Backup requests table (SQL)
+        run: |
+          pg_dump "$SUPABASE_DB_URL" \
+            --data-only \
+            --table=public.requests \
+            --column-inserts \
+            > "${BACKUP_DIR}/requests_data.sql"
+
+      # requests table only (CSV)
+      - name: Backup requests table (CSV)
+        run: |
+          psql "$SUPABASE_DB_URL" \
+            -c "\copy (select * from public.requests) to '${BACKUP_DIR}/requests.csv' csv header"
+
+      - name: Compress backup
+        run: |
+          tar -czf "supabase-backup-${BACKUP_TS}.tar.gz" -C backups "${BACKUP_TS}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ env.BACKUP_TS }}
+          path: |
+            backups/${{ env.BACKUP_TS }}
+            supabase-backup-${{ env.BACKUP_TS }}.tar.gz
+          retention-days: 90
