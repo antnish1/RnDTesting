@@ -4807,18 +4807,41 @@ function hideInventoryProgress(){
 }
 
 async function insertInventoryStagingInBatches(rows, batchSize = 500){
-  let inserted = 0;
+  let uploaded = 0;
+  let failed = 0;
+  const errorSamples = [];
+
   for(let i=0; i<rows.length; i += batchSize){
     const chunk = rows.slice(i, i + batchSize);
     const { error } = await db
       .from("inventory_staging")
       .upsert(chunk, { onConflict: "report_date,branch_code,item_code" });
-    if(error) throw error;
-    inserted += chunk.length;
-    const pct = 10 + Math.round((inserted / rows.length) * 60);
-    setInventoryProgress(pct, `Syncing staging rows... ${inserted}/${rows.length}`);
+
+    if(!error){
+      uploaded += chunk.length;
+    }else{
+      // Fallback to row-wise upsert to count failures precisely.
+      for(const row of chunk){
+        const { error: rowError } = await db
+          .from("inventory_staging")
+          .upsert([row], { onConflict: "report_date,branch_code,item_code" });
+        if(rowError){
+          failed++;
+          if(errorSamples.length < 5){
+            errorSamples.push(rowError.message || "Unknown row error");
+          }
+        }else{
+          uploaded++;
+        }
+      }
+    }
+
+    const done = Math.min(rows.length, i + chunk.length);
+    const pct = 10 + Math.round((done / rows.length) * 88);
+    setInventoryProgress(pct, `Uploading inventory rows... ${done}/${rows.length}`);
   }
-  return inserted;
+
+  return { uploaded, failed, errorSamples };
 }
 
 async function applyInventoryThreeTableFlow(stagingRows, reportDate){
@@ -4901,11 +4924,9 @@ async function processInventoryExcelData(rows, reportDate){
   }
 
   showLoader();
-  let syncCompleted = false;
   try{
     const payload = [];
-    let skipped = 0;
-    let deduped = 0;
+    let failed = 0;
 
     for(const row of rows){
       const branch = String(getInventoryValue(row, ["Branch"])).trim();
@@ -4927,7 +4948,13 @@ async function processInventoryExcelData(rows, reportDate){
 
       // Skip grand-total/footer rows and empty rows
       if(/^grand total$/i.test(branch) || /^grand total$/i.test(itemCode) || (!itemCode && !itemName)){
-        skipped++;
+        failed++;
+        continue;
+      }
+
+      const resolvedBranchCode = (bhlhln || brCode || branch || "").toUpperCase().trim();
+      if(!resolvedBranchCode || !itemCode){
+        failed++;
         continue;
       }
 
@@ -4936,7 +4963,7 @@ async function processInventoryExcelData(rows, reportDate){
         item_code: itemCode.toUpperCase(),
         item_name: itemName || null,
         item_group: itemGroup || null,
-        branch_code: (bhlhln || brCode || branch || "").toUpperCase() || null,
+        branch_code: resolvedBranchCode,
         rec_flag: rec || null,
         nsp_flag: nsp || null,
         uom: uom || null,
@@ -4955,41 +4982,30 @@ async function processInventoryExcelData(rows, reportDate){
       return;
     }
 
-    // Deduplicate within same upload by (report_date + branch_code + item_code)
+    // Keep last occurrence in the same file for same unique key.
     const dedupeMap = new Map();
     for(const row of payload){
       const key = `${row.report_date}__${row.branch_code || ""}__${row.item_code || ""}`;
-      if(dedupeMap.has(key)) deduped++;
+      if(dedupeMap.has(key)) failed++;
       dedupeMap.set(key, row); // keep latest row from file
     }
     const finalPayload = [...dedupeMap.values()];
 
-    setInventoryProgress(5, `Prepared ${finalPayload.length} rows. Syncing staging data...`);
+    setInventoryProgress(5, `Prepared ${finalPayload.length} rows for staging upload...`);
+    const uploadStats = await insertInventoryStagingInBatches(finalPayload, 500);
+    failed += uploadStats.failed;
 
-    await insertInventoryStagingInBatches(finalPayload, 500);
-    setInventoryProgress(80, "Applying server-side merge (inventory_current + inventory_changes)...");
-
-    const { data: rpcData, error: rpcError } = await db.rpc("process_inventory_report", {
-      p_report_date: reportDate
-    });
-    if(rpcError) throw rpcError;
-
-    const stats = Array.isArray(rpcData) ? (rpcData[0] || {}) : (rpcData || {});
-    syncCompleted = true;
-    setInventoryProgress(100, "Inventory processing completed.");
+    setInventoryProgress(100, "Inventory upload completed.");
 
     setUploadReportMeta("inventoryReport");
     showPopup(
-      `Inventory Upload Complete ✅\nUploaded: ${finalPayload.length}\nDuplicate Keys Removed: ${deduped}\nChanged: ${stats.changed_count ?? stats.changed ?? 0}\nCurrent Updated: ${stats.current_updated ?? stats.upserted ?? finalPayload.length}\nSkipped: ${skipped}`
+      `Inventory Upload Complete ✅\nUploaded: ${uploadStats.uploaded}\nFailed: ${failed}${uploadStats.errorSamples.length ? `\nErrors:\n- ${uploadStats.errorSamples.join("\n- ")}` : ""}`
     );
   } catch(err){
     console.error("Inventory upload failed:", err);
     const errorText = [err?.message, err?.details, err?.hint].filter(Boolean).join("\n");
-    showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}\n\nPlease create SQL RPC: process_inventory_report(p_report_date date).`);
+    showPopup(`Inventory upload failed ❌\n${errorText || "Unknown error"}`);
   } finally {
-    if(!syncCompleted){
-      console.warn("Inventory sync did not complete.");
-    }
     setTimeout(hideInventoryProgress, 1200);
     hideLoader();
   }
