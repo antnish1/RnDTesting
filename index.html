@@ -1893,7 +1893,7 @@ ${!isAdmin && !isSuper && !isViewer ? `
   Track Orders
 </span>
     </button>
-` : isSuper ? `
+` : isViewer ? `` : isSuper ? `
     ${isManager ? `` : `
     <button onclick="loadSuper('PendingApproval')" 
     class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
