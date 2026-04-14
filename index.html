@@ -4965,7 +4965,7 @@ async function processInventoryExcelData(rows, reportDate){
       }
 
       const mappedBranchCode = branchCodeByName.get(normalizeBranchKey(branch)) || "";
-      const resolvedBranchCode = (bhlhln || brCode || mappedBranchCode || "").toUpperCase().trim();
+      const resolvedBranchCode = (brCode || mappedBranchCode || bhlhln || "").toUpperCase().trim();
       if(!resolvedBranchCode || !itemCode){
         failed++;
         continue;
