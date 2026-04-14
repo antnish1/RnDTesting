@@ -5698,17 +5698,110 @@ async function loadManagerInventoryBranchDirectory(){
 }
 
 async function performManagerInventoryLookup(){
-  const input = document.getElementById("mgrInvLookupPartNo");
-  const partNo = normalizePartNo(input?.value || "");
-  window.managerInvBranchTxnResults = [];
-  window.managerInvLookupBranch = "ALL";
-  window.managerInvLookupQuery = partNo;
-  window.managerInvLookupDate = selectedDate;
-  window.managerInvLookupResults = [];
+  try{
+    const input = document.getElementById("mgrInvLookupPartNo");
+    const partNo = normalizePartNo(input?.value || "");
+    const selectedDate = (window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
+    window.managerInvBranchTxnResults = [];
+    window.managerInvLookupBranch = "ALL";
+    window.managerInvLookupQuery = partNo;
+    window.managerInvLookupResults = [];
 
-  if(!partNo){
-    window.managerInvLookupExpanded = false;
+    if(!partNo){
+      window.managerInvLookupExpanded = false;
+      loadSuper("Dashboard", true);
+      return;
+    }
+
+    showLoader();
+    const { data: inventoryRows, error } = await db
+      .from("inventory_staging")
+      .select("branch_code, item_code, item_name, item_group, dnp, rec_flag, nsp_flag, uom, received_qty, issued_qty, qty, inv_value, report_date")
+      .ilike("item_code", `%${partNo}%`)
+      .order("report_date", { ascending: false });
+    hideLoader();
+
+    if(error){
+      showPopup(`Inventory lookup failed ❌\n${error.message || "Unknown error"}`);
+      return;
+    }
+
+    const matchedRows = (inventoryRows || []).filter(r => normalizePartNo(r.item_code || "") === partNo);
+    const workingRows = matchedRows.length ? matchedRows : (inventoryRows || []);
+    const latestDate = (workingRows[0]?.report_date || selectedDate).toString().slice(0, 10);
+    if(!latestDate){
+      window.managerInvLookupExpanded = true;
+      loadSuper("Dashboard", true);
+      return;
+    }
+    window.managerInvLookupDate = latestDate;
+
+    const latestByBranch = {};
+    workingRows.forEach(r => {
+      if(((r.report_date || "").toString().slice(0, 10)) !== latestDate) return;
+      const code = (r.branch_code || "").toString().trim().toUpperCase();
+      if(!code || latestByBranch[code]) return;
+      latestByBranch[code] = r;
+    });
+
+    await loadManagerInventoryBranchDirectory();
+    const branchNameByCode = {};
+    (window.managerInvBranchDirectory || []).forEach(b => {
+      branchNameByCode[b.code] = b.name;
+    });
+
+    window.managerInvLookupResults = Object.entries(latestByBranch)
+      .map(([code, row]) => ({
+        branch: branchNameByCode[code] || code,
+        branch_code: code,
+        item_code: row.item_code || partNo,
+        item_name: row.item_name || "",
+        item_group: row.item_group || "",
+        dnp: row.dnp,
+        rec_flag: row.rec_flag || "",
+        nsp_flag: row.nsp_flag || "",
+        uom: row.uom || "",
+        received_qty: row.received_qty,
+        issued_qty: row.issued_qty,
+        qty: row.qty,
+        inv_value: row.inv_value
+      }))
+      .sort((a, b) => a.branch.localeCompare(b.branch));
+    window.managerInvLookupExpanded = true;
+
     loadSuper("Dashboard", true);
+  } catch (err){
+    hideLoader();
+    console.error("performManagerInventoryLookup error", err);
+    showPopup(`Inventory lookup failed ❌\n${err?.message || "Unknown error"}`);
+  }
+}
+
+function closeManagerInventoryLookupTab(){
+  window.managerInventoryTabOpen = false;
+  loadSuper("Dashboard", true);
+}
+
+async function setManagerInventoryLookupDate(value){
+  window.managerInvLookupDate = value || new Date().toISOString().slice(0, 10);
+  await loadManagerBranchTransactions();
+  loadSuper("Dashboard", true);
+}
+
+async function setManagerInventoryBranchFilter(branchCode){
+  window.managerInvLookupBranch = branchCode || "ALL";
+  window.managerInvLookupQuery = "";
+  window.managerInvLookupResults = [];
+  window.managerInvLookupExpanded = false;
+  await loadManagerBranchTransactions();
+  loadSuper("Dashboard", true);
+}
+
+async function loadManagerBranchTransactions(){
+  const selectedCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
+  const selectedDate = (window.managerInvLookupDate || new Date().toISOString().slice(0, 10)).toString();
+  window.managerInvBranchTxnResults = [];
+  if(selectedCode === "ALL"){
     return;
   }
   window.managerInvLookupDate = latestDate;
@@ -5734,89 +5827,102 @@ async function performManagerInventoryLookup(){
   }
   window.managerInvLookupDate = latestDate;
 
-  showLoader();
-  const { data: inventoryRows, error } = await db
+  const { data, error } = await db
     .from("inventory_staging")
-    .select("branch_code, item_code, item_name, item_group, dnp, rec_flag, nsp_flag, uom, received_qty, issued_qty, qty, inv_value, report_date")
-    .ilike("item_code", `%${partNo}%`)
-    .order("report_date", { ascending: false });
-  hideLoader();
+    .select("branch_code, item_code, item_name, item_group, dnp, received_qty, issued_qty, qty, inv_value, report_date")
+    .eq("branch_code", selectedCode)
+    .eq("report_date", selectedDate)
+    .order("item_name", { ascending: true });
 
   if(error){
-    showPopup(`Inventory lookup failed ❌\n${error.message || "Unknown error"}`);
+    showPopup(`Branch transaction lookup failed ❌\n${error.message || "Unknown error"}`);
     return;
   }
 
-  const matchedRows = (inventoryRows || []).filter(r => normalizePartNo(r.item_code || "") === partNo);
-  const workingRows = matchedRows.length ? matchedRows : (inventoryRows || []);
-  const latestDate = (workingRows[0]?.report_date || "").toString().slice(0, 10);
-  if(!latestDate){
-    window.managerInvLookupExpanded = true;
-    loadSuper("Dashboard", true);
-    return;
-  }
-  window.managerInvLookupDate = latestDate;
-
-  const latestByBranch = {};
-  workingRows.forEach(r => {
-    if(((r.report_date || "").toString().slice(0, 10)) !== latestDate) return;
-    const code = (r.branch_code || "").toString().trim().toUpperCase();
-    if(!code || latestByBranch[code]) return;
-    latestByBranch[code] = r;
-  });
-
-  await loadManagerInventoryBranchDirectory();
-  const branchNameByCode = {};
-  (window.managerInvBranchDirectory || []).forEach(b => {
-    branchNameByCode[b.code] = b.name;
-  });
-
-  window.managerInvLookupResults = Object.entries(latestByBranch)
-    .map(([code, row]) => ({
-      branch: branchNameByCode[code] || code,
-      branch_code: code,
-      item_code: row.item_code || partNo,
-      item_name: row.item_name || "",
-      item_group: row.item_group || "",
-      dnp: row.dnp,
-      rec_flag: row.rec_flag || "",
-      nsp_flag: row.nsp_flag || "",
-      uom: row.uom || "",
-      received_qty: row.received_qty,
-      issued_qty: row.issued_qty,
-      qty: row.qty,
-      inv_value: row.inv_value
-    }))
-    .sort((a, b) => a.branch.localeCompare(b.branch));
-  window.managerInvLookupExpanded = true;
-
-async function setManagerInventoryBranchFilter(branchCode){
-  window.managerInvLookupBranch = branchCode || "ALL";
-  window.managerInvLookupQuery = "";
-  window.managerInvLookupResults = [];
-  window.managerInvLookupExpanded = false;
-  await loadManagerBranchTransactions();
-  loadSuper("Dashboard", true);
+  window.managerInvBranchTxnResults = (data || []).filter(r =>
+    Number(r.received_qty || 0) !== 0 || Number(r.issued_qty || 0) !== 0
+  );
 }
 
-function closeManagerInventoryLookupTab(){
-  window.managerInventoryTabOpen = false;
-  loadSuper("Dashboard", true);
-}
+function renderManagerInventoryLookupTab(){
+  const rows = window.managerInvLookupResults || [];
+  const activeCode = (window.managerInvLookupBranch || "ALL").toUpperCase();
+  const orderedBranches = [{ code: "ALL", name: "ALL BRANCHES" }]
+    .concat(window.managerInvBranchDirectory || []);
+  const selectedBranch = orderedBranches.find(b => (b.code || "").toUpperCase() === activeCode);
+  const branchTxnRows = window.managerInvBranchTxnResults || [];
+  const showPartResults = window.managerInvLookupExpanded === true;
+  const showBranchResults = !showPartResults && activeCode !== "ALL";
 
-async function setManagerInventoryLookupDate(value){
-  window.managerInvLookupDate = value || new Date().toISOString().slice(0, 10);
-  await loadManagerBranchTransactions();
-  loadSuper("Dashboard", true);
-}
-
-async function setManagerInventoryBranchFilter(branchCode){
-  window.managerInvLookupBranch = branchCode || "ALL";
-  window.managerInvLookupQuery = "";
-  window.managerInvLookupResults = [];
-  window.managerInvLookupExpanded = false;
-  await loadManagerBranchTransactions();
-  loadSuper("Dashboard", true);
+  document.getElementById("main").innerHTML = `
+    <div class="mgr-shell">
+      <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="text-sm font-extrabold uppercase tracking-[0.1em]" style="color:#fcd34d;">Inventory Lookup</div>
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <input id="mgrInvLookupDate" type="date" class="pc-field h-[34px] max-w-[170px]" value="${escapeHtml(window.managerInvLookupDate || new Date().toISOString().slice(0, 10))}" onchange="setManagerInventoryLookupDate(this.value)" onclick="this.showPicker && this.showPicker()" />
+            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
+            <button class="track-page-btn mgr-compact-btn" onclick="performManagerInventoryLookup()">Search</button>
+            <button class="track-page-btn mgr-compact-btn" onclick="closeManagerInventoryLookupTab()">Back</button>
+          </div>
+        </div>
+      </section>
+      <div class="inv-tab-layout">
+        <aside class="inv-branch-sidebar">
+          ${orderedBranches.map(b => `<button class="inv-branch-btn ${(b.code || "ALL") === activeCode ? "active" : ""}" onclick="setManagerInventoryBranchFilter('${b.code}')">${escapeHtml(b.name)}</button>`).join("")}
+        </aside>
+        <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
+          <div class="inv-result-section ${showPartResults ? "expanded" : "collapsed"}">
+            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
+                <tr>
+                  <th class="px-2">Branch</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => `<tr>
+                  <td class="px-2">${escapeHtml(r.branch || "-")}</td>
+                  <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
+                  <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
+                  <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                </tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">${window.managerInvLookupQuery ? "No inventory rows found." : "Search by part number to expand this section."}</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4 ${showBranchResults || (!showPartResults && activeCode === "ALL") ? "" : "hidden"}">
+            <div class="text-xs uppercase tracking-[0.1em] font-semibold mb-2" style="color:#fcd34d;">
+              ${activeCode === "ALL" ? "Branch Daily Transactions" : `Branch Daily Transactions • ${escapeHtml(selectedBranch?.name || activeCode)}`}
+            </div>
+            <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
+              <thead class="text-xs uppercase tracking-wider border-b" style="background: linear-gradient(180deg, #3f2a03, #1f2937); color:#fef3c7;">
+                <tr>
+                  <th class="px-2">Branch</th><th class="px-2">Itemcode</th><th class="px-2">ItemName</th><th class="px-2">Item Group</th><th class="px-2 text-right">DNP</th><th class="px-2 text-right">Received</th><th class="px-2 text-right">Issued</th><th class="px-2 text-right">Closing Balance</th><th class="px-2 text-right">Closing Inv Val</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${activeCode === "ALL"
+                  ? `<tr><td colspan="9" class="text-center py-4">Select a branch from sidebar to view transactions for ${(window.managerInvLookupDate || "").toString()}.</td></tr>`
+                  : (branchTxnRows.map(r => `<tr>
+                    <td class="px-2">${escapeHtml(selectedBranch?.name || r.branch_code || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_code || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_name || "-")}</td>
+                    <td class="px-2">${escapeHtml(r.item_group || "-")}</td>
+                    <td class="px-2 text-right">${Number(r.dnp || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.received_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.issued_qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.qty || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                    <td class="px-2 text-right">${Number(r.inv_value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+                  </tr>`).join("") || `<tr><td colspan="9" class="text-center py-4">No received/issued movement for ${escapeHtml(selectedBranch?.name || activeCode)} on ${(window.managerInvLookupDate || "").toString()}.</td></tr>`)}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>`;
 }
 
 async function loadManagerBranchTransactions(){
