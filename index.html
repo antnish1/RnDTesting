@@ -1499,22 +1499,6 @@ function isAdminRole(user){
   return role === "admin" || branch.toUpperCase() === "HQ";
 }
 
-function getUserRole(user){
-  const rawRole = user?.Role ?? user?.role ?? user?.ROLE ?? "";
-  return rawRole.toString().trim().toLowerCase();
-}
-
-function getUserBranch(user){
-  const rawBranch = user?.Branch ?? user?.branch ?? user?.BRANCH ?? user?.BRANCK ?? "";
-  return rawBranch.toString().trim();
-}
-
-function isAdminRole(user){
-  const role = getUserRole(user);
-  const branch = getUserBranch(user);
-  return role === "admin" || branch === "HQ";
-}
-
 function isSuperLikeRole(user){
   const role = getUserRole(user);
   return role === "super" || role === "manager";
@@ -1844,12 +1828,6 @@ document.getElementById("app").innerHTML = `
   border: 1px solid var(--pc-border);
   box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
-<div class="mb-1 text-[10px] leading-tight tracking-wide uppercase" style="color:var(--pc-text-muted);">
-  STATUS REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().statusReport)}</span>
-  &nbsp;|&nbsp;
-  INVENTORY REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().inventoryReport)}</span>
-</div>
-
 <div class="flex justify-between items-center">
 
 <div class="relative flex items-center w-full">
@@ -1976,14 +1954,16 @@ document.getElementById("app").innerHTML = `
   `}
 
 
-    <button onclick="loadDocketScanner()" 
-    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
-    data-tab="scanner">
-    <span class="flex items-center gap-2">
-      <i data-lucide="scan-line" class="w-4 h-4"></i>
-      Docket Scan
-    </span>
-    </button>
+    ${isAdmin ? `
+      <button onclick="loadDocketScanner()"
+      class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+      data-tab="scanner">
+      <span class="flex items-center gap-2">
+        <i data-lucide="scan-line" class="w-4 h-4"></i>
+        Docket Scan
+      </span>
+      </button>
+    ` : ``}
 
     <button onclick="logout()" 
     class="top-btn logout-btn">
@@ -2060,6 +2040,13 @@ function normalizeDocketNo(val){
 }
 
 function loadDocketScanner(){
+  const user = getUser();
+  if(!isAdminRole(user)){
+    showPopup("Docket Scan is available only for admin login.");
+    loadTrack("track", true);
+    return;
+  }
+
   window.activeTab = "scanner";
   updateMenuHighlight();
 
