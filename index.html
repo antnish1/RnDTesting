@@ -1499,6 +1499,22 @@ function isAdminRole(user){
   return role === "admin" || branch.toUpperCase() === "HQ";
 }
 
+function getUserRole(user){
+  const rawRole = user?.Role ?? user?.role ?? user?.ROLE ?? "";
+  return rawRole.toString().trim().toLowerCase();
+}
+
+function getUserBranch(user){
+  const rawBranch = user?.Branch ?? user?.branch ?? user?.BRANCH ?? user?.BRANCK ?? "";
+  return rawBranch.toString().trim();
+}
+
+function isAdminRole(user){
+  const role = getUserRole(user);
+  const branch = getUserBranch(user);
+  return role === "admin" || branch === "HQ";
+}
+
 function isSuperLikeRole(user){
   const role = getUserRole(user);
   return role === "super" || role === "manager";
