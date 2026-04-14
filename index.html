@@ -1702,19 +1702,12 @@ document.getElementById("app").innerHTML = `
   <div class="space-y-0">
 
 <!-- HEADER WITH LOGOUT -->
-<div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md"
+<div class="w-full rounded-2xl px-6 py-3 flex justify-between items-center backdrop-blur-md"
      style="
   background: rgba(15,23,42,0.88);
   border: 1px solid var(--pc-border);
   box-shadow: 0 8px 18px rgba(2,6,23,0.45);
 ">
-<div class="mb-1 text-[10px] leading-tight tracking-wide uppercase" style="color:var(--pc-text-muted);">
-  STATUS REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().statusReport)}</span>
-  &nbsp;|&nbsp;
-  INVENTORY REPORT UPLOAD: <span style="color:var(--pc-text);">${formatUploadHeaderTimestamp(getUploadReportMeta().inventoryReport)}</span>
-</div>
-
-<div class="flex justify-between items-center">
 
 <div class="relative flex items-center w-full">
 
@@ -3124,36 +3117,6 @@ function formatDateTime(val){
   return `${day}-${month}-${year} ${hours}:${mins} ${ampm}`;
 }
 
-function getUploadReportMeta(){
-  try{
-    const raw = localStorage.getItem("uploadReportMeta");
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
-  }catch(_){
-    return {};
-  }
-}
-
-function setUploadReportMeta(type, whenISO = new Date().toISOString()){
-  const prev = getUploadReportMeta();
-  const next = { ...prev, [type]: whenISO };
-  localStorage.setItem("uploadReportMeta", JSON.stringify(next));
-}
-
-function formatUploadHeaderTimestamp(value){
-  if(!value) return "-";
-  const dt = new Date(value);
-  if(Number.isNaN(dt.getTime())) return "-";
-  return dt.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
-  });
-}
-
 function getEffectiveQty(row){
   const edited = row?.editedqty ?? row?.EditedQty;
   if(edited === null || edited === undefined || edited === ""){
@@ -4325,7 +4288,6 @@ async function processExcelData(rows){
 
   hideLoader();
 
-  setUploadReportMeta("statusReport");
   showPopup(`Upload Complete ✅\nUpdated: ${updated}\nSkipped: ${skipped}`);
 
   loadAdmin(window.activeTab);
@@ -4538,7 +4500,6 @@ async function processInventoryExcelData(rows, reportDate){
     syncCompleted = true;
     setInventoryProgress(100, "Inventory processing completed.");
 
-    setUploadReportMeta("inventoryReport");
     showPopup(
       `Inventory Upload Complete ✅\nUploaded: ${finalPayload.length}\nDuplicate Keys Removed: ${deduped}\nChanged: ${stats.changed_count ?? stats.changed ?? 0}\nCurrent Updated: ${stats.current_updated ?? stats.upserted ?? finalPayload.length}\nSkipped: ${skipped}`
     );
