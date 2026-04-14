@@ -4819,11 +4819,7 @@ async function processExcelData(rows){
     // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
     const { data: existing } = await db
       .from("requests")
-
       .select("id,Qty,Status")
-
-      .select("id,Qty")
-main
       .eq("OrderNo", orderNo)
       .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
       .maybeSingle();
@@ -4838,14 +4834,12 @@ main
       console.log("DB Row:", existing);
     }
 
-
     if(normalizeRowStatus(existing.Status) === "RECEIVED"){
       console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
       skipped++;
       continue;
     }
 
- main
     const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
     const billedQty = Number(r["Billed Qty"] || 0);
     const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
@@ -4905,27 +4899,23 @@ main
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
     const orderedQty = Number(existing.Qty || 0);
     const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
-
     const normalizedUploadStatus = normalizeRowStatus(status || "");
     const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
-    let dispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
+    var resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
     if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
-      dispatchStatus = normalizedUploadStatus;
+      resolvedDispatchStatus = normalizedUploadStatus;
     }
-    if(pendingQty > 0 && dispatchStatus === "DISPATCHED"){
-      dispatchStatus = "NOT DISPATCHED";
+    if(pendingQty > 0 && resolvedDispatchStatus === "DISPATCHED"){
+      resolvedDispatchStatus = "NOT DISPATCHED";
     }
-    if(pendingQty <= 0 && dispatchStatus === "NOT DISPATCHED"){
-      dispatchStatus = "DISPATCHED";
+    if(pendingQty <= 0 && resolvedDispatchStatus === "NOT DISPATCHED"){
+      resolvedDispatchStatus = "DISPATCHED";
     }
-
-    const dispatchStatus = pendingQty > 0 ? "PARTIALLY DISPATCHED" : (status || "DISPATCHED");
- main
 
     const { error } = await db
       .from("requests")
       .update({
-        Status: dispatchStatus,
+        Status: resolvedDispatchStatus,
         ProcessedDate: new Date().toISOString(),
         OrderRegDt: r["Order Reg. Dt"] || "",
         DeliveryNo: deliveryNo || "",
@@ -4934,7 +4924,7 @@ main
         BilledQty: billedQty,
         billed_qty_total: billedQtyTotal,
         pending_qty: pendingQty,
-        dispatch_status: dispatchStatus,
+        dispatch_status: resolvedDispatchStatus,
         TransportName: r["Transport Name"] || "",
         TransportMode: r["Transport Mode"] || "",
         Docket: r["Docket"] || "",
@@ -4950,8 +4940,8 @@ main
         await appendOrderActionLog(
           orderNo,
           "STATUS_UPDATED",
-          `Status updated to ${dispatchStatus} via upload by ${getUser()?.Name || "Unknown User"}.`,
-          { status: dispatchStatus, billed_qty_total: billedQtyTotal, pending_qty: pendingQty }
+          `Status updated to ${resolvedDispatchStatus} via upload by ${getUser()?.Name || "Unknown User"}.`,
+          { status: resolvedDispatchStatus, billed_qty_total: billedQtyTotal, pending_qty: pendingQty }
         );
         statusLoggedOrders.add(orderNo);
       }
