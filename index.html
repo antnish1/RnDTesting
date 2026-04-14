@@ -3854,6 +3854,7 @@ const orderStatus = getOrderStatusLabel(data);
   const prevDays = Number(window.prevQtyDays) || 30;
   const partNosForPrev = [...new Set(data.map(r => normalizePartNo(r.PartNo)).filter(Boolean))];
   const prevQtyMap = {};
+  const inventoryQtyMap = {};
   if(partNosForPrev.length){
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - prevDays);
@@ -3871,6 +3872,32 @@ const orderStatus = getOrderStatusLabel(data);
       const key = normalizePartNo(pr.PartNo);
       prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
     });
+
+    const normalizeBranchName = (val) => (val || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
+    const orderBranchName = normalizeBranchName(order.Branch);
+    const { data: branchMappings } = await db
+      .from("branch_mapping")
+      .select("*");
+    const matchedMapping = (branchMappings || []).find(m => {
+      const mappingBranch = normalizeBranchName(getUserField(m, ["branchname", "branch_name"]));
+      return mappingBranch && mappingBranch === orderBranchName;
+    });
+    const branchCode = (getUserField(matchedMapping, ["branchcode", "branch_code"]) || "").toString().trim().toUpperCase();
+
+    if(branchCode){
+      const { data: inventoryRows } = await db
+        .from("inventory_staging")
+        .select("item_code, qty, report_date")
+        .eq("branch_code", branchCode)
+        .in("item_code", partNosForPrev)
+        .order("report_date", { ascending: false });
+
+      (inventoryRows || []).forEach(invRow => {
+        const partKey = normalizePartNo(invRow.item_code);
+        if(!partKey || inventoryQtyMap[partKey] !== undefined) return;
+        inventoryQtyMap[partKey] = Number(invRow.qty || 0);
+      });
+    }
   }
   const canSuperEditQty = isSuper && (
     orderStatus === "PENDING APPROVAL" ||
@@ -3884,6 +3911,7 @@ const orderStatus = getOrderStatusLabel(data);
   const rowKey = `${r.PartNo || "PART"}__${idx}`;
   const rowEdit = superEditState[rowKey] || {};
   const prevQty = prevQtyMap[normalizePartNo(r.PartNo)] || 0;
+  const invQty = inventoryQtyMap[normalizePartNo(r.PartNo)] ?? 0;
   const originalQty = Number(r.Qty || 0);
   const autoSuggestedQty = Math.max(0, originalQty - prevQty);
   const hasPersistedEdit = r.editedqty !== null && r.editedqty !== undefined && r.editedqty !== "";
@@ -3932,6 +3960,7 @@ const orderStatus = getOrderStatusLabel(data);
     <td>${formatDate(r.BillingDt)}</td>
     <td>${r.TransportName || "-"}</td>
     <td>${r.Docket || "-"}</td>
+    <td>${invQty}</td>
     <td>${prevQty}</td>
     ${canSuperEditQty ? `
       <td>
@@ -4293,6 +4322,7 @@ ${actionButtons}
             <th class="text-left">Billing Dt</th>
             <th class="text-left">Transport</th>
             <th class="text-left">Docket</th>
+            <th class="text-left">Inv</th>
             <th class="px-1 text-left">
               PrevQty
               <div class="mt-1">
