@@ -268,6 +268,13 @@ body {
   box-shadow: none;
 }
 
+.dev-nav-btn{
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  letter-spacing: 0.01em;
+}
+
 .active-top-btn {
   background: linear-gradient(180deg, rgba(250,204,21,0.18), rgba(161,98,7,0.2));
   color: #fef08a;
@@ -1614,21 +1621,25 @@ function isViewerRole(user){
   return getUserRole(user) === "viewer";
 }
 
+function isDeveloperRole(user){
+  return getUserRole(user) === "developer";
+}
+
 async function syncUserRoleFromDb(user){
   if(!user) return null;
 
-  let query = db
-    .from("users")
-    .select("Role")
-    .eq("Branch", getUserBranch(user));
-
   const userId = getUserId(user);
   const userName = getUserName(user);
+  const userBranch = getUserBranch(user);
+  const baseQuery = db.from("users").select("id,Name,Branch,Role");
+  let query = null;
 
   if(userId !== undefined && userId !== null && `${userId}` !== ""){
-    query = query.eq("id", userId);
+    query = baseQuery.eq("id", userId);
   }else if(userName){
-    query = query.eq("Name", userName);
+    query = baseQuery.eq("Name", userName);
+  }else if(userBranch){
+    query = baseQuery.eq("Branch", userBranch);
   }else{
     return normalizeUserPayload(user);
   }
@@ -1640,8 +1651,18 @@ async function syncUserRoleFromDb(user){
   }
 
   const latestRole = getUserField(data, ["role", "userrole"]);
-  if(latestRole){
-    const nextUser = normalizeUserPayload({ ...user, Role: latestRole, role: latestRole });
+  const latestBranch = getUserField(data, ["branch", "branck", "branchname"]);
+  const latestName = getUserField(data, ["name", "username", "employee"]);
+  if(latestRole || latestBranch || latestName){
+    const nextUser = normalizeUserPayload({
+      ...user,
+      Role: latestRole || user.Role,
+      role: latestRole || user.role,
+      Branch: latestBranch || user.Branch,
+      branch: latestBranch || user.branch,
+      Name: latestName || user.Name,
+      name: latestName || user.name
+    });
     localStorage.setItem("user", JSON.stringify(nextUser));
     return nextUser;
   }
@@ -1789,15 +1810,21 @@ const { data: allUsers } = await db
 .from("users")
 .select("*");
 
-const data = (allUsers || []).map(normalizeUserPayload).find(u =>
-  getUserBranch(u) === branch && (u?.Password || "").toString() === password
+const normalizedUsers = (allUsers || []).map(normalizeUserPayload);
+const branchNorm = (branch || "").toString().trim().toUpperCase();
+const passwordNorm = (password || "").toString().trim();
+const matchingUsers = normalizedUsers.filter(u =>
+  getUserBranch(u).toUpperCase() === branchNorm &&
+  (u?.Password || "").toString().trim() === passwordNorm
 );
+const data = matchingUsers.find(u => getUserName(u).toUpperCase() === branchNorm) || matchingUsers[0];
 
 hideLoader();
 
 if(!data) return showPopup("Invalid credentials");
 
 localStorage.setItem("user", JSON.stringify(normalizeUserPayload(data)));
+localStorage.setItem("developerLoginAt", new Date().toISOString());
 loadBranch();
 }
 
@@ -1896,10 +1923,13 @@ const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
 const isViewer = isViewerRole(user);
+const isDeveloper = isDeveloperRole(user);
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
-if(isAdmin){
+if(isDeveloper){
+  window.activeTab = "DevDashboard";
+}else if(isAdmin){
   window.activeTab = "Approved";
 }else if(isSuper){
   window.activeTab = isManager ? "Dashboard" : "PendingApproval";
@@ -1945,9 +1975,9 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  <div class="flex items-center gap-3 w-full justify-end">
+  <div class="flex items-center gap-2 w-full justify-end flex-wrap md:flex-nowrap">
 
-<div class="relative">
+<div class="relative min-w-[210px] md:min-w-[280px]">
 
   <i data-lucide="search" 
      class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">
@@ -1962,7 +1992,47 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-${!isAdmin && !isSuper && !isViewer ? `
+${isDeveloper ? `
+    <button onclick="loadDeveloperDashboard()" 
+    class="top-btn dev-nav-btn ${window.activeTab==='DevDashboard' ? 'active-top-btn' : ''}"
+    data-tab="DevDashboard">
+      Workspace
+    </button>
+    <button onclick="loadDeveloperUsers()"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevUsers' ? 'active-top-btn' : ''}"
+    data-tab="DevUsers">
+      Users
+    </button>
+    <button onclick="loadDeveloperRequestsEditor()"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevRequests' ? 'active-top-btn' : ''}"
+    data-tab="DevRequests">
+      Requests
+    </button>
+    <button onclick="loadDeveloperCommentsInbox()"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevComments' ? 'active-top-btn' : ''}"
+    data-tab="DevComments">
+      Comments
+    </button>
+    <button onclick="openDeveloperInventoryLookup()"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}"
+    data-tab="DevInventory">Inventory</button>
+    <button onclick="loadUpload()" 
+    class="top-btn dev-nav-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
+    data-tab="upload">Reports</button>
+    <button onclick="loadDocketScanner()"
+    class="top-btn dev-nav-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+    data-tab="scanner">Docket</button>
+    <button onclick="loadCreate('create')" 
+    class="top-btn dev-nav-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
+    data-tab="create">
+      New Order
+    </button>
+    <button onclick="loadTrack('track')" 
+    class="top-btn dev-nav-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
+    data-tab="track">
+      Track
+    </button>
+` : !isAdmin && !isSuper && !isViewer ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -2099,6 +2169,17 @@ else if(isAdmin){
   // ✅ ADD THIS LINE (VERY IMPORTANT)
   setTimeout(loadPendingCount, 200);
 }
+else if(isDeveloper){
+  if(window.activeTab === "DevUsers"){
+    loadDeveloperUsers();
+  }else if(window.activeTab === "DevRequests"){
+    loadDeveloperRequestsEditor();
+  }else if(window.activeTab === "DevComments"){
+    loadDeveloperCommentsInbox();
+  }else{
+    loadDeveloperDashboard();
+  }
+}
 else if(isSuper){
   loadSuper(window.activeTab || "PendingApproval");
 }
@@ -2128,8 +2209,8 @@ function normalizeDocketNo(val){
 
 function loadDocketScanner(){
   const user = getUser();
-  if(!isAdminRole(user)){
-    showPopup("Docket Scan is available only for admin login.");
+  if(!isAdminRole(user) && !isDeveloperRole(user)){
+    showPopup("Docket Scan is available only for admin/developer login.");
     loadTrack("track", true);
     return;
   }
@@ -3058,6 +3139,7 @@ const user = getUser();
 const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isViewer = isViewerRole(user);
+const isDeveloper = isDeveloperRole(user);
 
 showLoader();
 
@@ -3067,7 +3149,7 @@ let query = db
   .order("created_at", { ascending:false });
 
 // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
-if(!isAdmin && !isSuper && !isViewer){
+if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
   query = query.eq("Branch", getUserBranch(user));
 }
 
@@ -3920,7 +4002,7 @@ function getCommentAttachmentHref(url){
 async function openOrderView(orderNo){
 
 const user = getUser();
-const isSuper = isSuperLikeRole(user);
+const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
 
@@ -4076,7 +4158,7 @@ const orderStatus = getOrderStatusLabel(data);
   window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
-const isAdmin = isAdminRole(user);
+const isAdmin = isAdminRole(user) || isDeveloperRole(user);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -4130,6 +4212,7 @@ const canSuperActions = isSuper && (
   orderStatus === "PENDING APPROVAL" ||
   orderStatus === "APPROVAL PENDING"
 );
+const canProcessOrder = isAdminRole(user) || isDeveloperRole(user);
 
 if(isSuper){
   const { data: superUsers } = await db
@@ -4151,6 +4234,17 @@ let actionButtons = "";
 if(isSuper){
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap justify-end">
+      ${canProcessOrder ? `
+        <div class="flex gap-2 items-center">
+          <input
+            id="processOrderNo"
+            value="${orderNo}"
+            class="pc-field admin-orderno-input w-[170px] text-sm"
+            placeholder="Enter Order No"
+          />
+          <button onclick="processOrder('${orderNo}')" class="detail-action-btn">Process</button>
+        </div>
+      ` : ""}
       ${canSuperActions ? `
         <button onclick="openChangeApproverPopup('${orderNo}', '${order.ApprovedBy || ""}')"
           class="detail-action-btn">
@@ -4555,8 +4649,11 @@ async function processOrder(orderNo){
 
   await appendOrderActionLog(inputOrderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Unknown User"}.`);
   showPopup("Order Updated & Processed ✅");
-
-  loadAdmin("Processed");
+  if(isDeveloperRole(getUser())){
+    loadDeveloperDashboard();
+  } else {
+    loadAdmin("Processed");
+  }
 }
 
 
@@ -4777,13 +4874,29 @@ async function processExcelData(rows){
   showLoader();
 
   let updated = 0;
+  let inserted = 0;
   let skipped = 0;
   const statusLoggedOrders = new Set();
+
+  const getUploadCellValue = (row, aliases = []) => {
+    const normalizedEntries = Object.entries(row || {}).map(([key, value]) => ({
+      key: (key || "").toString().trim().toLowerCase().replace(/\s+/g, " "),
+      value
+    }));
+    for(const alias of aliases){
+      const hit = normalizedEntries.find(entry => entry.key === (alias || "").toString().trim().toLowerCase().replace(/\s+/g, " "));
+      if(hit) return hit.value;
+    }
+    return "";
+  };
+  const normalizeCompare = (value) => (value || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
+  const isReceivedLockedStatus = (statusValue) => normalizeCompare(statusValue).includes("RECEIVED");
 
   for(const r of rows){
     console.log("🟡 RAW EXCEL ROW:", r);
     const orderNo = r["Order No"]?.toString().trim().toUpperCase();
     const partNo = r["Material No"]?.toString().trim().toUpperCase();
+    const branchName = (getUploadCellValue(r, ["branch", "branch name", "plant", "location", "branch_name"]) || "").toString().trim();
     console.log("📦 Excel OrderNo:", orderNo);
     console.log("🔩 Excel PartNo:", partNo);
     
@@ -4816,17 +4929,45 @@ async function processExcelData(rows){
       continue;
     }
 
-    // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
-    const { data: existing } = await db
-      .from("requests")
-      .select("id,Qty,Status")
-      .eq("OrderNo", orderNo)
-      .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
-      .maybeSingle();
-      console.log("🧾 DB MATCH RESULT:", existing);
-   if(!existing){
+    const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
+    const billedQty = Number(r["Billed Qty"] || 0);
+    const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
+    const deliveryNo = (r["Delivery No"] || "").toString().trim();
+    const billNo = (r["BillNo & Image"] || "").toString().trim();
+    const docketNo = (r["Docket"] || "").toString().trim();
+    const transportName = (r["Transport Name"] || "").toString().trim();
+
+    // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE) using OrderNo + PartNo
+    let existing = null;
+    if(orderNo){
+      const { data: matchesByOrder } = await db
+        .from("requests")
+        .select("*")
+        .eq("OrderNo", orderNo)
+        .eq("PartNo", normalizedPartNo)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if(matchesByOrder?.length){
+        existing = matchesByOrder[0];
+      }
+    }
+    if(!existing){
+      const { data: fallbackByBranch } = await db
+        .from("requests")
+        .select("*")
+        .eq("PartNo", normalizedPartNo)
+        .order("created_at", { ascending: false });
+      const branchMatched = (fallbackByBranch || []).find(x =>
+        normalizeCompare(x.Branch || "") === normalizeCompare(branchName || "")
+      );
+      if(branchMatched){
+        existing = branchMatched;
+      }
+    }
+    console.log("🧾 DB MATCH RESULT:", existing);
+    if(!existing){
       console.log("❌ NO MATCH FOUND");
-      console.log("Excel:", orderNo, partNo);
+      console.log("Excel:", orderNo, partNo, branchName);
       skipped++;
       continue;
     } else {
@@ -4834,17 +4975,75 @@ async function processExcelData(rows){
       console.log("DB Row:", existing);
     }
 
-    if(normalizeRowStatus(existing.Status) === "RECEIVED"){
+    if(isReceivedLockedStatus(existing.Status)){
       console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
       skipped++;
       continue;
     }
 
-    const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
-    const billedQty = Number(r["Billed Qty"] || 0);
-    const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
-    const deliveryNo = (r["Delivery No"] || "").toString().trim();
-    const billNo = (r["BillNo & Image"] || "").toString().trim();
+    const existingBillNo = (existing.BillNo || "").toString().trim();
+    const existingDocket = (existing.Docket || "").toString().trim();
+    const existingTransport = (existing.TransportName || "").toString().trim();
+    const hasExistingBill = !!existingBillNo;
+    const hasExistingDocket = !!existingDocket;
+    const hasExistingTransport = !!existingTransport;
+    const hasMismatchOnExistingFilledFields =
+      (hasExistingBill && normalizeCompare(existingBillNo) !== normalizeCompare(billNo)) ||
+      (hasExistingDocket && normalizeCompare(existingDocket) !== normalizeCompare(docketNo)) ||
+      (hasExistingTransport && normalizeCompare(existingTransport) !== normalizeCompare(transportName));
+
+    const normalizedUploadStatus = normalizeRowStatus(status || "");
+    const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
+    var resolvedDispatchStatus = "PROCESSED";
+    if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
+      resolvedDispatchStatus = normalizedUploadStatus;
+    }
+
+    if(hasMismatchOnExistingFilledFields){
+      const insertPayload = {
+        ...existing,
+        id: undefined,
+        Status: resolvedDispatchStatus,
+        ProcessedDate: new Date().toISOString(),
+        OrderRegDt: r["Order Reg. Dt"] || "",
+        DeliveryNo: deliveryNo || "",
+        BillNo: billNo || "",
+        BillingDt: r["Billing Dt"] || "",
+        BilledQty: billedQty,
+        TransportName: transportName || "",
+        TransportMode: (r["Transport Mode"] || "").toString().trim(),
+        Docket: docketNo || "",
+        PackingDetail: (r["Packing Detail"] || "").toString().trim(),
+        EWayBillNo: (r["E-Way Bill No"] || "").toString().trim(),
+        GSTInvoiceNo: (r["GST Invoice No."] || "").toString().trim()
+      };
+      delete insertPayload.created_at;
+      delete insertPayload.updated_at;
+
+      const { error: insertError } = await db
+        .from("requests")
+        .insert([insertPayload])
+        .select("id,OrderNo")
+        .limit(1);
+
+      if(insertError){
+        console.error(insertError);
+        skipped++;
+        continue;
+      }
+      inserted++;
+      if(!statusLoggedOrders.has(orderNo)){
+        await appendOrderActionLog(
+          orderNo,
+          "STATUS_UPDATED",
+          `New request row inserted from upload due Bill/Docket/Transport mismatch by ${getUser()?.Name || "Unknown User"}.`,
+          { status: resolvedDispatchStatus, mode: "insert_on_mismatch" }
+        );
+        statusLoggedOrders.add(orderNo);
+      }
+      continue;
+    }
+
     const idempotencyKey = [
       String(existing.id),
       orderNo,
@@ -4863,8 +5062,8 @@ async function processExcelData(rows){
       billing_dt: billingDt,
       delivery_no: deliveryNo || null,
       bill_no: billNo || null,
-      docket: (r["Docket"] || "").toString().trim() || null,
-      transport_name: (r["Transport Name"] || "").toString().trim() || null,
+      docket: docketNo || null,
+      transport_name: transportName || null,
       transport_mode: (r["Transport Mode"] || "").toString().trim() || null,
       packing_detail: (r["Packing Detail"] || "").toString().trim() || null,
       eway_bill_no: (r["E-Way Bill No"] || "").toString().trim() || null,
@@ -4899,9 +5098,7 @@ async function processExcelData(rows){
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
     const orderedQty = Number(existing.Qty || 0);
     const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
-    const normalizedUploadStatus = normalizeRowStatus(status || "");
-    const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
-    var resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
+    resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
     if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
       resolvedDispatchStatus = normalizedUploadStatus;
     }
@@ -4925,9 +5122,9 @@ async function processExcelData(rows){
         billed_qty_total: billedQtyTotal,
         pending_qty: pendingQty,
         dispatch_status: resolvedDispatchStatus,
-        TransportName: r["Transport Name"] || "",
+        TransportName: transportName || "",
         TransportMode: r["Transport Mode"] || "",
-        Docket: r["Docket"] || "",
+        Docket: docketNo || "",
         PackingDetail: r["Packing Detail"] || "",
         EWayBillNo: r["E-Way Bill No"] || "",
         GSTInvoiceNo: r["GST Invoice No."] || ""
@@ -4954,7 +5151,7 @@ async function processExcelData(rows){
   hideLoader();
 
   setUploadReportMeta("statusReport");
-  showPopup(`Upload Complete ✅\nUpdated: ${updated}\nSkipped: ${skipped}`);
+  showPopup(`Upload Complete ✅\nUpdated: ${updated}\nInserted: ${inserted}\nSkipped: ${skipped}`);
 
   loadAdmin(window.activeTab);
 }
@@ -6007,6 +6204,401 @@ function setManagerDashboardBranchFilter(branch){
   loadSuper("Dashboard", true);
 }
 
+function openDeveloperInventoryLookup(){
+  window.activeTab = "DevInventory";
+  window.managerInventoryTabOpen = true;
+  loadManagerInventoryBranchDirectory().finally(() => loadSuper("Dashboard", true));
+}
+
+function getDeveloperCommentSeenAt(){
+  return localStorage.getItem("developerCommentsSeenAt") || localStorage.getItem("developerLoginAt") || "";
+}
+
+function getOrderCommentsWithMeta(row){
+  const base = getOrderComments({ items: [row], OrderComments: row?.OrderComments });
+  return base.map(c => ({
+    ...c,
+    OrderNo: row?.OrderNo || "",
+    Branch: row?.Branch || "",
+    OrderType: row?.OrderType || "",
+    Status: row?.Status || "",
+    created_at: row?.created_at || ""
+  }));
+}
+
+async function fetchDeveloperCommentFeed(){
+  const { data, error } = await db
+    .from("requests")
+    .select("id,OrderNo,Branch,OrderType,Status,created_at,OrderComments")
+    .order("created_at", { ascending: false });
+  if(error) throw error;
+  return (data || [])
+    .flatMap(getOrderCommentsWithMeta)
+    .filter(c => !isSystemActionComment(c))
+    .sort((a, b) => new Date(b?.at || 0).getTime() - new Date(a?.at || 0).getTime());
+}
+
+async function loadDeveloperDashboard(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevDashboard";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const [{ data: users }, { data: requests }] = await Promise.all([
+      db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
+      db.from("requests").select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty").order("created_at", { ascending: false })
+    ]);
+    const byOrder = {};
+    (requests || []).forEach(r => {
+      if(!byOrder[r.OrderNo]) byOrder[r.OrderNo] = { ...r, items: [] };
+      byOrder[r.OrderNo].items.push(r);
+    });
+    const orderList = Object.values(byOrder);
+    const statusMap = {};
+    const typeMap = {};
+    const getOrderValue = (o) => (o?.items || []).reduce((sum, x) => sum + Number(getEffectiveValue(x) || 0), 0);
+    orderList.forEach(o => {
+      const status = getOrderStatusLabel(o) || "UNKNOWN";
+      if(!statusMap[status]) statusMap[status] = { count: 0, value: 0 };
+      statusMap[status].count += 1;
+      statusMap[status].value += getOrderValue(o);
+      const type = (o.OrderType || "OTHER").toUpperCase();
+      if(!typeMap[type]) typeMap[type] = { count: 0, value: 0 };
+      typeMap[type].count += 1;
+      typeMap[type].value += getOrderValue(o);
+    });
+
+    const comments = (requests || []).flatMap(getOrderCommentsWithMeta).filter(c => !isSystemActionComment(c));
+    const seenAt = getDeveloperCommentSeenAt();
+    const unreadComments = seenAt ? comments.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : comments;
+
+    const statusAction = (statusKey) => {
+      const k = (statusKey || "").toUpperCase();
+      if(k === "PENDING APPROVAL" || k === "APPROVAL PENDING") return `loadSuper('PendingApproval')`;
+      if(k === "APPROVED") return `loadSuper('Approved')`;
+      if(k === "REJECTED") return `loadSuper('Rejected')`;
+      if(k === "PROCESSED") return `loadAdmin('Processed')`;
+      if(k === "DISPATCHED" || k === "PARTIALLY DISPATCHED" || k === "NOT DESPATCHED") return `loadTrack('track')`;
+      return `loadSuper('All')`;
+    };
+    const statusCards = Object.entries(statusMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([k, v]) => `
+        <button onclick="${statusAction(k)}"
+          class="text-left rounded-md px-3 py-2 transition-all hover:-translate-y-[1px]"
+          style="background:linear-gradient(180deg, rgba(20,25,40,0.98), rgba(7,11,23,0.98)); border:1px solid rgba(99,102,241,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(30,41,59,0.95);">
+          <div class="flex items-start justify-between gap-3">
+            <span class="text-[11px] uppercase tracking-[0.12em] font-semibold" style="color:#a5b4fc;">${escapeHtml(k)}</span>
+            <span class="text-2xl leading-none font-extrabold" style="color:#e2e8f0;">${v.count}</span>
+          </div>
+          <div class="text-[11px] mt-2 font-semibold" style="color:#93c5fd;">VALUE ₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
+        </button>
+      `).join("");
+    const typeCards = Object.entries(typeMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([k, v]) => `
+        <button onclick="loadTrack('track')"
+          class="text-left rounded-md px-3 py-2 transition-all hover:-translate-y-[1px]"
+          style="background:linear-gradient(180deg, rgba(10,50,62,0.92), rgba(6,28,36,0.95)); border:1px solid rgba(45,212,191,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(17,24,39,0.95);">
+          <div class="flex items-start justify-between gap-3">
+            <span class="text-[11px] uppercase tracking-[0.12em] font-semibold" style="color:#99f6e4;">${escapeHtml(k)}</span>
+            <span class="text-2xl leading-none font-extrabold" style="color:#e2e8f0;">${v.count}</span>
+          </div>
+          <div class="text-[11px] mt-2 font-semibold" style="color:#5eead4;">VALUE ₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
+        </button>
+      `).join("");
+    const recentUnreadRows = unreadComments.slice(0, 12).map(c => `
+      <tr>
+        <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(c.Branch || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(c.by || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(c.text || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(c.at || ""))}</td>
+      </tr>
+    `).join("");
+
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-5">
+        <section class="rounded-2xl p-4" style="background:linear-gradient(130deg, rgba(10,15,27,0.98), rgba(15,23,42,0.98)); border:1px solid rgba(99,102,241,0.35);">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div class="text-[11px] uppercase tracking-[0.16em] font-bold" style="color:#818cf8; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">DEVELOPER WORKSPACE</div>
+              <div class="text-sm md:text-base font-semibold mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                users:${(users || []).length} | orders:${orderList.length} | unread_comments:${unreadComments.length}
+              </div>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <button class="track-page-btn" onclick="loadDeveloperUsers()">Manage Users</button>
+              <button class="track-page-btn" onclick="loadDeveloperRequestsEditor()">Edit Requests</button>
+              <button class="track-page-btn" onclick="loadDeveloperCommentsInbox()">Comments Inbox</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid lg:grid-cols-2 gap-3">
+          <div class="rounded-xl p-3" style="background:rgba(6,11,23,0.88); border:1px solid rgba(129,140,248,0.28);">
+            <div class="text-xs font-bold uppercase tracking-[0.1em] mb-2" style="color:#c7d2fe;">Status-wise Orders</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${statusCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
+          </div>
+          <div class="rounded-xl p-3" style="background:rgba(6,11,23,0.88); border:1px solid rgba(45,212,191,0.28);">
+            <div class="text-xs font-bold uppercase tracking-[0.1em] mb-2" style="color:#99f6e4;">Order Type Distribution</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${typeCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
+          </div>
+        </section>
+
+        <section class="rounded-xl p-4" style="background:rgba(6,11,23,0.9); border:1px solid rgba(250,204,21,0.24);">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold uppercase tracking-[0.1em]" style="color:#fde68a;">Unread Incoming Comments</div>
+            <button class="track-page-btn" onclick="loadDeveloperCommentsInbox()">Open Inbox</button>
+          </div>
+          <div class="overflow-x-auto mt-2">
+            <table class="track-table w-full text-sm">
+              <thead><tr><th>Order</th><th>Branch</th><th>By</th><th>Comment</th><th>At</th></tr></thead>
+              <tbody>${recentUnreadRows || `<tr><td colspan="5" class="text-center py-3">No unread comments 🎉</td></tr>`}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load developer dashboard ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+async function loadDeveloperUsers(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevUsers";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const { data, error } = await db.from("users").select("*").order("Name", { ascending: true });
+    if(error) throw error;
+    const roleOptions = [...new Set((data || []).map(u => (getUserField(u, ["role"]) || "").toString().trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b))
+      .map(role => `<option value="${escapeHtml(role)}">${escapeHtml(role)}</option>`)
+      .join("");
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-4">
+        <section class="rounded-xl p-4" style="background:linear-gradient(140deg, rgba(9,13,24,0.98), rgba(15,23,42,0.95)); border:1px solid rgba(56,189,248,0.3);">
+          <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#93c5fd;">Create User</div>
+          <div class="grid md:grid-cols-5 gap-2 mt-2">
+            <input id="devNewUserName" class="pc-field" placeholder="Name" />
+            <input id="devNewUserBranch" class="pc-field" placeholder="Branch" />
+            <select id="devNewUserRole" class="pc-field">
+              <option value="">Select role</option>
+              ${roleOptions}
+            </select>
+            <input id="devNewUserPassword" class="pc-field" placeholder="Password" />
+            <button class="track-page-btn" onclick="createDeveloperUser()">Add User</button>
+          </div>
+        </section>
+        <section class="rounded-xl p-4" style="background:rgba(6,11,23,0.9); border:1px solid rgba(148,163,184,0.28);">
+          <div class="text-xs uppercase font-bold tracking-[0.12em] mb-2" style="color:#cbd5e1;">User Directory</div>
+          <div class="overflow-x-auto">
+            <table class="track-table w-full text-sm table-fixed">
+              <thead><tr><th class="w-[60px]">ID</th><th>Name</th><th>Branch</th><th class="w-[120px]">Role</th><th class="w-[140px]">Password</th><th class="w-[220px]">Actions</th></tr></thead>
+              <tbody>
+                ${(data || []).map(u => `
+                  <tr>
+                    <td class="px-2 py-2">${escapeHtml(u.id ?? "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(getUserField(u, ["name"]))}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(getUserField(u, ["branch"]))}</td>
+                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["role"]))}</td>
+                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["password"]))}</td>
+                    <td class="px-2 py-2">
+                      <button class="track-page-btn" onclick="editDeveloperUser('${u.id}')">Edit</button>
+                      <button class="track-page-btn" style="border-color:rgba(239,68,68,0.6); color:#fecaca;" onclick="deleteDeveloperUser('${u.id}')">Delete</button>
+                    </td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load users ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+async function createDeveloperUser(){
+  const Name = (document.getElementById("devNewUserName")?.value || "").trim();
+  const Branch = (document.getElementById("devNewUserBranch")?.value || "").trim();
+  const Role = (document.getElementById("devNewUserRole")?.value || "").trim();
+  const Password = (document.getElementById("devNewUserPassword")?.value || "").trim();
+  if(!Name || !Branch || !Role || !Password) return showPopup("All fields are mandatory");
+  showLoader();
+  const { error } = await db.from("users").insert([{ Name, Branch, Role, Password }]);
+  hideLoader();
+  if(error) return showPopup(`Failed to add user ❌\n${error.message || ""}`);
+  showPopup("User added ✅", "success");
+  loadDeveloperUsers();
+}
+
+async function editDeveloperUser(id){
+  if(!id) return;
+  const { data, error } = await db.from("users").select("*").eq("id", id).maybeSingle();
+  if(error || !data) return showPopup("User not found");
+  const Name = prompt("Enter Name", data.Name || "");
+  if(Name === null) return;
+  const Branch = prompt("Enter Branch", data.Branch || "");
+  if(Branch === null) return;
+  const Role = prompt("Enter Role", data.Role || "");
+  if(Role === null) return;
+  const Password = prompt("Enter Password", data.Password || "");
+  if(Password === null) return;
+  showLoader();
+  const { error: updateError } = await db.from("users").update({ Name, Branch, Role, Password }).eq("id", id);
+  hideLoader();
+  if(updateError) return showPopup(`Failed to update user ❌\n${updateError.message || ""}`);
+  showPopup("User updated ✅", "success");
+  loadDeveloperUsers();
+}
+
+async function deleteDeveloperUser(id){
+  if(!id) return;
+  if(!confirm("Hard delete this user permanently?")) return;
+  showLoader();
+  const { error } = await db.from("users").delete().eq("id", id);
+  hideLoader();
+  if(error) return showPopup(`Delete failed ❌\n${error.message || ""}`);
+  showPopup("User deleted ✅", "success");
+  loadDeveloperUsers();
+}
+
+async function loadDeveloperRequestsEditor(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevRequests";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const { data, error } = await db
+      .from("requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if(error) throw error;
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-4">
+        <section class="rounded-2xl p-4" style="background:linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.96)); border:1px solid rgba(250,204,21,0.35);">
+          <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#fde68a;">Requests Table Editor (latest 200 rows)</div>
+          <div class="overflow-x-auto mt-2">
+            <table class="track-table w-full text-sm">
+              <thead><tr><th>ID</th><th>Order No</th><th>Branch</th><th>Part No</th><th>Status</th><th>Updated</th><th>Edit</th></tr></thead>
+              <tbody>
+                ${(data || []).map(r => `
+                  <tr>
+                    <td class="px-2 py-2">${escapeHtml(r.id ?? "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.OrderNo || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.Branch || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.PartNo || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.Status || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(r.created_at || ""))}</td>
+                    <td class="px-2 py-2"><button class="track-page-btn" onclick="editDeveloperRequestRow('${r.id}')">Edit JSON</button></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load requests ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+async function editDeveloperRequestRow(id){
+  if(!id) return;
+  const { data, error } = await db.from("requests").select("*").eq("id", id).maybeSingle();
+  if(error || !data) return showPopup("Request row not found");
+  const editable = { ...data };
+  const raw = prompt("Edit request row JSON", JSON.stringify(editable));
+  if(raw === null) return;
+  let payload = null;
+  try{
+    payload = JSON.parse(raw);
+  }catch{
+    return showPopup("Invalid JSON");
+  }
+  delete payload.id;
+  showLoader();
+  const { error: updateError } = await db.from("requests").update(payload).eq("id", id);
+  hideLoader();
+  if(updateError) return showPopup(`Update failed ❌\n${updateError.message || ""}`);
+  showPopup("Request updated ✅", "success");
+  loadDeveloperRequestsEditor();
+}
+
+async function loadDeveloperCommentsInbox(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevComments";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const feed = await fetchDeveloperCommentFeed();
+    const seenAt = getDeveloperCommentSeenAt();
+    if(window.devCommentsShowAll === undefined) window.devCommentsShowAll = false;
+    const unreadOnly = seenAt ? feed.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : feed;
+    const rowsToShow = window.devCommentsShowAll ? feed : unreadOnly;
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-4">
+        <section class="rounded-xl p-4" style="background:linear-gradient(140deg, rgba(9,13,24,0.98), rgba(15,23,42,0.95)); border:1px solid rgba(244,114,182,0.28);">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#f9a8d4;">Unread comments since last login: ${unreadOnly.length} • Total comments: ${feed.length}</div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs flex items-center gap-2" style="color:#e2e8f0;">
+                <input type="checkbox" ${window.devCommentsShowAll ? "checked" : ""} onchange="window.devCommentsShowAll=this.checked; loadDeveloperCommentsInbox();" />
+                Show All
+              </label>
+              <button class="track-page-btn" onclick="markDeveloperCommentsRead()">Mark all read</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto mt-2">
+            <table class="track-table w-full text-sm table-fixed">
+              <thead><tr><th class="w-[120px]">Order</th><th class="w-[140px]">Branch</th><th class="w-[110px]">Type</th><th class="w-[160px]">Status</th><th class="w-[160px]">By</th><th>Comment</th><th class="w-[170px]">At</th></tr></thead>
+              <tbody>
+                ${rowsToShow.map(c => `
+                  <tr class="cursor-pointer" onclick="openOrderView('${c.OrderNo}')">
+                    <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(c.Branch || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(c.OrderType || "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(c.Status || "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(c.by || "-")}</td>
+                    <td class="px-2 py-2 break-words">${escapeHtml(c.text || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(c.at || ""))}</td>
+                  </tr>
+                `).join("") || `<tr><td colspan="7" class="text-center py-4">No comments to show.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load comments inbox ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+function markDeveloperCommentsRead(){
+  localStorage.setItem("developerCommentsSeenAt", new Date().toISOString());
+  showPopup("All comments marked as read ✅", "success");
+  loadDeveloperCommentsInbox();
+}
+
 
 function clearUniversalSearch(){
   document.getElementById("universalSearch").value = "";
@@ -6027,7 +6619,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   showLoader();
 
   const user = getUser();
-  const isManager = isManagerRole(user);
+  const isManager = isManagerRole(user) || isDeveloperRole(user);
 
   let query = db
     .from("requests")
@@ -6060,9 +6652,10 @@ const grouped = {};
   grouped[r.OrderNo].items.push(r);
 });
 
-  const orders = applyOrderSort(
+  const allOrders = applyOrderSort(
     Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  ).filter(shouldShowOrder);
+  );
+  const orders = allOrders.filter(shouldShowOrder);
 
   if(isManager && activeTab === "Dashboard"){
     renderManagerDashboard(orders);
@@ -6098,7 +6691,8 @@ else if(activeTab === "Approved"){
   });
 }
 else if(activeTab === "Rejected"){
-  filtered = orders.filter(o => getOrderStatusLabel(o) === "REJECTED");
+  const rejectedSource = isDeveloperRole(user) ? allOrders : orders;
+  filtered = rejectedSource.filter(o => getOrderStatusLabel(o) === "REJECTED");
 }
 else if(activeTab === "All"){
   filtered = isManager
@@ -6797,7 +7391,9 @@ async function acceptEditedQty(orderNo){
 
 function goBack(){
   const user = getUser();
-  if(isSuperLikeRole(user)){
+  if(isDeveloperRole(user)){
+    loadDeveloperDashboard();
+  } else if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
   } else if(isAdminRole(user)){
     loadAdmin(window.activeTab || "Approved", true);
@@ -7026,6 +7622,16 @@ function refreshCurrentView(){
 
 if(isAdminRole(user)){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
+} else if(isDeveloperRole(user)){
+  if(window.activeTab === "DevUsers"){
+    loadDeveloperUsers();
+  } else if(window.activeTab === "DevRequests"){
+    loadDeveloperRequestsEditor();
+  } else if(window.activeTab === "DevComments"){
+    loadDeveloperCommentsInbox();
+  } else {
+    loadDeveloperDashboard();
+  }
 } else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
 } else {
@@ -7092,8 +7698,20 @@ function changePage(step){
   const user = getUser();
   const isAdmin = isAdminRole(user);
   const isSuper = isSuperLikeRole(user);
+  const isDeveloper = isDeveloperRole(user);
 
-  if(isAdmin){
+  if(isDeveloper){
+    if(window.activeTab === "DevUsers"){
+      loadDeveloperUsers();
+    } else if(window.activeTab === "DevRequests"){
+      loadDeveloperRequestsEditor();
+    } else if(window.activeTab === "DevComments"){
+      loadDeveloperCommentsInbox();
+    } else {
+      loadDeveloperDashboard();
+    }
+  }
+  else if(isAdmin){
     loadAdmin(window.activeTab, true);
   }
   else if(isSuper){
