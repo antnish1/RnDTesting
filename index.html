@@ -1621,18 +1621,18 @@ function isDeveloperRole(user){
 async function syncUserRoleFromDb(user){
   if(!user) return null;
 
-  let query = db
-    .from("users")
-    .select("Role")
-    .eq("Branch", getUserBranch(user));
-
   const userId = getUserId(user);
   const userName = getUserName(user);
+  const userBranch = getUserBranch(user);
+  const baseQuery = db.from("users").select("id,Name,Branch,Role");
+  let query = null;
 
   if(userId !== undefined && userId !== null && `${userId}` !== ""){
-    query = query.eq("id", userId);
+    query = baseQuery.eq("id", userId);
   }else if(userName){
-    query = query.eq("Name", userName);
+    query = baseQuery.eq("Name", userName);
+  }else if(userBranch){
+    query = baseQuery.eq("Branch", userBranch);
   }else{
     return normalizeUserPayload(user);
   }
@@ -1644,8 +1644,18 @@ async function syncUserRoleFromDb(user){
   }
 
   const latestRole = getUserField(data, ["role", "userrole"]);
-  if(latestRole){
-    const nextUser = normalizeUserPayload({ ...user, Role: latestRole, role: latestRole });
+  const latestBranch = getUserField(data, ["branch", "branck", "branchname"]);
+  const latestName = getUserField(data, ["name", "username", "employee"]);
+  if(latestRole || latestBranch || latestName){
+    const nextUser = normalizeUserPayload({
+      ...user,
+      Role: latestRole || user.Role,
+      role: latestRole || user.role,
+      Branch: latestBranch || user.Branch,
+      branch: latestBranch || user.branch,
+      Name: latestName || user.Name,
+      name: latestName || user.name
+    });
     localStorage.setItem("user", JSON.stringify(nextUser));
     return nextUser;
   }
@@ -1793,9 +1803,14 @@ const { data: allUsers } = await db
 .from("users")
 .select("*");
 
-const data = (allUsers || []).map(normalizeUserPayload).find(u =>
-  getUserBranch(u) === branch && (u?.Password || "").toString() === password
+const normalizedUsers = (allUsers || []).map(normalizeUserPayload);
+const branchNorm = (branch || "").toString().trim().toUpperCase();
+const passwordNorm = (password || "").toString().trim();
+const matchingUsers = normalizedUsers.filter(u =>
+  getUserBranch(u).toUpperCase() === branchNorm &&
+  (u?.Password || "").toString().trim() === passwordNorm
 );
+const data = matchingUsers.find(u => getUserName(u).toUpperCase() === branchNorm) || matchingUsers[0];
 
 hideLoader();
 
@@ -1906,7 +1921,7 @@ const isDeveloper = isDeveloperRole(user);
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
 if(isDeveloper){
-  window.activeTab = window.activeTab || "DevDashboard";
+  window.activeTab = "DevDashboard";
 }else if(isAdmin){
   window.activeTab = "Approved";
 }else if(isSuper){
