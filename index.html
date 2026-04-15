@@ -4908,16 +4908,27 @@ async function processExcelData(rows){
       if(/^\d+(\.\d+)?$/.test(raw)){
         const serial = Math.floor(Number(raw));
         if(!Number.isFinite(serial)) return null;
-        const base = new Date(Date.UTC(1899, 11, 30));
-        base.setUTCDate(base.getUTCDate() + serial);
-        return base.toISOString().slice(0, 10);
+        try{
+          const base = new Date(Date.UTC(1899, 11, 30));
+          base.setUTCDate(base.getUTCDate() + serial);
+          if(Number.isNaN(base.getTime())) return null;
+          const year = base.getUTCFullYear();
+          if(year < 1900 || year > 2100) return null;
+          return base.toISOString().slice(0, 10);
+        }catch{
+          return null;
+        }
       }
       const normalized = raw.replace(/\//g, "-");
       if(/^\d{2}-\d{2}-\d{4}$/.test(normalized)){
         const [dd, mm, yyyy] = normalized.split("-");
+        const candidate = new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`);
+        if(Number.isNaN(candidate.getTime())) return null;
         return `${yyyy}-${mm}-${dd}`;
       }
       if(/^\d{4}-\d{2}-\d{2}/.test(normalized)){
+        const candidate = new Date(`${normalized.slice(0, 10)}T00:00:00Z`);
+        if(Number.isNaN(candidate.getTime())) return null;
         return normalized.slice(0, 10);
       }
       return null;
