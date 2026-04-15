@@ -1614,6 +1614,10 @@ function isViewerRole(user){
   return getUserRole(user) === "viewer";
 }
 
+function isDeveloperRole(user){
+  return getUserRole(user) === "developer";
+}
+
 async function syncUserRoleFromDb(user){
   if(!user) return null;
 
@@ -1798,6 +1802,7 @@ hideLoader();
 if(!data) return showPopup("Invalid credentials");
 
 localStorage.setItem("user", JSON.stringify(normalizeUserPayload(data)));
+localStorage.setItem("developerLoginAt", new Date().toISOString());
 loadBranch();
 }
 
@@ -1896,10 +1901,13 @@ const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isManager = isManagerRole(user);
 const isViewer = isViewerRole(user);
+const isDeveloper = isDeveloperRole(user);
 
 // ✅ IMPORTANT: set default tab BEFORE rendering
 // ✅ FORCE DEFAULT TAB FOR HQ (NO SIDE EFFECT)
-if(isAdmin){
+if(isDeveloper){
+  window.activeTab = window.activeTab || "DevDashboard";
+}else if(isAdmin){
   window.activeTab = "Approved";
 }else if(isSuper){
   window.activeTab = isManager ? "Dashboard" : "PendingApproval";
@@ -1962,7 +1970,62 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-${!isAdmin && !isSuper && !isViewer ? `
+${isDeveloper ? `
+    <button onclick="loadDeveloperDashboard()" 
+    class="top-btn ${window.activeTab==='DevDashboard' ? 'active-top-btn' : ''}"
+    data-tab="DevDashboard">
+      Dev Dashboard
+    </button>
+    <button onclick="loadDeveloperUsers()"
+    class="top-btn ${window.activeTab==='DevUsers' ? 'active-top-btn' : ''}"
+    data-tab="DevUsers">
+      Users
+    </button>
+    <button onclick="loadDeveloperRequestsEditor()"
+    class="top-btn ${window.activeTab==='DevRequests' ? 'active-top-btn' : ''}"
+    data-tab="DevRequests">
+      Requests
+    </button>
+    <button onclick="loadDeveloperCommentsInbox()"
+    class="top-btn ${window.activeTab==='DevComments' ? 'active-top-btn' : ''}"
+    data-tab="DevComments">
+      Comments
+    </button>
+    <button onclick="loadCreate('create')" 
+    class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
+    data-tab="create">
+      New Order
+    </button>
+    <button onclick="loadTrack('track')" 
+    class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
+    data-tab="track">
+      Track
+    </button>
+    <button onclick="loadSuper('PendingApproval')" 
+    class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
+    data-tab="PendingApproval">Pending</button>
+    <button onclick="loadSuper('Approved')" 
+    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
+    data-tab="Approved">Approved</button>
+    <button onclick="loadSuper('Rejected')" 
+    class="top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}"
+    data-tab="Rejected">Rejected</button>
+    <button onclick="loadSuper('All')" 
+    class="top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}"
+    data-tab="All">All Orders</button>
+    <button onclick="loadAdmin('Processed')" 
+    class="top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}"
+    data-tab="Processed">Process</button>
+    <button onclick="loadUpload()" 
+    class="top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
+    data-tab="upload">Upload Reports</button>
+    <button onclick="loadDocketScanner()"
+    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+    data-tab="scanner">Scan Docket</button>
+    <button onclick="openDeveloperInventoryLookup()"
+    class="top-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}"
+    data-tab="DevInventory">Inventory Lookup</button>
+` : !isAdmin && !isSuper && !isViewer ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -2099,6 +2162,17 @@ else if(isAdmin){
   // ✅ ADD THIS LINE (VERY IMPORTANT)
   setTimeout(loadPendingCount, 200);
 }
+else if(isDeveloper){
+  if(window.activeTab === "DevUsers"){
+    loadDeveloperUsers();
+  }else if(window.activeTab === "DevRequests"){
+    loadDeveloperRequestsEditor();
+  }else if(window.activeTab === "DevComments"){
+    loadDeveloperCommentsInbox();
+  }else{
+    loadDeveloperDashboard();
+  }
+}
 else if(isSuper){
   loadSuper(window.activeTab || "PendingApproval");
 }
@@ -2128,8 +2202,8 @@ function normalizeDocketNo(val){
 
 function loadDocketScanner(){
   const user = getUser();
-  if(!isAdminRole(user)){
-    showPopup("Docket Scan is available only for admin login.");
+  if(!isAdminRole(user) && !isDeveloperRole(user)){
+    showPopup("Docket Scan is available only for admin/developer login.");
     loadTrack("track", true);
     return;
   }
@@ -3058,6 +3132,7 @@ const user = getUser();
 const isAdmin = isAdminRole(user);
 const isSuper = isSuperLikeRole(user);
 const isViewer = isViewerRole(user);
+const isDeveloper = isDeveloperRole(user);
 
 showLoader();
 
@@ -3067,7 +3142,7 @@ let query = db
   .order("created_at", { ascending:false });
 
 // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
-if(!isAdmin && !isSuper && !isViewer){
+if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
   query = query.eq("Branch", getUserBranch(user));
 }
 
@@ -3920,7 +3995,7 @@ function getCommentAttachmentHref(url){
 async function openOrderView(orderNo){
 
 const user = getUser();
-const isSuper = isSuperLikeRole(user);
+const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
 
@@ -4076,7 +4151,7 @@ const orderStatus = getOrderStatusLabel(data);
   window.superPendingEditState[orderNo] = canSuperEditQty ? hasPendingEditedQty : false;
 
 
-const isAdmin = isAdminRole(user);
+const isAdmin = isAdminRole(user) || isDeveloperRole(user);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -4130,6 +4205,7 @@ const canSuperActions = isSuper && (
   orderStatus === "PENDING APPROVAL" ||
   orderStatus === "APPROVAL PENDING"
 );
+const canProcessOrder = isAdminRole(user) || isDeveloperRole(user);
 
 if(isSuper){
   const { data: superUsers } = await db
@@ -4151,6 +4227,17 @@ let actionButtons = "";
 if(isSuper){
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap justify-end">
+      ${canProcessOrder ? `
+        <div class="flex gap-2 items-center">
+          <input
+            id="processOrderNo"
+            value="${orderNo}"
+            class="pc-field admin-orderno-input w-[170px] text-sm"
+            placeholder="Enter Order No"
+          />
+          <button onclick="processOrder('${orderNo}')" class="detail-action-btn">Process</button>
+        </div>
+      ` : ""}
       ${canSuperActions ? `
         <button onclick="openChangeApproverPopup('${orderNo}', '${order.ApprovedBy || ""}')"
           class="detail-action-btn">
@@ -4555,8 +4642,11 @@ async function processOrder(orderNo){
 
   await appendOrderActionLog(inputOrderNo, "ADMIN_PROCESSED", `Order marked as Processed by ${getUser()?.Name || "Unknown User"}.`);
   showPopup("Order Updated & Processed ✅");
-
-  loadAdmin("Processed");
+  if(isDeveloperRole(getUser())){
+    loadDeveloperDashboard();
+  } else {
+    loadAdmin("Processed");
+  }
 }
 
 
@@ -6007,6 +6097,353 @@ function setManagerDashboardBranchFilter(branch){
   loadSuper("Dashboard", true);
 }
 
+function openDeveloperInventoryLookup(){
+  window.activeTab = "DevInventory";
+  window.managerInventoryTabOpen = true;
+  loadManagerInventoryBranchDirectory().finally(() => loadSuper("Dashboard", true));
+}
+
+function getDeveloperCommentSeenAt(){
+  return localStorage.getItem("developerCommentsSeenAt") || localStorage.getItem("developerLoginAt") || "";
+}
+
+function getOrderCommentsWithMeta(row){
+  const base = getOrderComments({ items: [row], OrderComments: row?.OrderComments });
+  return base.map(c => ({
+    ...c,
+    OrderNo: row?.OrderNo || "",
+    Branch: row?.Branch || "",
+    OrderType: row?.OrderType || "",
+    Status: row?.Status || "",
+    created_at: row?.created_at || ""
+  }));
+}
+
+async function fetchDeveloperCommentFeed(){
+  const { data, error } = await db
+    .from("requests")
+    .select("id,OrderNo,Branch,OrderType,Status,created_at,OrderComments")
+    .order("created_at", { ascending: false });
+  if(error) throw error;
+  return (data || [])
+    .flatMap(getOrderCommentsWithMeta)
+    .filter(c => !isSystemActionComment(c))
+    .sort((a, b) => new Date(b?.at || 0).getTime() - new Date(a?.at || 0).getTime());
+}
+
+async function loadDeveloperDashboard(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevDashboard";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const [{ data: users }, { data: requests }] = await Promise.all([
+      db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
+      db.from("requests").select("id,OrderNo,OrderType,Status,created_at,OrderComments").order("created_at", { ascending: false })
+    ]);
+    const byOrder = {};
+    (requests || []).forEach(r => {
+      if(!byOrder[r.OrderNo]) byOrder[r.OrderNo] = { ...r, items: [] };
+      byOrder[r.OrderNo].items.push(r);
+    });
+    const orderList = Object.values(byOrder);
+    const statusCounts = {};
+    const typeCounts = {};
+    orderList.forEach(o => {
+      const status = getOrderStatusLabel(o);
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      const type = (o.OrderType || "OTHER").toUpperCase();
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    });
+
+    const comments = (requests || []).flatMap(getOrderCommentsWithMeta).filter(c => !isSystemActionComment(c));
+    const seenAt = getDeveloperCommentSeenAt();
+    const unreadComments = seenAt ? comments.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : comments;
+
+    const statusCards = Object.entries(statusCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `<div class="rounded-xl p-3" style="background:rgba(99,102,241,0.16); border:1px solid rgba(129,140,248,0.45);"><div class="text-[11px] uppercase tracking-widest" style="color:#c7d2fe;">${k}</div><div class="text-xl font-extrabold">${v}</div></div>`)
+      .join("");
+    const typeCards = Object.entries(typeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `<div class="rounded-xl p-3" style="background:rgba(20,184,166,0.16); border:1px solid rgba(45,212,191,0.45);"><div class="text-[11px] uppercase tracking-widest" style="color:#99f6e4;">${k}</div><div class="text-xl font-extrabold">${v}</div></div>`)
+      .join("");
+    const recentUnreadRows = unreadComments.slice(0, 12).map(c => `
+      <tr>
+        <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(c.Branch || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(c.by || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(c.text || "-")}</td>
+        <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(c.at || ""))}</td>
+      </tr>
+    `).join("");
+
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-5">
+        <section class="rounded-2xl p-5" style="background:linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,0.96)); border:1px solid rgba(129,140,248,0.35); box-shadow:0 18px 35px rgba(2,6,23,0.45);">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div class="text-xs uppercase tracking-[0.18em] font-bold" style="color:#a5b4fc;">Developer Control Center</div>
+              <div class="text-lg font-extrabold mt-1">Users: ${(users || []).length} • Orders: ${orderList.length} • Unread comments: ${unreadComments.length}</div>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <button class="track-page-btn" onclick="loadDeveloperUsers()">Manage Users</button>
+              <button class="track-page-btn" onclick="loadDeveloperRequestsEditor()">Edit Requests</button>
+              <button class="track-page-btn" onclick="loadDeveloperCommentsInbox()">Comments Inbox</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid md:grid-cols-2 gap-4">
+          <div class="rounded-2xl p-4" style="background:rgba(15,23,42,0.86); border:1px solid rgba(129,140,248,0.35);">
+            <div class="text-xs font-bold uppercase tracking-[0.1em] mb-2" style="color:#c7d2fe;">Status-wise Orders</div>
+            <div class="grid grid-cols-2 gap-2">${statusCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
+          </div>
+          <div class="rounded-2xl p-4" style="background:rgba(15,23,42,0.86); border:1px solid rgba(45,212,191,0.35);">
+            <div class="text-xs font-bold uppercase tracking-[0.1em] mb-2" style="color:#99f6e4;">Order Type Distribution</div>
+            <div class="grid grid-cols-2 gap-2">${typeCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl p-4" style="background:rgba(15,23,42,0.86); border:1px solid rgba(250,204,21,0.3);">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold uppercase tracking-[0.1em]" style="color:#fde68a;">Unread Incoming Comments</div>
+            <button class="track-page-btn" onclick="loadDeveloperCommentsInbox()">Open Inbox</button>
+          </div>
+          <div class="overflow-x-auto mt-2">
+            <table class="track-table w-full text-sm">
+              <thead><tr><th>Order</th><th>Branch</th><th>By</th><th>Comment</th><th>At</th></tr></thead>
+              <tbody>${recentUnreadRows || `<tr><td colspan="5" class="text-center py-3">No unread comments 🎉</td></tr>`}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load developer dashboard ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+async function loadDeveloperUsers(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevUsers";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const { data, error } = await db.from("users").select("*").order("Name", { ascending: true });
+    if(error) throw error;
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-4">
+        <section class="rounded-2xl p-4" style="background:linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.96)); border:1px solid rgba(96,165,250,0.35);">
+          <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#93c5fd;">Create User</div>
+          <div class="grid md:grid-cols-5 gap-2 mt-2">
+            <input id="devNewUserName" class="pc-field" placeholder="Name" />
+            <input id="devNewUserBranch" class="pc-field" placeholder="Branch" />
+            <input id="devNewUserRole" class="pc-field" placeholder="Role (developer/admin/...)" />
+            <input id="devNewUserPassword" class="pc-field" placeholder="Password" />
+            <button class="track-page-btn" onclick="createDeveloperUser()">Add User</button>
+          </div>
+        </section>
+        <section class="rounded-2xl p-4" style="background:rgba(15,23,42,0.88); border:1px solid rgba(148,163,184,0.35);">
+          <div class="text-xs uppercase font-bold tracking-[0.12em] mb-2" style="color:#cbd5e1;">User Directory</div>
+          <div class="overflow-x-auto">
+            <table class="track-table w-full text-sm">
+              <thead><tr><th>ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Password</th><th>Actions</th></tr></thead>
+              <tbody>
+                ${(data || []).map(u => `
+                  <tr>
+                    <td class="px-2 py-2">${escapeHtml(u.id ?? "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["name"]))}</td>
+                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["branch"]))}</td>
+                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["role"]))}</td>
+                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["password"]))}</td>
+                    <td class="px-2 py-2">
+                      <button class="track-page-btn" onclick="editDeveloperUser('${u.id}')">Edit</button>
+                      <button class="track-page-btn" style="border-color:rgba(239,68,68,0.6); color:#fecaca;" onclick="deleteDeveloperUser('${u.id}')">Delete</button>
+                    </td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load users ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+async function createDeveloperUser(){
+  const Name = (document.getElementById("devNewUserName")?.value || "").trim();
+  const Branch = (document.getElementById("devNewUserBranch")?.value || "").trim();
+  const Role = (document.getElementById("devNewUserRole")?.value || "").trim();
+  const Password = (document.getElementById("devNewUserPassword")?.value || "").trim();
+  if(!Name || !Branch || !Role || !Password) return showPopup("All fields are mandatory");
+  showLoader();
+  const { error } = await db.from("users").insert([{ Name, Branch, Role, Password }]);
+  hideLoader();
+  if(error) return showPopup(`Failed to add user ❌\n${error.message || ""}`);
+  showPopup("User added ✅", "success");
+  loadDeveloperUsers();
+}
+
+async function editDeveloperUser(id){
+  if(!id) return;
+  const { data, error } = await db.from("users").select("*").eq("id", id).maybeSingle();
+  if(error || !data) return showPopup("User not found");
+  const Name = prompt("Enter Name", data.Name || "");
+  if(Name === null) return;
+  const Branch = prompt("Enter Branch", data.Branch || "");
+  if(Branch === null) return;
+  const Role = prompt("Enter Role", data.Role || "");
+  if(Role === null) return;
+  const Password = prompt("Enter Password", data.Password || "");
+  if(Password === null) return;
+  showLoader();
+  const { error: updateError } = await db.from("users").update({ Name, Branch, Role, Password }).eq("id", id);
+  hideLoader();
+  if(updateError) return showPopup(`Failed to update user ❌\n${updateError.message || ""}`);
+  showPopup("User updated ✅", "success");
+  loadDeveloperUsers();
+}
+
+async function deleteDeveloperUser(id){
+  if(!id) return;
+  if(!confirm("Hard delete this user permanently?")) return;
+  showLoader();
+  const { error } = await db.from("users").delete().eq("id", id);
+  hideLoader();
+  if(error) return showPopup(`Delete failed ❌\n${error.message || ""}`);
+  showPopup("User deleted ✅", "success");
+  loadDeveloperUsers();
+}
+
+async function loadDeveloperRequestsEditor(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevRequests";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const { data, error } = await db
+      .from("requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if(error) throw error;
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-4">
+        <section class="rounded-2xl p-4" style="background:linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.96)); border:1px solid rgba(250,204,21,0.35);">
+          <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#fde68a;">Requests Table Editor (latest 200 rows)</div>
+          <div class="overflow-x-auto mt-2">
+            <table class="track-table w-full text-sm">
+              <thead><tr><th>ID</th><th>Order No</th><th>Branch</th><th>Part No</th><th>Status</th><th>Updated</th><th>Edit</th></tr></thead>
+              <tbody>
+                ${(data || []).map(r => `
+                  <tr>
+                    <td class="px-2 py-2">${escapeHtml(r.id ?? "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.OrderNo || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.Branch || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.PartNo || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(r.Status || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(r.created_at || ""))}</td>
+                    <td class="px-2 py-2"><button class="track-page-btn" onclick="editDeveloperRequestRow('${r.id}')">Edit JSON</button></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load requests ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+async function editDeveloperRequestRow(id){
+  if(!id) return;
+  const { data, error } = await db.from("requests").select("*").eq("id", id).maybeSingle();
+  if(error || !data) return showPopup("Request row not found");
+  const editable = { ...data };
+  const raw = prompt("Edit request row JSON", JSON.stringify(editable));
+  if(raw === null) return;
+  let payload = null;
+  try{
+    payload = JSON.parse(raw);
+  }catch{
+    return showPopup("Invalid JSON");
+  }
+  delete payload.id;
+  showLoader();
+  const { error: updateError } = await db.from("requests").update(payload).eq("id", id);
+  hideLoader();
+  if(updateError) return showPopup(`Update failed ❌\n${updateError.message || ""}`);
+  showPopup("Request updated ✅", "success");
+  loadDeveloperRequestsEditor();
+}
+
+async function loadDeveloperCommentsInbox(){
+  stopDocketCameraScanner();
+  window.activeTab = "DevComments";
+  updateMenuHighlight();
+  showLoader();
+  try{
+    const feed = await fetchDeveloperCommentFeed();
+    const seenAt = getDeveloperCommentSeenAt();
+    const unreadOnly = seenAt ? feed.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : feed;
+    document.getElementById("main").innerHTML = `
+      <div class="space-y-4">
+        <section class="rounded-2xl p-4" style="background:linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.96)); border:1px solid rgba(244,114,182,0.35);">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#f9a8d4;">Unread comments since last login: ${unreadOnly.length}</div>
+            <button class="track-page-btn" onclick="markDeveloperCommentsRead()">Mark all read</button>
+          </div>
+          <div class="overflow-x-auto mt-2">
+            <table class="track-table w-full text-sm">
+              <thead><tr><th>Order</th><th>Branch</th><th>Type</th><th>Status</th><th>By</th><th>Comment</th><th>At</th><th></th></tr></thead>
+              <tbody>
+                ${unreadOnly.map(c => `
+                  <tr>
+                    <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(c.Branch || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(c.OrderType || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(c.Status || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(c.by || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(c.text || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(c.at || ""))}</td>
+                    <td class="px-2 py-2"><button class="track-page-btn" onclick="openOrderView('${c.OrderNo}')">Open</button></td>
+                  </tr>
+                `).join("") || `<tr><td colspan="8" class="text-center py-4">No unread comments 🎉</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    `;
+  }catch(error){
+    console.error(error);
+    showPopup(`Failed to load comments inbox ❌\n${error?.message || ""}`);
+  }finally{
+    hideLoader();
+  }
+}
+
+function markDeveloperCommentsRead(){
+  localStorage.setItem("developerCommentsSeenAt", new Date().toISOString());
+  showPopup("All comments marked as read ✅", "success");
+  loadDeveloperCommentsInbox();
+}
+
 
 function clearUniversalSearch(){
   document.getElementById("universalSearch").value = "";
@@ -6027,7 +6464,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   showLoader();
 
   const user = getUser();
-  const isManager = isManagerRole(user);
+  const isManager = isManagerRole(user) || isDeveloperRole(user);
 
   let query = db
     .from("requests")
@@ -6797,7 +7234,9 @@ async function acceptEditedQty(orderNo){
 
 function goBack(){
   const user = getUser();
-  if(isSuperLikeRole(user)){
+  if(isDeveloperRole(user)){
+    loadDeveloperDashboard();
+  } else if(isSuperLikeRole(user)){
     loadSuper(window.activeTab || "PendingApproval", true);
   } else if(isAdminRole(user)){
     loadAdmin(window.activeTab || "Approved", true);
@@ -7026,6 +7465,16 @@ function refreshCurrentView(){
 
 if(isAdminRole(user)){
   loadAdmin(window.activeTab, true);   // ✅ PASS TRUE
+} else if(isDeveloperRole(user)){
+  if(window.activeTab === "DevUsers"){
+    loadDeveloperUsers();
+  } else if(window.activeTab === "DevRequests"){
+    loadDeveloperRequestsEditor();
+  } else if(window.activeTab === "DevComments"){
+    loadDeveloperCommentsInbox();
+  } else {
+    loadDeveloperDashboard();
+  }
 } else if(isSuperLikeRole(user)){
   loadSuper(window.activeTab || "PendingApproval", true);
 } else {
@@ -7092,8 +7541,20 @@ function changePage(step){
   const user = getUser();
   const isAdmin = isAdminRole(user);
   const isSuper = isSuperLikeRole(user);
+  const isDeveloper = isDeveloperRole(user);
 
-  if(isAdmin){
+  if(isDeveloper){
+    if(window.activeTab === "DevUsers"){
+      loadDeveloperUsers();
+    } else if(window.activeTab === "DevRequests"){
+      loadDeveloperRequestsEditor();
+    } else if(window.activeTab === "DevComments"){
+      loadDeveloperCommentsInbox();
+    } else {
+      loadDeveloperDashboard();
+    }
+  }
+  else if(isAdmin){
     loadAdmin(window.activeTab, true);
   }
   else if(isSuper){
