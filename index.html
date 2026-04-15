@@ -1968,9 +1968,9 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  <div class="flex items-center gap-3 w-full justify-end">
+  <div class="flex items-center gap-2 w-full justify-end flex-wrap md:flex-nowrap">
 
-<div class="relative">
+<div class="relative min-w-[210px] md:min-w-[280px]">
 
   <i data-lucide="search" 
      class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">
@@ -1989,7 +1989,7 @@ ${isDeveloper ? `
     <button onclick="loadDeveloperDashboard()" 
     class="top-btn ${window.activeTab==='DevDashboard' ? 'active-top-btn' : ''}"
     data-tab="DevDashboard">
-      Dev Dashboard
+      Workspace
     </button>
     <button onclick="loadDeveloperUsers()"
     class="top-btn ${window.activeTab==='DevUsers' ? 'active-top-btn' : ''}"
@@ -2006,6 +2006,15 @@ ${isDeveloper ? `
     data-tab="DevComments">
       Comments
     </button>
+    <button onclick="openDeveloperInventoryLookup()"
+    class="top-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}"
+    data-tab="DevInventory">Inventory</button>
+    <button onclick="loadUpload()" 
+    class="top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
+    data-tab="upload">Reports</button>
+    <button onclick="loadDocketScanner()"
+    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+    data-tab="scanner">Docket</button>
     <button onclick="loadCreate('create')" 
     class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
     data-tab="create">
@@ -2016,30 +2025,6 @@ ${isDeveloper ? `
     data-tab="track">
       Track
     </button>
-    <button onclick="loadSuper('PendingApproval')" 
-    class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
-    data-tab="PendingApproval">Pending</button>
-    <button onclick="loadSuper('Approved')" 
-    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
-    data-tab="Approved">Approved</button>
-    <button onclick="loadSuper('Rejected')" 
-    class="top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}"
-    data-tab="Rejected">Rejected</button>
-    <button onclick="loadSuper('All')" 
-    class="top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}"
-    data-tab="All">All Orders</button>
-    <button onclick="loadAdmin('Processed')" 
-    class="top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}"
-    data-tab="Processed">Process</button>
-    <button onclick="loadUpload()" 
-    class="top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
-    data-tab="upload">Upload Reports</button>
-    <button onclick="loadDocketScanner()"
-    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
-    data-tab="scanner">Scan Docket</button>
-    <button onclick="openDeveloperInventoryLookup()"
-    class="top-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}"
-    data-tab="DevInventory">Inventory Lookup</button>
 ` : !isAdmin && !isSuper && !isViewer ? `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
@@ -6162,27 +6147,59 @@ async function loadDeveloperDashboard(){
       byOrder[r.OrderNo].items.push(r);
     });
     const orderList = Object.values(byOrder);
-    const statusCounts = {};
-    const typeCounts = {};
+    const statusMap = {};
+    const typeMap = {};
+    const getOrderValue = (o) => (o?.items || []).reduce((sum, x) => sum + Number(getEffectiveValue(x) || 0), 0);
     orderList.forEach(o => {
-      const status = getOrderStatusLabel(o);
-      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      const status = getOrderStatusLabel(o) || "UNKNOWN";
+      if(!statusMap[status]) statusMap[status] = { count: 0, value: 0 };
+      statusMap[status].count += 1;
+      statusMap[status].value += getOrderValue(o);
       const type = (o.OrderType || "OTHER").toUpperCase();
-      typeCounts[type] = (typeCounts[type] || 0) + 1;
+      if(!typeMap[type]) typeMap[type] = { count: 0, value: 0 };
+      typeMap[type].count += 1;
+      typeMap[type].value += getOrderValue(o);
     });
 
     const comments = (requests || []).flatMap(getOrderCommentsWithMeta).filter(c => !isSystemActionComment(c));
     const seenAt = getDeveloperCommentSeenAt();
     const unreadComments = seenAt ? comments.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : comments;
 
-    const statusCards = Object.entries(statusCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `<div class="rounded-xl p-3" style="background:rgba(99,102,241,0.16); border:1px solid rgba(129,140,248,0.45);"><div class="text-[11px] uppercase tracking-widest" style="color:#c7d2fe;">${k}</div><div class="text-xl font-extrabold">${v}</div></div>`)
-      .join("");
-    const typeCards = Object.entries(typeCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `<div class="rounded-xl p-3" style="background:rgba(20,184,166,0.16); border:1px solid rgba(45,212,191,0.45);"><div class="text-[11px] uppercase tracking-widest" style="color:#99f6e4;">${k}</div><div class="text-xl font-extrabold">${v}</div></div>`)
-      .join("");
+    const statusAction = (statusKey) => {
+      const k = (statusKey || "").toUpperCase();
+      if(k === "PENDING APPROVAL" || k === "APPROVAL PENDING") return `loadSuper('PendingApproval')`;
+      if(k === "APPROVED") return `loadSuper('Approved')`;
+      if(k === "REJECTED") return `loadSuper('Rejected')`;
+      if(k === "PROCESSED") return `loadAdmin('Processed')`;
+      if(k === "DISPATCHED" || k === "PARTIALLY DISPATCHED" || k === "NOT DESPATCHED") return `loadTrack('track')`;
+      return `loadSuper('All')`;
+    };
+    const statusCards = Object.entries(statusMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([k, v]) => `
+        <button onclick="${statusAction(k)}"
+          class="text-left rounded-lg px-3 py-2 transition-all hover:-translate-y-[1px]"
+          style="background:rgba(15,23,42,0.92); border:1px solid rgba(99,102,241,0.45);">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-[11px] uppercase tracking-[0.12em] font-semibold" style="color:#a5b4fc;">${escapeHtml(k)}</span>
+            <span class="text-sm font-bold" style="color:#e2e8f0;">${v.count}</span>
+          </div>
+          <div class="text-[11px] mt-1" style="color:#93c5fd;">₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
+        </button>
+      `).join("");
+    const typeCards = Object.entries(typeMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([k, v]) => `
+        <button onclick="loadTrack('track')"
+          class="text-left rounded-lg px-3 py-2 transition-all hover:-translate-y-[1px]"
+          style="background:rgba(8,47,73,0.55); border:1px solid rgba(45,212,191,0.45);">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-[11px] uppercase tracking-[0.12em] font-semibold" style="color:#99f6e4;">${escapeHtml(k)}</span>
+            <span class="text-sm font-bold" style="color:#e2e8f0;">${v.count}</span>
+          </div>
+          <div class="text-[11px] mt-1" style="color:#5eead4;">₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
+        </button>
+      `).join("");
     const recentUnreadRows = unreadComments.slice(0, 12).map(c => `
       <tr>
         <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
@@ -6195,11 +6212,13 @@ async function loadDeveloperDashboard(){
 
     document.getElementById("main").innerHTML = `
       <div class="space-y-5">
-        <section class="rounded-2xl p-5" style="background:linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,0.96)); border:1px solid rgba(129,140,248,0.35); box-shadow:0 18px 35px rgba(2,6,23,0.45);">
+        <section class="rounded-2xl p-4" style="background:linear-gradient(130deg, rgba(10,15,27,0.98), rgba(15,23,42,0.98)); border:1px solid rgba(99,102,241,0.35);">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div class="text-xs uppercase tracking-[0.18em] font-bold" style="color:#a5b4fc;">Developer Control Center</div>
-              <div class="text-lg font-extrabold mt-1">Users: ${(users || []).length} • Orders: ${orderList.length} • Unread comments: ${unreadComments.length}</div>
+              <div class="text-[11px] uppercase tracking-[0.16em] font-bold" style="color:#818cf8; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">DEVELOPER WORKSPACE</div>
+              <div class="text-sm md:text-base font-semibold mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                users:${(users || []).length} | orders:${orderList.length} | unread_comments:${unreadComments.length}
+              </div>
             </div>
             <div class="flex gap-2 flex-wrap">
               <button class="track-page-btn" onclick="loadDeveloperUsers()">Manage Users</button>
@@ -6209,18 +6228,18 @@ async function loadDeveloperDashboard(){
           </div>
         </section>
 
-        <section class="grid md:grid-cols-2 gap-4">
-          <div class="rounded-2xl p-4" style="background:rgba(15,23,42,0.86); border:1px solid rgba(129,140,248,0.35);">
+        <section class="grid lg:grid-cols-2 gap-3">
+          <div class="rounded-xl p-3" style="background:rgba(6,11,23,0.88); border:1px solid rgba(129,140,248,0.28);">
             <div class="text-xs font-bold uppercase tracking-[0.1em] mb-2" style="color:#c7d2fe;">Status-wise Orders</div>
-            <div class="grid grid-cols-2 gap-2">${statusCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${statusCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
           </div>
-          <div class="rounded-2xl p-4" style="background:rgba(15,23,42,0.86); border:1px solid rgba(45,212,191,0.35);">
+          <div class="rounded-xl p-3" style="background:rgba(6,11,23,0.88); border:1px solid rgba(45,212,191,0.28);">
             <div class="text-xs font-bold uppercase tracking-[0.1em] mb-2" style="color:#99f6e4;">Order Type Distribution</div>
-            <div class="grid grid-cols-2 gap-2">${typeCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${typeCards || `<div class="text-xs" style="color:var(--pc-text-muted);">No data</div>`}</div>
           </div>
         </section>
 
-        <section class="rounded-2xl p-4" style="background:rgba(15,23,42,0.86); border:1px solid rgba(250,204,21,0.3);">
+        <section class="rounded-xl p-4" style="background:rgba(6,11,23,0.9); border:1px solid rgba(250,204,21,0.24);">
           <div class="flex items-center justify-between">
             <div class="text-xs font-bold uppercase tracking-[0.1em]" style="color:#fde68a;">Unread Incoming Comments</div>
             <button class="track-page-btn" onclick="loadDeveloperCommentsInbox()">Open Inbox</button>
@@ -6252,7 +6271,7 @@ async function loadDeveloperUsers(){
     if(error) throw error;
     document.getElementById("main").innerHTML = `
       <div class="space-y-4">
-        <section class="rounded-2xl p-4" style="background:linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.96)); border:1px solid rgba(96,165,250,0.35);">
+        <section class="rounded-xl p-4" style="background:linear-gradient(140deg, rgba(9,13,24,0.98), rgba(15,23,42,0.95)); border:1px solid rgba(56,189,248,0.3);">
           <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#93c5fd;">Create User</div>
           <div class="grid md:grid-cols-5 gap-2 mt-2">
             <input id="devNewUserName" class="pc-field" placeholder="Name" />
@@ -6262,17 +6281,17 @@ async function loadDeveloperUsers(){
             <button class="track-page-btn" onclick="createDeveloperUser()">Add User</button>
           </div>
         </section>
-        <section class="rounded-2xl p-4" style="background:rgba(15,23,42,0.88); border:1px solid rgba(148,163,184,0.35);">
+        <section class="rounded-xl p-4" style="background:rgba(6,11,23,0.9); border:1px solid rgba(148,163,184,0.28);">
           <div class="text-xs uppercase font-bold tracking-[0.12em] mb-2" style="color:#cbd5e1;">User Directory</div>
           <div class="overflow-x-auto">
-            <table class="track-table w-full text-sm">
-              <thead><tr><th>ID</th><th>Name</th><th>Branch</th><th>Role</th><th>Password</th><th>Actions</th></tr></thead>
+            <table class="track-table w-full text-sm table-fixed">
+              <thead><tr><th class="w-[60px]">ID</th><th>Name</th><th>Branch</th><th class="w-[120px]">Role</th><th class="w-[140px]">Password</th><th class="w-[220px]">Actions</th></tr></thead>
               <tbody>
                 ${(data || []).map(u => `
                   <tr>
                     <td class="px-2 py-2">${escapeHtml(u.id ?? "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["name"]))}</td>
-                    <td class="px-2 py-2">${escapeHtml(getUserField(u, ["branch"]))}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(getUserField(u, ["name"]))}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(getUserField(u, ["branch"]))}</td>
                     <td class="px-2 py-2">${escapeHtml(getUserField(u, ["role"]))}</td>
                     <td class="px-2 py-2">${escapeHtml(getUserField(u, ["password"]))}</td>
                     <td class="px-2 py-2">
@@ -6418,23 +6437,23 @@ async function loadDeveloperCommentsInbox(){
     const unreadOnly = seenAt ? feed.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : feed;
     document.getElementById("main").innerHTML = `
       <div class="space-y-4">
-        <section class="rounded-2xl p-4" style="background:linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.96)); border:1px solid rgba(244,114,182,0.35);">
+        <section class="rounded-xl p-4" style="background:linear-gradient(140deg, rgba(9,13,24,0.98), rgba(15,23,42,0.95)); border:1px solid rgba(244,114,182,0.28);">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#f9a8d4;">Unread comments since last login: ${unreadOnly.length}</div>
             <button class="track-page-btn" onclick="markDeveloperCommentsRead()">Mark all read</button>
           </div>
           <div class="overflow-x-auto mt-2">
-            <table class="track-table w-full text-sm">
-              <thead><tr><th>Order</th><th>Branch</th><th>Type</th><th>Status</th><th>By</th><th>Comment</th><th>At</th><th></th></tr></thead>
+            <table class="track-table w-full text-sm table-fixed">
+              <thead><tr><th class="w-[120px]">Order</th><th class="w-[140px]">Branch</th><th class="w-[110px]">Type</th><th class="w-[160px]">Status</th><th class="w-[160px]">By</th><th>Comment</th><th class="w-[170px]">At</th><th class="w-[90px]"></th></tr></thead>
               <tbody>
                 ${unreadOnly.map(c => `
                   <tr>
                     <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(c.Branch || "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(c.Branch || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(c.OrderType || "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(c.Status || "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(c.by || "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(c.text || "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(c.Status || "-")}</td>
+                    <td class="px-2 py-2 truncate">${escapeHtml(c.by || "-")}</td>
+                    <td class="px-2 py-2 break-words">${escapeHtml(c.text || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(c.at || ""))}</td>
                     <td class="px-2 py-2"><button class="track-page-btn" onclick="openOrderView('${c.OrderNo}')">Open</button></td>
                   </tr>
