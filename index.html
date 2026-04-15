@@ -4874,13 +4874,29 @@ async function processExcelData(rows){
   showLoader();
 
   let updated = 0;
+  let inserted = 0;
   let skipped = 0;
   const statusLoggedOrders = new Set();
+
+  const getUploadCellValue = (row, aliases = []) => {
+    const normalizedEntries = Object.entries(row || {}).map(([key, value]) => ({
+      key: (key || "").toString().trim().toLowerCase().replace(/\s+/g, " "),
+      value
+    }));
+    for(const alias of aliases){
+      const hit = normalizedEntries.find(entry => entry.key === (alias || "").toString().trim().toLowerCase().replace(/\s+/g, " "));
+      if(hit) return hit.value;
+    }
+    return "";
+  };
+  const normalizeCompare = (value) => (value || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
+  const isReceivedLockedStatus = (statusValue) => normalizeCompare(statusValue).includes("RECEIVED");
 
   for(const r of rows){
     console.log("🟡 RAW EXCEL ROW:", r);
     const orderNo = r["Order No"]?.toString().trim().toUpperCase();
     const partNo = r["Material No"]?.toString().trim().toUpperCase();
+    const branchName = (getUploadCellValue(r, ["branch", "branch name", "plant", "location", "branch_name"]) || "").toString().trim();
     console.log("📦 Excel OrderNo:", orderNo);
     console.log("🔩 Excel PartNo:", partNo);
     
@@ -4913,17 +4929,45 @@ async function processExcelData(rows){
       continue;
     }
 
-    // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE)
-    const { data: existing } = await db
-      .from("requests")
-      .select("id,Qty,Status")
-      .eq("OrderNo", orderNo)
-      .eq("PartNo", partNo.replace(/\s/g,"").toUpperCase())
-      .maybeSingle();
-      console.log("🧾 DB MATCH RESULT:", existing);
-   if(!existing){
+    const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
+    const billedQty = Number(r["Billed Qty"] || 0);
+    const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
+    const deliveryNo = (r["Delivery No"] || "").toString().trim();
+    const billNo = (r["BillNo & Image"] || "").toString().trim();
+    const docketNo = (r["Docket"] || "").toString().trim();
+    const transportName = (r["Transport Name"] || "").toString().trim();
+
+    // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE) using OrderNo + PartNo
+    let existing = null;
+    if(orderNo){
+      const { data: matchesByOrder } = await db
+        .from("requests")
+        .select("*")
+        .eq("OrderNo", orderNo)
+        .eq("PartNo", normalizedPartNo)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if(matchesByOrder?.length){
+        existing = matchesByOrder[0];
+      }
+    }
+    if(!existing){
+      const { data: fallbackByBranch } = await db
+        .from("requests")
+        .select("*")
+        .eq("PartNo", normalizedPartNo)
+        .order("created_at", { ascending: false });
+      const branchMatched = (fallbackByBranch || []).find(x =>
+        normalizeCompare(x.Branch || "") === normalizeCompare(branchName || "")
+      );
+      if(branchMatched){
+        existing = branchMatched;
+      }
+    }
+    console.log("🧾 DB MATCH RESULT:", existing);
+    if(!existing){
       console.log("❌ NO MATCH FOUND");
-      console.log("Excel:", orderNo, partNo);
+      console.log("Excel:", orderNo, partNo, branchName);
       skipped++;
       continue;
     } else {
@@ -4931,17 +4975,75 @@ async function processExcelData(rows){
       console.log("DB Row:", existing);
     }
 
-    if(normalizeRowStatus(existing.Status) === "RECEIVED"){
+    if(isReceivedLockedStatus(existing.Status)){
       console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
       skipped++;
       continue;
     }
 
-    const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
-    const billedQty = Number(r["Billed Qty"] || 0);
-    const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
-    const deliveryNo = (r["Delivery No"] || "").toString().trim();
-    const billNo = (r["BillNo & Image"] || "").toString().trim();
+    const existingBillNo = (existing.BillNo || "").toString().trim();
+    const existingDocket = (existing.Docket || "").toString().trim();
+    const existingTransport = (existing.TransportName || "").toString().trim();
+    const hasExistingBill = !!existingBillNo;
+    const hasExistingDocket = !!existingDocket;
+    const hasExistingTransport = !!existingTransport;
+    const hasMismatchOnExistingFilledFields =
+      (hasExistingBill && normalizeCompare(existingBillNo) !== normalizeCompare(billNo)) ||
+      (hasExistingDocket && normalizeCompare(existingDocket) !== normalizeCompare(docketNo)) ||
+      (hasExistingTransport && normalizeCompare(existingTransport) !== normalizeCompare(transportName));
+
+    const normalizedUploadStatus = normalizeRowStatus(status || "");
+    const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
+    var resolvedDispatchStatus = "PROCESSED";
+    if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
+      resolvedDispatchStatus = normalizedUploadStatus;
+    }
+
+    if(hasMismatchOnExistingFilledFields){
+      const insertPayload = {
+        ...existing,
+        id: undefined,
+        Status: resolvedDispatchStatus,
+        ProcessedDate: new Date().toISOString(),
+        OrderRegDt: r["Order Reg. Dt"] || "",
+        DeliveryNo: deliveryNo || "",
+        BillNo: billNo || "",
+        BillingDt: r["Billing Dt"] || "",
+        BilledQty: billedQty,
+        TransportName: transportName || "",
+        TransportMode: (r["Transport Mode"] || "").toString().trim(),
+        Docket: docketNo || "",
+        PackingDetail: (r["Packing Detail"] || "").toString().trim(),
+        EWayBillNo: (r["E-Way Bill No"] || "").toString().trim(),
+        GSTInvoiceNo: (r["GST Invoice No."] || "").toString().trim()
+      };
+      delete insertPayload.created_at;
+      delete insertPayload.updated_at;
+
+      const { error: insertError } = await db
+        .from("requests")
+        .insert([insertPayload])
+        .select("id,OrderNo")
+        .limit(1);
+
+      if(insertError){
+        console.error(insertError);
+        skipped++;
+        continue;
+      }
+      inserted++;
+      if(!statusLoggedOrders.has(orderNo)){
+        await appendOrderActionLog(
+          orderNo,
+          "STATUS_UPDATED",
+          `New request row inserted from upload due Bill/Docket/Transport mismatch by ${getUser()?.Name || "Unknown User"}.`,
+          { status: resolvedDispatchStatus, mode: "insert_on_mismatch" }
+        );
+        statusLoggedOrders.add(orderNo);
+      }
+      continue;
+    }
+
     const idempotencyKey = [
       String(existing.id),
       orderNo,
@@ -4960,8 +5062,8 @@ async function processExcelData(rows){
       billing_dt: billingDt,
       delivery_no: deliveryNo || null,
       bill_no: billNo || null,
-      docket: (r["Docket"] || "").toString().trim() || null,
-      transport_name: (r["Transport Name"] || "").toString().trim() || null,
+      docket: docketNo || null,
+      transport_name: transportName || null,
       transport_mode: (r["Transport Mode"] || "").toString().trim() || null,
       packing_detail: (r["Packing Detail"] || "").toString().trim() || null,
       eway_bill_no: (r["E-Way Bill No"] || "").toString().trim() || null,
@@ -4996,9 +5098,7 @@ async function processExcelData(rows){
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
     const orderedQty = Number(existing.Qty || 0);
     const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
-    const normalizedUploadStatus = normalizeRowStatus(status || "");
-    const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
-    var resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
+    resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
     if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
       resolvedDispatchStatus = normalizedUploadStatus;
     }
@@ -5022,9 +5122,9 @@ async function processExcelData(rows){
         billed_qty_total: billedQtyTotal,
         pending_qty: pendingQty,
         dispatch_status: resolvedDispatchStatus,
-        TransportName: r["Transport Name"] || "",
+        TransportName: transportName || "",
         TransportMode: r["Transport Mode"] || "",
-        Docket: r["Docket"] || "",
+        Docket: docketNo || "",
         PackingDetail: r["Packing Detail"] || "",
         EWayBillNo: r["E-Way Bill No"] || "",
         GSTInvoiceNo: r["GST Invoice No."] || ""
@@ -5051,7 +5151,7 @@ async function processExcelData(rows){
   hideLoader();
 
   setUploadReportMeta("statusReport");
-  showPopup(`Upload Complete ✅\nUpdated: ${updated}\nSkipped: ${skipped}`);
+  showPopup(`Upload Complete ✅\nUpdated: ${updated}\nInserted: ${inserted}\nSkipped: ${skipped}`);
 
   loadAdmin(window.activeTab);
 }
