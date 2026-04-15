@@ -268,6 +268,13 @@ body {
   box-shadow: none;
 }
 
+.dev-nav-btn{
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  letter-spacing: 0.01em;
+}
+
 .active-top-btn {
   background: linear-gradient(180deg, rgba(250,204,21,0.18), rgba(161,98,7,0.2));
   color: #fef08a;
@@ -1987,41 +1994,41 @@ document.getElementById("app").innerHTML = `
 
 ${isDeveloper ? `
     <button onclick="loadDeveloperDashboard()" 
-    class="top-btn ${window.activeTab==='DevDashboard' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevDashboard' ? 'active-top-btn' : ''}"
     data-tab="DevDashboard">
       Workspace
     </button>
     <button onclick="loadDeveloperUsers()"
-    class="top-btn ${window.activeTab==='DevUsers' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevUsers' ? 'active-top-btn' : ''}"
     data-tab="DevUsers">
       Users
     </button>
     <button onclick="loadDeveloperRequestsEditor()"
-    class="top-btn ${window.activeTab==='DevRequests' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevRequests' ? 'active-top-btn' : ''}"
     data-tab="DevRequests">
       Requests
     </button>
     <button onclick="loadDeveloperCommentsInbox()"
-    class="top-btn ${window.activeTab==='DevComments' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevComments' ? 'active-top-btn' : ''}"
     data-tab="DevComments">
       Comments
     </button>
     <button onclick="openDeveloperInventoryLookup()"
-    class="top-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}"
     data-tab="DevInventory">Inventory</button>
     <button onclick="loadUpload()" 
-    class="top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}"
     data-tab="upload">Reports</button>
     <button onclick="loadDocketScanner()"
-    class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
     data-tab="scanner">Docket</button>
     <button onclick="loadCreate('create')" 
-    class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
     data-tab="create">
       New Order
     </button>
     <button onclick="loadTrack('track')" 
-    class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
+    class="top-btn dev-nav-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}"
     data-tab="track">
       Track
     </button>
@@ -6139,7 +6146,7 @@ async function loadDeveloperDashboard(){
   try{
     const [{ data: users }, { data: requests }] = await Promise.all([
       db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
-      db.from("requests").select("id,OrderNo,OrderType,Status,created_at,OrderComments").order("created_at", { ascending: false })
+      db.from("requests").select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty").order("created_at", { ascending: false })
     ]);
     const byOrder = {};
     (requests || []).forEach(r => {
@@ -6178,26 +6185,26 @@ async function loadDeveloperDashboard(){
       .sort((a, b) => b[1].count - a[1].count)
       .map(([k, v]) => `
         <button onclick="${statusAction(k)}"
-          class="text-left rounded-lg px-3 py-2 transition-all hover:-translate-y-[1px]"
-          style="background:rgba(15,23,42,0.92); border:1px solid rgba(99,102,241,0.45);">
-          <div class="flex items-center justify-between gap-3">
+          class="text-left rounded-md px-3 py-2 transition-all hover:-translate-y-[1px]"
+          style="background:linear-gradient(180deg, rgba(20,25,40,0.98), rgba(7,11,23,0.98)); border:1px solid rgba(99,102,241,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(30,41,59,0.95);">
+          <div class="flex items-start justify-between gap-3">
             <span class="text-[11px] uppercase tracking-[0.12em] font-semibold" style="color:#a5b4fc;">${escapeHtml(k)}</span>
-            <span class="text-sm font-bold" style="color:#e2e8f0;">${v.count}</span>
+            <span class="text-2xl leading-none font-extrabold" style="color:#e2e8f0;">${v.count}</span>
           </div>
-          <div class="text-[11px] mt-1" style="color:#93c5fd;">₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
+          <div class="text-[11px] mt-2 font-semibold" style="color:#93c5fd;">VALUE ₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
         </button>
       `).join("");
     const typeCards = Object.entries(typeMap)
       .sort((a, b) => b[1].count - a[1].count)
       .map(([k, v]) => `
         <button onclick="loadTrack('track')"
-          class="text-left rounded-lg px-3 py-2 transition-all hover:-translate-y-[1px]"
-          style="background:rgba(8,47,73,0.55); border:1px solid rgba(45,212,191,0.45);">
-          <div class="flex items-center justify-between gap-3">
+          class="text-left rounded-md px-3 py-2 transition-all hover:-translate-y-[1px]"
+          style="background:linear-gradient(180deg, rgba(10,50,62,0.92), rgba(6,28,36,0.95)); border:1px solid rgba(45,212,191,0.55); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(17,24,39,0.95);">
+          <div class="flex items-start justify-between gap-3">
             <span class="text-[11px] uppercase tracking-[0.12em] font-semibold" style="color:#99f6e4;">${escapeHtml(k)}</span>
-            <span class="text-sm font-bold" style="color:#e2e8f0;">${v.count}</span>
+            <span class="text-2xl leading-none font-extrabold" style="color:#e2e8f0;">${v.count}</span>
           </div>
-          <div class="text-[11px] mt-1" style="color:#5eead4;">₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
+          <div class="text-[11px] mt-2 font-semibold" style="color:#5eead4;">VALUE ₹ ${Math.round(v.value).toLocaleString("en-IN")}</div>
         </button>
       `).join("");
     const recentUnreadRows = unreadComments.slice(0, 12).map(c => `
@@ -6269,6 +6276,10 @@ async function loadDeveloperUsers(){
   try{
     const { data, error } = await db.from("users").select("*").order("Name", { ascending: true });
     if(error) throw error;
+    const roleOptions = [...new Set((data || []).map(u => (getUserField(u, ["role"]) || "").toString().trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b))
+      .map(role => `<option value="${escapeHtml(role)}">${escapeHtml(role)}</option>`)
+      .join("");
     document.getElementById("main").innerHTML = `
       <div class="space-y-4">
         <section class="rounded-xl p-4" style="background:linear-gradient(140deg, rgba(9,13,24,0.98), rgba(15,23,42,0.95)); border:1px solid rgba(56,189,248,0.3);">
@@ -6276,7 +6287,10 @@ async function loadDeveloperUsers(){
           <div class="grid md:grid-cols-5 gap-2 mt-2">
             <input id="devNewUserName" class="pc-field" placeholder="Name" />
             <input id="devNewUserBranch" class="pc-field" placeholder="Branch" />
-            <input id="devNewUserRole" class="pc-field" placeholder="Role (developer/admin/...)" />
+            <select id="devNewUserRole" class="pc-field">
+              <option value="">Select role</option>
+              ${roleOptions}
+            </select>
             <input id="devNewUserPassword" class="pc-field" placeholder="Password" />
             <button class="track-page-btn" onclick="createDeveloperUser()">Add User</button>
           </div>
@@ -6434,20 +6448,28 @@ async function loadDeveloperCommentsInbox(){
   try{
     const feed = await fetchDeveloperCommentFeed();
     const seenAt = getDeveloperCommentSeenAt();
+    if(window.devCommentsShowAll === undefined) window.devCommentsShowAll = false;
     const unreadOnly = seenAt ? feed.filter(c => new Date(c?.at || 0).getTime() > new Date(seenAt).getTime()) : feed;
+    const rowsToShow = window.devCommentsShowAll ? feed : unreadOnly;
     document.getElementById("main").innerHTML = `
       <div class="space-y-4">
         <section class="rounded-xl p-4" style="background:linear-gradient(140deg, rgba(9,13,24,0.98), rgba(15,23,42,0.95)); border:1px solid rgba(244,114,182,0.28);">
           <div class="flex items-center justify-between gap-3 flex-wrap">
-            <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#f9a8d4;">Unread comments since last login: ${unreadOnly.length}</div>
-            <button class="track-page-btn" onclick="markDeveloperCommentsRead()">Mark all read</button>
+            <div class="text-xs uppercase font-bold tracking-[0.12em]" style="color:#f9a8d4;">Unread comments since last login: ${unreadOnly.length} • Total comments: ${feed.length}</div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs flex items-center gap-2" style="color:#e2e8f0;">
+                <input type="checkbox" ${window.devCommentsShowAll ? "checked" : ""} onchange="window.devCommentsShowAll=this.checked; loadDeveloperCommentsInbox();" />
+                Show All
+              </label>
+              <button class="track-page-btn" onclick="markDeveloperCommentsRead()">Mark all read</button>
+            </div>
           </div>
           <div class="overflow-x-auto mt-2">
             <table class="track-table w-full text-sm table-fixed">
-              <thead><tr><th class="w-[120px]">Order</th><th class="w-[140px]">Branch</th><th class="w-[110px]">Type</th><th class="w-[160px]">Status</th><th class="w-[160px]">By</th><th>Comment</th><th class="w-[170px]">At</th><th class="w-[90px]"></th></tr></thead>
+              <thead><tr><th class="w-[120px]">Order</th><th class="w-[140px]">Branch</th><th class="w-[110px]">Type</th><th class="w-[160px]">Status</th><th class="w-[160px]">By</th><th>Comment</th><th class="w-[170px]">At</th></tr></thead>
               <tbody>
-                ${unreadOnly.map(c => `
-                  <tr>
+                ${rowsToShow.map(c => `
+                  <tr class="cursor-pointer" onclick="openOrderView('${c.OrderNo}')">
                     <td class="px-2 py-2">${escapeHtml(c.OrderNo || "-")}</td>
                     <td class="px-2 py-2 truncate">${escapeHtml(c.Branch || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(c.OrderType || "-")}</td>
@@ -6455,9 +6477,8 @@ async function loadDeveloperCommentsInbox(){
                     <td class="px-2 py-2 truncate">${escapeHtml(c.by || "-")}</td>
                     <td class="px-2 py-2 break-words">${escapeHtml(c.text || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(c.at || ""))}</td>
-                    <td class="px-2 py-2"><button class="track-page-btn" onclick="openOrderView('${c.OrderNo}')">Open</button></td>
                   </tr>
-                `).join("") || `<tr><td colspan="8" class="text-center py-4">No unread comments 🎉</td></tr>`}
+                `).join("") || `<tr><td colspan="7" class="text-center py-4">No comments to show.</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -6531,9 +6552,10 @@ const grouped = {};
   grouped[r.OrderNo].items.push(r);
 });
 
-  const orders = applyOrderSort(
+  const allOrders = applyOrderSort(
     Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  ).filter(shouldShowOrder);
+  );
+  const orders = allOrders.filter(shouldShowOrder);
 
   if(isManager && activeTab === "Dashboard"){
     renderManagerDashboard(orders);
@@ -6569,7 +6591,8 @@ else if(activeTab === "Approved"){
   });
 }
 else if(activeTab === "Rejected"){
-  filtered = orders.filter(o => getOrderStatusLabel(o) === "REJECTED");
+  const rejectedSource = isDeveloperRole(user) ? allOrders : orders;
+  filtered = rejectedSource.filter(o => getOrderStatusLabel(o) === "REJECTED");
 }
 else if(activeTab === "All"){
   filtered = isManager
