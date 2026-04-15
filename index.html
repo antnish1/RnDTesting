@@ -4879,7 +4879,7 @@ async function processExcelData(rows){
   const statusLoggedOrders = new Set();
   let requestIdSeed = null;
 
-  const getUploadCellValue = (row, aliases = []) => {
+  const getUploadCellValueLocal = (row, aliases = []) => {
     const normalizedEntries = Object.entries(row || {}).map(([key, value]) => ({
       key: (key || "").toString().trim().toLowerCase().replace(/\s+/g, " "),
       value
@@ -4890,8 +4890,8 @@ async function processExcelData(rows){
     }
     return "";
   };
-  const normalizeCompare = (value) => (value || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
-  const isReceivedLockedStatus = (statusValue) => normalizeCompare(statusValue).includes("RECEIVED");
+  const normalizeCompareLocal = (value) => (value || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
+  const isReceivedLockedStatus = (statusValue) => normalizeCompareLocal(statusValue).includes("RECEIVED");
   const allocateRequestId = async () => {
     if(requestIdSeed === null){
       const { data: latestIdRows } = await db
@@ -4905,25 +4905,11 @@ async function processExcelData(rows){
     return requestIdSeed;
   };
 
-  const getUploadCellValue = (row, aliases = []) => {
-    const normalizedEntries = Object.entries(row || {}).map(([key, value]) => ({
-      key: (key || "").toString().trim().toLowerCase().replace(/\s+/g, " "),
-      value
-    }));
-    for(const alias of aliases){
-      const hit = normalizedEntries.find(entry => entry.key === (alias || "").toString().trim().toLowerCase().replace(/\s+/g, " "));
-      if(hit) return hit.value;
-    }
-    return "";
-  };
-  const normalizeCompare = (value) => (value || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
-  const isReceivedLockedStatus = (statusValue) => normalizeCompare(statusValue).includes("RECEIVED");
-
   for(const r of rows){
     console.log("🟡 RAW EXCEL ROW:", r);
     const orderNo = r["Order No"]?.toString().trim().toUpperCase();
     const partNo = r["Material No"]?.toString().trim().toUpperCase();
-    const branchName = (getUploadCellValue(r, ["branch", "branch name", "plant", "location", "branch_name"]) || "").toString().trim();
+    const branchName = (getUploadCellValueLocal(r, ["branch", "branch name", "plant", "location", "branch_name"]) || "").toString().trim();
     console.log("📦 Excel OrderNo:", orderNo);
     console.log("🔩 Excel PartNo:", partNo);
     
@@ -4996,7 +4982,7 @@ async function processExcelData(rows){
         .eq("PartNo", normalizedPartNo)
         .order("created_at", { ascending: false });
       const branchMatched = (fallbackByBranch || []).find(x =>
-        normalizeCompare(x.Branch || "") === normalizeCompare(branchName || "")
+        normalizeCompareLocal(x.Branch || "") === normalizeCompareLocal(branchName || "")
       );
       if(branchMatched){
         existing = branchMatched;
@@ -5026,9 +5012,9 @@ async function processExcelData(rows){
     const hasExistingDocket = !!existingDocket;
     const hasExistingTransport = !!existingTransport;
     const hasMismatchOnExistingFilledFields =
-      (hasExistingBill && normalizeCompare(existingBillNo) !== normalizeCompare(billNo)) ||
-      (hasExistingDocket && normalizeCompare(existingDocket) !== normalizeCompare(docketNo)) ||
-      (hasExistingTransport && normalizeCompare(existingTransport) !== normalizeCompare(transportName));
+      (hasExistingBill && normalizeCompareLocal(existingBillNo) !== normalizeCompareLocal(billNo)) ||
+      (hasExistingDocket && normalizeCompareLocal(existingDocket) !== normalizeCompareLocal(docketNo)) ||
+      (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName));
 
     const normalizedUploadStatus = normalizeRowStatus(status || "");
     const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
