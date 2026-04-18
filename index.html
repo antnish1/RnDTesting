@@ -6123,7 +6123,6 @@ async function loadManagerBranchTransactions(){
   if(selectedCode === "ALL"){
     return;
   }
-  window.managerInvLookupDate = latestDate;
 
   const { data, error } = await db
     .from("inventory_staging")
