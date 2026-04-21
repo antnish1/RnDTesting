@@ -10,10 +10,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     
 </head>
@@ -582,7 +578,7 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: clamp(280px, 34vw, 460px);
+  width: 100%;
   height: 42px;
   padding: 0 14px 0 40px;
   border-radius: 12px;
@@ -1241,12 +1237,17 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .nav-scroll-row{
   width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding-bottom: 2px;
+}
+
+.header-search-shell{
+  flex: 1 1 220px;
+  min-width: 160px;
 }
 
 .mobile-content-shell{
@@ -1295,6 +1296,19 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
   #main table{
     min-width: 860px;
+  }
+}
+
+@media (min-width: 769px){
+  .nav-scroll-row{
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    overflow-x: auto;
+  }
+
+  .header-search-shell{
+    flex: 1 1 260px;
+    max-width: 360px;
   }
 }
 
@@ -2055,7 +2069,7 @@ document.getElementById("app").innerHTML = `
 ">
 <div class="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
 
-<div class="relative flex items-center w-full">
+<div class="relative flex items-center w-full md:w-auto md:flex-none">
 
   <!-- LEFT: LOGO -->
 <div class="flex items-center gap-4">
@@ -2078,9 +2092,9 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  <div class="nav-scroll-row md:justify-end">
+  <div class="nav-scroll-row md:flex-1 md:justify-end">
 
-<div class="relative w-full min-w-0 md:w-auto md:min-w-[280px]">
+<div class="relative w-full min-w-0 md:w-auto md:min-w-[280px] header-search-shell">
 
   <i data-lucide="search" 
      class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">
