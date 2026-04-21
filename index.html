@@ -4041,7 +4041,10 @@ function getOrderCommentCount(orderObj){
   return getUserComments(orderObj).length;
 }
 
-function shouldShowOrder(orderObj){
+function shouldShowOrder(orderObj, options = {}){
+  if(options.includeZero === true){
+    return true;
+  }
   const items = Array.isArray(orderObj?.items) ? orderObj.items : [];
   const totalQty = items.reduce((sum, x) => sum + getEffectiveQty(x), 0);
   const totalValue = items.reduce((sum, x) => sum + getEffectiveValue(x), 0);
@@ -5766,7 +5769,8 @@ function renderSearchResults(data){
     grouped[r.OrderNo].items.push(r);
   });
 
-  const orders = Object.values(grouped).filter(shouldShowOrder);
+  const includeAllForManager = isManagerRole(getUser()) || isDeveloperRole(getUser());
+  const orders = Object.values(grouped).filter(o => shouldShowOrder(o, { includeZero: includeAllForManager }));
 
   let html = `
   <div class="pc-section">
@@ -6042,7 +6046,7 @@ function renderManagerDashboard(orders){
               <tr><th class="px-2">Date</th><th class="px-2">Type</th><th class="px-2">Customer</th><th class="px-2">Branch</th><th class="px-2 text-center">Qty</th><th class="px-2 text-right">Value</th><th class="px-2">Order No</th><th class="px-2">Status</th></tr>
             </thead>
             <tbody>
-              ${selectedOrders.slice(0,120).map(o=>`<tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer"><td class="px-2">${formatDateTime(o.created_at)}</td><td class="px-2"><span class="px-2 py-1 rounded-full text-xs font-semibold" style="${getManagerTypeChipStyle(o.OrderType)}">${o.OrderType || "-"}</span></td><td class="px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td><td class="px-2">${o.Branch || "-"}</td><td class="px-2 text-center">${(o.items || []).reduce((s,x)=>s+Number(getEffectiveQty(x) || 0),0)}</td><td class="px-2 text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td><td class="px-2 font-semibold">${o.OrderNo} ${getOrderCommentCount(o) > 0 ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>` : ""}</td><td class="px-2"><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td></tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected range.</td></tr>`}
+              ${selectedOrders.map(o=>`<tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer"><td class="px-2">${formatDateTime(o.created_at)}</td><td class="px-2"><span class="px-2 py-1 rounded-full text-xs font-semibold" style="${getManagerTypeChipStyle(o.OrderType)}">${o.OrderType || "-"}</span></td><td class="px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td><td class="px-2">${o.Branch || "-"}</td><td class="px-2 text-center">${(o.items || []).reduce((s,x)=>s+Number(getEffectiveQty(x) || 0),0)}</td><td class="px-2 text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td><td class="px-2 font-semibold">${o.OrderNo} ${getOrderCommentCount(o) > 0 ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>` : ""}</td><td class="px-2"><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td></tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected range.</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -6776,7 +6780,9 @@ const grouped = {};
   const allOrders = applyOrderSort(
     Object.values(grouped).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
   );
-  const orders = allOrders.filter(shouldShowOrder);
+  const orders = isManager
+    ? allOrders
+    : allOrders.filter(shouldShowOrder);
 
   if(isManager && activeTab === "Dashboard"){
     renderManagerDashboard(orders);
