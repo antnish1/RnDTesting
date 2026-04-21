@@ -582,7 +582,7 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: clamp(280px, 34vw, 460px);
+  width: 100%;
   height: 42px;
   padding: 0 14px 0 40px;
   border-radius: 12px;
@@ -1241,12 +1241,17 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .nav-scroll-row{
   width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding-bottom: 2px;
+}
+
+.header-search-shell{
+  flex: 1 1 260px;
+  min-width: 180px;
 }
 
 .mobile-content-shell{
@@ -1295,6 +1300,17 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
   #main table{
     min-width: 860px;
+  }
+}
+
+@media (min-width: 769px){
+  .nav-scroll-row{
+    justify-content: flex-end;
+  }
+
+  .header-search-shell{
+    flex-basis: 320px;
+    max-width: 480px;
   }
 }
 
@@ -2080,7 +2096,7 @@ document.getElementById("app").innerHTML = `
 
   <div class="nav-scroll-row md:justify-end">
 
-<div class="relative w-full min-w-0 md:w-auto md:min-w-[280px]">
+<div class="relative w-full min-w-0 md:w-auto md:min-w-[280px] header-search-shell">
 
   <i data-lucide="search" 
      class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">
