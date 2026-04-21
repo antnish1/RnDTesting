@@ -1250,8 +1250,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 }
 
 .header-search-shell{
-  flex: 1 1 260px;
-  min-width: 180px;
+  flex: 1 1 220px;
+  min-width: 160px;
 }
 
 .mobile-content-shell{
@@ -1305,12 +1305,14 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 @media (min-width: 769px){
   .nav-scroll-row{
+    flex-wrap: nowrap;
     justify-content: flex-end;
+    overflow-x: auto;
   }
 
   .header-search-shell{
-    flex-basis: 320px;
-    max-width: 480px;
+    flex: 1 1 260px;
+    max-width: 360px;
   }
 }
 
