@@ -5977,6 +5977,7 @@ function renderManagerDashboard(orders){
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
   window.managerDashFilter = window.managerDashFilter || { type: "status", key: "ALL", label: "All Orders" };
+  window.managerDashBranchFilter = (window.managerDashBranchFilter || "ALL").toString();
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
   window.managerInventoryTabOpen = window.managerInventoryTabOpen === true;
   window.managerInvLookupQuery = (window.managerInvLookupQuery || "").toString();
@@ -6022,23 +6023,45 @@ function renderManagerDashboard(orders){
     return t || "OTHER";
   };
   const byType = (k) => summaryFrom(safeOrders.filter(o => orderTypeKey(o) === k));
-
+  const cardPalette = [
+    { tint:"rgba(148,163,184,0.18)", border:"rgba(148,163,184,0.35)" },
+    { tint:"rgba(245,158,11,0.18)", border:"rgba(245,158,11,0.4)" },
+    { tint:"rgba(34,197,94,0.16)", border:"rgba(34,197,94,0.4)" },
+    { tint:"rgba(239,68,68,0.16)", border:"rgba(239,68,68,0.38)" },
+    { tint:"rgba(250,204,21,0.18)", border:"rgba(250,204,21,0.45)" },
+    { tint:"rgba(20,184,166,0.18)", border:"rgba(20,184,166,0.4)" },
+    { tint:"rgba(99,102,241,0.16)", border:"rgba(129,140,248,0.36)" },
+    { tint:"rgba(14,165,233,0.16)", border:"rgba(56,189,248,0.36)" }
+  ];
+  const formatCardLabel = (value) => (value || "Unknown")
+    .toString()
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+  const statusEntries = Array.from(new Set(safeOrders.map(o => statusKey(o) || "UNKNOWN")))
+    .filter(Boolean)
+    .sort((a, b) => byStatus(b).count - byStatus(a).count);
   const statusCards = [
-    { key:"ALL", label:"Total Orders", ...summaryFrom(safeOrders), tint:"rgba(148,163,184,0.18)", border:"rgba(148,163,184,0.35)" },
-    { key:"PENDING APPROVAL", label:"Pending", ...byStatus("PENDING APPROVAL"), tint:"rgba(245,158,11,0.18)", border:"rgba(245,158,11,0.4)" },
-    { key:"APPROVED", label:"Approved", ...byStatus("APPROVED"), tint:"rgba(34,197,94,0.16)", border:"rgba(34,197,94,0.4)" },
-    { key:"REJECTED", label:"Rejected", ...byStatus("REJECTED"), tint:"rgba(239,68,68,0.16)", border:"rgba(239,68,68,0.38)" },
-    { key:"PROCESSED", label:"Processed", ...byStatus("PROCESSED"), tint:"rgba(250,204,21,0.18)", border:"rgba(250,204,21,0.45)" },
-    { key:"DISPATCHED", label:"Dispatched", ...byStatus("DISPATCHED"), tint:"rgba(20,184,166,0.18)", border:"rgba(20,184,166,0.4)" }
+    { key:"ALL", label:"Total Orders", ...summaryFrom(safeOrders), ...cardPalette[0] },
+    ...statusEntries.map((k, idx) => ({
+      key: k,
+      label: formatCardLabel(k),
+      ...byStatus(k),
+      ...(cardPalette[(idx + 1) % cardPalette.length])
+    }))
   ];
-  const typeCards = [
-    { key:"VOR", label:"VOR", ...byType("VOR"), tint:"rgba(245,158,11,0.15)", border:"rgba(245,158,11,0.36)" },
-    { key:"ZMAC", label:"ZMAC", ...byType("ZMAC"), tint:"rgba(99,102,241,0.16)", border:"rgba(129,140,248,0.36)" },
-    { key:"ZSPL", label:"ZSPL", ...byType("ZSPL"), tint:"rgba(14,165,233,0.16)", border:"rgba(56,189,248,0.36)" },
-    { key:"LUBES", label:"LUBES", ...byType("LUBES"), tint:"rgba(34,197,94,0.14)", border:"rgba(34,197,94,0.34)" },
-    { key:"SOP_CUSTOMER", label:"SOP Customer", ...byType("SOP_CUSTOMER"), tint:"rgba(20,184,166,0.15)", border:"rgba(20,184,166,0.34)" },
-    { key:"SOP_STOCK", label:"SOP Stock", ...byType("SOP_STOCK"), tint:"rgba(148,163,184,0.16)", border:"rgba(148,163,184,0.34)" }
-  ];
+  const typeEntries = Array.from(new Set(safeOrders.map(o => orderTypeKey(o) || "OTHER")))
+    .filter(Boolean)
+    .sort((a, b) => byType(b).count - byType(a).count);
+  const typeCards = typeEntries.map((k, idx) => ({
+    key: k,
+    label: formatCardLabel(k),
+    ...byType(k),
+    ...(cardPalette[idx % cardPalette.length])
+  }));
+  const branchFilterOptions = Array.from(new Set(allOrders.map(o => (o.Branch || "-").toString())))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
 
   const branchMap = {};
   safeOrders.forEach(o => {
@@ -6070,6 +6093,10 @@ function renderManagerDashboard(orders){
   } else if(activeFilter?.type === "branch"){
     selectedOrders = safeOrders.filter(o => (o.Branch || "-") === activeFilter.key);
   }
+  if(window.managerDashBranchFilter !== "ALL"){
+    selectedOrders = selectedOrders.filter(o => (o.Branch || "-") === window.managerDashBranchFilter);
+  }
+  window.managerDashSelectedOrders = selectedOrders;
 
   const totalRow = branchRows.reduce((acc, b) => {
     acc.totalOrders += b.totalOrders; acc.totalValue += b.totalValue;
@@ -6116,15 +6143,20 @@ function renderManagerDashboard(orders){
           </div>
           <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
             <div class="flex items-center gap-2">
+              <span class="mgr-filter-label !mb-0">Branch</span>
+              <select id="mgrDashBranch" class="pc-field h-[38px] min-w-[210px]" onchange="onManagerDashboardBranchFilterChange(this.value)">
+                <option value="ALL" ${window.managerDashBranchFilter === "ALL" ? "selected" : ""}>ALL Branches</option>
+                ${branchFilterOptions.map(b => `<option value="${escapeHtml(b)}" ${window.managerDashBranchFilter === b ? "selected" : ""}>${escapeHtml(b)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">From</span>
-              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
+              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
             <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">To</span>
-              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" />
+              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
-            <button class="track-page-btn" onclick="applyManagerDashboardDateRange()">Apply</button>
-            <button class="track-page-btn" onclick="resetManagerDashboardDateRange()">Reset</button>
           </div>
         </div>
 
@@ -6137,7 +6169,10 @@ function renderManagerDashboard(orders){
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">
             ${`Filtered Orders ${activeFilter ? `• ${escapeHtml(sanitizeUiText(activeFilter.label))}` : ""}`}
           </div>
-          <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadManagerDashboardFilteredExcel()" class="table-toggle-btn" style="background:linear-gradient(180deg, rgba(59,130,246,0.95), rgba(37,99,235,0.95)); border-color:#93c5fd; color:#eff6ff;">Download Excel</button>
+            <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
+          </div>
         </div>
         <div class="overflow-x-auto ${window.managerDashTableVisible ? "" : "hidden"}">
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
@@ -6191,7 +6226,7 @@ function renderManagerDashboard(orders){
     </div>`;
 }
 
-function applyManagerDashboardDateRange(){
+function onManagerDashboardDateChange(){
   const fromInput = document.getElementById("mgrDashFrom");
   const toInput = document.getElementById("mgrDashTo");
   window.managerDashDateRange = {
@@ -6201,8 +6236,8 @@ function applyManagerDashboardDateRange(){
   loadSuper("Dashboard", true);
 }
 
-function resetManagerDashboardDateRange(){
-  window.managerDashDateRange = { from: "", to: new Date().toISOString().slice(0, 10) };
+function onManagerDashboardBranchFilterChange(branch){
+  window.managerDashBranchFilter = (branch || "ALL").toString();
   loadSuper("Dashboard", true);
 }
 
@@ -6227,6 +6262,29 @@ function clearManagerDashboardCardFilter(){
 function toggleManagerDashboardFilteredTable(){
   window.managerDashTableVisible = !window.managerDashTableVisible;
   loadSuper("Dashboard", true);
+}
+
+function downloadManagerDashboardFilteredExcel(){
+  const data = Array.isArray(window.managerDashSelectedOrders) ? window.managerDashSelectedOrders : [];
+  if(!data.length){
+    showPopup("No filtered orders available to download.");
+    return;
+  }
+  const excelData = data.map(o => ({
+    "Created At": formatDateTime(o.created_at),
+    "Order Type": o.OrderType || "",
+    "Order For": (o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock",
+    "Branch": o.Branch || "-",
+    "Qty": (o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0),
+    "Value": Math.round((o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0)),
+    "Order No": o.OrderNo || "",
+    "Status": getOrderStatusLabel(o) || ""
+  }));
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = Object.keys(excelData[0] || {}).map(key => ({ wch: Math.max(14, key.length + 2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Filtered Orders");
+  XLSX.writeFile(wb, `Manager_Filtered_Orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 function openManagerInventoryLookupTab(){
