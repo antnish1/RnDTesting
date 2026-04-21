@@ -582,7 +582,7 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: clamp(280px, 34vw, 460px);
+  width: 100%;
   height: 42px;
   padding: 0 14px 0 40px;
   border-radius: 12px;
@@ -1241,17 +1241,17 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .nav-scroll-row{
   width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding-bottom: 2px;
 }
 
 .header-search-shell{
-  flex: 1 1 320px;
-  min-width: 240px;
+  flex: 1 1 260px;
+  min-width: 180px;
 }
 
 .mobile-content-shell{
@@ -1305,12 +1305,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 @media (min-width: 769px){
   .nav-scroll-row{
-    overflow-x: visible;
-    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .header-search-shell{
-    min-width: 280px;
+    flex-basis: 320px;
+    max-width: 480px;
   }
 }
 
