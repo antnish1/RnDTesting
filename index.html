@@ -4046,6 +4046,36 @@ function getResolvedRowStatus(row){
   return "PARTIALLY DISPATCHED";
 }
 
+async function syncRequestRowStatusesWithRules(rows){
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const updates = sourceRows
+    .filter(r => r && r.id !== undefined && r.id !== null)
+    .map(r => {
+      const current = normalizeRowStatus(r.Status);
+      const resolved = getResolvedRowStatus(r);
+      if(current === resolved) return null;
+      if(current === "RECEIVED" && resolved !== "RECEIVED") return null;
+      return { id: r.id, status: resolved };
+    })
+    .filter(Boolean);
+
+  if(!updates.length) return 0;
+
+  const chunkSize = 30;
+  let changed = 0;
+  for(let i = 0; i < updates.length; i += chunkSize){
+    const chunk = updates.slice(i, i + chunkSize);
+    await Promise.all(chunk.map(async u => {
+      const { error } = await db
+        .from("requests")
+        .update({ Status: u.status })
+        .eq("id", u.id);
+      if(!error) changed += 1;
+    }));
+  }
+  return changed;
+}
+
 function getOrderStatusLabel(order){
   const items = Array.isArray(order?.items) ? order.items : (Array.isArray(order) ? order : []);
   if(!items.length) return "PENDING APPROVAL";
@@ -7001,7 +7031,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   const pageSize = 1000;
   let offset = 0;
-  const allRows = [];
+  let allRows = [];
 
   while(true){
     let query = db
@@ -7024,6 +7054,20 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     allRows.push(...data);
     if(data.length < pageSize) break;
     offset += pageSize;
+  }
+
+  if(!window.requestStatusSyncInFlight){
+    window.requestStatusSyncInFlight = true;
+    try{
+      const syncedCount = await syncRequestRowStatusesWithRules(allRows);
+      if(syncedCount > 0){
+        allRows = allRows.map(r => ({ ...r, Status: getResolvedRowStatus(r) }));
+      }
+    }catch(err){
+      console.error("Status sync failed:", err);
+    }finally{
+      window.requestStatusSyncInFlight = false;
+    }
   }
 
   GLOBAL_DATA = allRows;
