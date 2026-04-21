@@ -794,6 +794,17 @@ tr[style*="f59e0b"]:hover {
   grid-template-columns: repeat(6, minmax(0,1fr));
   gap: 10px;
 }
+.mgr-kpi-grid-single-row{
+  display:flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.mgr-kpi-grid-single-row .mgr-kpi-card{
+  min-width: 150px;
+  flex: 0 0 auto;
+}
 .mgr-kpi-card{
   border-radius: 12px;
   padding: 8px;
@@ -1499,7 +1510,7 @@ const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
-const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -2277,6 +2288,11 @@ renderIcons();
 initResponsiveLayoutObserver();
 applyMobileTableLayoutFixes();
 
+if(!isAdmin && window.pendingCountIntervalId){
+  clearInterval(window.pendingCountIntervalId);
+  window.pendingCountIntervalId = null;
+}
+
     
 // ✅ Load correct screen
 if(window.activeTab === "scanner"){
@@ -2284,9 +2300,7 @@ if(window.activeTab === "scanner"){
 }
 else if(isAdmin){
   loadAdmin(window.activeTab || "Approved");
-
-  // ✅ ADD THIS LINE (VERY IMPORTANT)
-  setTimeout(loadPendingCount, 200);
+  startPendingCountAutoRefresh();
 }
 else if(isDeveloper){
   if(window.activeTab === "DevUsers"){
@@ -2303,7 +2317,10 @@ else if(isSuper){
   loadSuper(window.activeTab || "PendingApproval");
 }
 else{
-  setTimeout(loadPendingCount, 200);
+  if(window.pendingCountIntervalId){
+    clearInterval(window.pendingCountIntervalId);
+    window.pendingCountIntervalId = null;
+  }
 
   if(isViewer){
     loadTrack("track");
@@ -2460,18 +2477,21 @@ function renderDocketMatches(){
   wrap.innerHTML = rows.map(r=>`
     <div class="rounded-xl p-3 space-y-2" style="border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-sm font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
-        <span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(r.Status)}">${normalizeRowStatus(r.Status || "-")}</span>
+        <div class="text-base font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          ${getResolvedRowStatus(r) === "RECEIVED" ? `<span class="px-2 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide" style="background:#16a34a;color:#ecfdf5;border:1px solid #86efac;">Already Received</span>` : ""}
+          <span class="px-3 py-1 rounded text-sm font-bold" style="${getStatusChipStyle(getResolvedRowStatus(r))}">${getPrintableStatusLabel(r)}</span>
+        </div>
       </div>
-      <div class="grid grid-cols-2 gap-2 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
         <div><span style="color:var(--pc-text-muted);">Customer:</span> <span style="color:#e2e8f0;">${escapeHtml(r.CustomerName || "-")}</span></div>
         <div><span style="color:var(--pc-text-muted);">Branch:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Branch || "-")}</span></div>
         <div><span style="color:var(--pc-text-muted);">Docket:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Docket || "-")}</span></div>
         <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Qty ?? "-")}</span></div>
       </div>
       <details class="rounded-lg p-2" style="border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);">
-        <summary class="cursor-pointer text-xs font-semibold" style="color:#bfdbfe;">View complete row details</summary>
-        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+        <summary class="cursor-pointer text-sm font-semibold" style="color:#bfdbfe;">View complete row details</summary>
+        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           ${
             Object.entries(r)
               .sort(([a],[b])=>{
@@ -2486,8 +2506,8 @@ function renderDocketMatches(){
                 const label = key.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
                 const printable = val === null || val === undefined || val === "" ? "-" : String(val);
                 return `<div class="rounded-lg px-2 py-1" style="background:rgba(15,23,42,.75); border:1px solid rgba(71,85,105,.45);">
-                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:10px;">${escapeHtml(label)}</div>
-                  <div style="color:#e2e8f0; word-break:break-word;">${escapeHtml(printable)}</div>
+                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:12px; font-weight:700;">${escapeHtml(label)}</div>
+                  <div style="color:#e2e8f0; word-break:break-word; font-size:14px;">${escapeHtml(printable)}</div>
                 </div>`;
               })
               .join("")
@@ -2495,10 +2515,13 @@ function renderDocketMatches(){
         </div>
       </details>
       <button
-        class="top-btn w-full justify-center ${normalizeRowStatus(r.Status) === "RECEIVED" ? "opacity-60 cursor-not-allowed" : ""}"
-        ${normalizeRowStatus(r.Status) === "RECEIVED" ? "disabled" : ""}
+        class="w-full rounded-lg py-2.5 text-sm font-bold transition-all ${getResolvedRowStatus(r) === "RECEIVED" ? "opacity-80 cursor-not-allowed" : "hover:-translate-y-[1px]"}"
+        style="${getResolvedRowStatus(r) === "RECEIVED"
+          ? "background:rgba(22,163,74,0.24); color:#dcfce7; border:1px solid rgba(74,222,128,0.6);"
+          : "background:linear-gradient(180deg, #2563eb, #1d4ed8); color:#eff6ff; border:1px solid #93c5fd; box-shadow:0 8px 16px rgba(30,64,175,0.35);"}"
+        ${getResolvedRowStatus(r) === "RECEIVED" ? "disabled" : ""}
         onclick="markDocketRowReceived('${r.id}')">
-        ${normalizeRowStatus(r.Status) === "RECEIVED" ? "Already Received" : "Mark Received"}
+        ${getResolvedRowStatus(r) === "RECEIVED" ? "Already Received" : "Mark Received"}
       </button>
     </div>
   `).join("");
@@ -3615,7 +3638,7 @@ async function loadPendingCount(){
 
   const { data, error } = await db
     .from("requests")
-    .select("OrderNo, Status, ApprovalStatus");
+    .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate");
 
   if(error) return;
 
@@ -3641,6 +3664,17 @@ async function loadPendingCount(){
       el.classList.add("hidden");
     }
   }
+}
+
+function startPendingCountAutoRefresh(){
+  if(window.pendingCountIntervalId){
+    clearInterval(window.pendingCountIntervalId);
+    window.pendingCountIntervalId = null;
+  }
+  loadPendingCount();
+  window.pendingCountIntervalId = setInterval(() => {
+    loadPendingCount();
+  }, 20000);
 }
   
 // ---------- ADMIN ----------
@@ -3989,24 +4023,87 @@ function getEffectiveValue(row){
 function normalizeRowStatus(status){
   const s = (status || "").toString().trim().toUpperCase();
 
+  if(s.includes("RECEIV")){
+    return s.includes("PARTIAL") ? "PARTIALLY RECEIVED" : "RECEIVED";
+  }
+  if((s.includes("DESPATCHED") || s.includes("DISPATCHED")) && s.includes("PART")){
+    return "PARTIALLY DISPATCHED";
+  }
   if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    return s.includes("NOT") ? "NOT DESPATCHED" : "DISPATCHED";
+    if(s.includes("NOT")) return "PROCESSED";
+    return "DISPATCHED";
   }
   if(s.includes("REJECT")) return "REJECTED";
   if(s.includes("PROCESS")) return "PROCESSED";
   if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING") || s === "PENDINGAPPROVAL"){
     return "PENDING APPROVAL";
   }
-  if(s.includes("PEND")) return "APPROVED";
+  if(s.includes("PEND")) return "PENDING APPROVAL";
 
   return s || "PENDING APPROVAL";
+}
+
+function getResolvedRowStatus(row){
+  if(!row || typeof row !== "object"){
+    return normalizeRowStatus(row);
+  }
+  const current = normalizeRowStatus(row.Status);
+  if(current === "RECEIVED" || current === "PARTIALLY RECEIVED"){
+    return "RECEIVED";
+  }
+  const billedQty = Number(row.BilledQty || 0);
+  const hasFulfillmentStarted = (
+    current === "PROCESSED" ||
+    current === "PARTIALLY DISPATCHED" ||
+    current === "DISPATCHED" ||
+    !!row.ProcessedDate ||
+    billedQty > 0
+  );
+  if(!hasFulfillmentStarted){
+    return current;
+  }
+  const effectiveQty = Number(getEffectiveQty(row) || 0);
+  if(billedQty <= 0) return "PROCESSED";
+  if(effectiveQty <= 0) return "DISPATCHED";
+  if(billedQty >= effectiveQty) return "DISPATCHED";
+  return "PARTIALLY DISPATCHED";
+}
+
+async function syncRequestRowStatusesWithRules(rows){
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const updates = sourceRows
+    .filter(r => r && r.id !== undefined && r.id !== null)
+    .map(r => {
+      const current = normalizeRowStatus(r.Status);
+      const resolved = getResolvedRowStatus(r);
+      if(current === resolved) return null;
+      if(current === "RECEIVED" && resolved !== "RECEIVED") return null;
+      return { id: r.id, status: resolved };
+    })
+    .filter(Boolean);
+
+  if(!updates.length) return 0;
+
+  const chunkSize = 30;
+  let changed = 0;
+  for(let i = 0; i < updates.length; i += chunkSize){
+    const chunk = updates.slice(i, i + chunkSize);
+    await Promise.all(chunk.map(async u => {
+      const { error } = await db
+        .from("requests")
+        .update({ Status: u.status })
+        .eq("id", u.id);
+      if(!error) changed += 1;
+    }));
+  }
+  return changed;
 }
 
 function getOrderStatusLabel(order){
   const items = Array.isArray(order?.items) ? order.items : (Array.isArray(order) ? order : []);
   if(!items.length) return "PENDING APPROVAL";
 
-  const statuses = items.map(x => normalizeRowStatus(x?.Status));
+  const statuses = items.map(x => getResolvedRowStatus(x));
   const hasRejected = items.some(x => {
     const approval = (x?.ApprovalStatus || "").toString().trim().toUpperCase();
     return normalizeRowStatus(x?.Status) === "REJECTED" || approval === "REJECTED";
@@ -4014,12 +4111,20 @@ function getOrderStatusLabel(order){
   const hasPendingApproval = items.some(x =>
     normalizeRowStatus(x?.Status) === "PENDING APPROVAL" || isPendingApprovalStatus(x?.ApprovalStatus)
   );
+  const hasFulfillmentStarted = statuses.some(s =>
+    s === "PROCESSED" || s === "PARTIALLY DISPATCHED" || s === "DISPATCHED" || s === "PARTIALLY RECEIVED" || s === "RECEIVED"
+  );
+  const hasAnyReceived = statuses.some(s => s === "RECEIVED" || s === "PARTIALLY RECEIVED");
+  const allReceived = statuses.every(s => s === "RECEIVED");
 
+  if(hasFulfillmentStarted){
+    if(allReceived) return "RECEIVED";
+    if(hasAnyReceived) return "PARTIALLY RECEIVED";
+    if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
+    if(statuses.some(s => s === "DISPATCHED" || s === "PARTIALLY DISPATCHED")) return "PARTIALLY DISPATCHED";
+    if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
+  }
   if(hasRejected) return "REJECTED";
-  if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
-  if(statuses.includes("DISPATCHED")) return "PARTIALLY DISPATCHED";
-  if(statuses.every(s => s === "NOT DESPATCHED")) return "NOT DESPATCHED";
-  if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
   if(statuses.every(s => s === "PENDING APPROVAL") || hasPendingApproval) return "PENDING APPROVAL";
   if(statuses.some(s => s === "APPROVED")) return "APPROVED";
 
@@ -4032,8 +4137,10 @@ function getStatusChipStyle(status){
     "PENDING APPROVAL": { bg:"rgba(59,130,246,0.2)", text:"#dbeafe", border:"rgba(96,165,250,0.45)" },
     "APPROVED": { bg:"rgba(16,185,129,0.16)", text:"#d1fae5", border:"rgba(16,185,129,0.42)" },
     "PROCESSED": { bg:"rgba(245,158,11,0.18)", text:"#fef3c7", border:"rgba(245,158,11,0.46)" },
-    "DISPATCHED": { bg:"rgba(34,197,94,0.18)", text:"#dcfce7", border:"rgba(34,197,94,0.44)" },
+    "DISPATCHED": { bg:"rgba(59,130,246,0.22)", text:"#dbeafe", border:"rgba(96,165,250,0.5)" },
     "PARTIALLY DISPATCHED": { bg:"rgba(217,119,6,0.22)", text:"#ffedd5", border:"rgba(251,191,36,0.45)" },
+    "PARTIALLY RECEIVED": { bg:"rgba(8,145,178,0.26)", text:"#cffafe", border:"rgba(6,182,212,0.46)" },
+    "RECEIVED": { bg:"rgba(22,163,74,0.30)", text:"#ecfdf5", border:"rgba(74,222,128,0.56)" },
     "NOT DESPATCHED": { bg:"rgba(71,85,105,0.35)", text:"#e2e8f0", border:"rgba(148,163,184,0.45)" },
     "REJECTED": { bg:"rgba(239,68,68,0.18)", text:"#fecaca", border:"rgba(239,68,68,0.4)" }
   };
@@ -4358,8 +4465,8 @@ const orderStatus = getOrderStatusLabel(data);
   
 <td>
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="${getStatusChipStyle(r.Status)}">
-    ${(r.Status || "").toUpperCase()}
+    style="${getStatusChipStyle(getResolvedRowStatus(r))}">
+    ${getPrintableStatusLabel(r)}
   </span>
 </td>
     <td>${formatDate(r.ProcessedDate)}</td>
@@ -5252,12 +5359,15 @@ async function processExcelData(rows){
       (hasExistingDocket && normalizeCompareLocal(existingDocket) !== normalizeCompareLocal(docketNo)) ||
       (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName));
 
-    const normalizedUploadStatus = normalizeRowStatus(status || "");
-    const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
-    var resolvedDispatchStatus = "PROCESSED";
-    if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
-      resolvedDispatchStatus = normalizedUploadStatus;
-    }
+    const resolveRowFulfillmentStatus = (rowObj, billedTotal) => {
+      const effectiveQty = Number(getEffectiveQty(rowObj) || 0);
+      const safeBilled = Number(billedTotal || 0);
+      if(safeBilled <= 0) return "PROCESSED";
+      if(effectiveQty <= 0) return "DISPATCHED";
+      if(safeBilled >= effectiveQty) return "DISPATCHED";
+      return "PARTIALLY DISPATCHED";
+    };
+    var resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQty);
 
     if(hasMismatchOnExistingFilledFields){
       const nextRequestId = await allocateRequestId();
@@ -5357,18 +5467,7 @@ async function processExcelData(rows){
     }
 
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
-    const orderedQty = Number(existing.Qty || 0);
-    const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
-    resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
-    if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
-      resolvedDispatchStatus = normalizedUploadStatus;
-    }
-    if(pendingQty > 0 && resolvedDispatchStatus === "DISPATCHED"){
-      resolvedDispatchStatus = "NOT DISPATCHED";
-    }
-    if(pendingQty <= 0 && resolvedDispatchStatus === "NOT DISPATCHED"){
-      resolvedDispatchStatus = "DISPATCHED";
-    }
+    resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQtyTotal);
 
     const { error } = await db
       .from("requests")
@@ -5847,7 +5946,7 @@ function handleUniversalSearch(value){
       (r.MachineNo || "").toLowerCase().includes(search) ||
       (r.Branch || "").toLowerCase().includes(search) ||
       (r.OrderType || "").toLowerCase().includes(search) ||
-      (r.Status || "").toLowerCase().includes(search)
+      getPrintableStatusLabel(r).toLowerCase().includes(search)
     );
 
   });
@@ -5901,6 +6000,8 @@ function renderSearchResults(data){
     const tableStatusRaw = getOrderStatusLabel(o);
     const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
       tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "PARTIALLY RECEIVED" ? "Partially Received" :
+      tableStatusRaw === "RECEIVED" ? "Received" :
       tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
       tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
 
@@ -5970,6 +6071,56 @@ function renderSearchResults(data){
 }
 
 
+function updateManagerPendingFavicon(count){
+  const pending = Number(count || 0);
+  const faviconLink = document.querySelector('link[rel="icon"]');
+  if(!faviconLink){
+    return;
+  }
+  if(!window.managerBaseFaviconHref){
+    window.managerBaseFaviconHref = faviconLink.getAttribute("href") || "F.ico";
+  }
+  const titlePrefix = pending > 0 ? `🔴 Pending ${pending > 99 ? "99+" : pending} | ` : "";
+  const baseTitle = (window.managerBaseTitle || document.title || "Parts Connect Portal")
+    .replace(/^\(\d+\+?\)\s*/, "")
+    .replace(/^🔴 Pending\s+\d+\+?\s+\|\s*/, "");
+  window.managerBaseTitle = baseTitle;
+  document.title = `${titlePrefix}${baseTitle}`;
+
+  if(pending <= 0){
+    faviconLink.href = window.managerBaseFaviconHref;
+    return;
+  }
+  const size = 96;
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if(!ctx){
+      faviconLink.href = window.managerBaseFaviconHref;
+      return;
+    }
+    ctx.drawImage(img, 0, 0, size, size);
+    ctx.fillStyle = "#ef4444";
+    ctx.beginPath();
+    ctx.arc(70, 24, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(pending > 99 ? "99+" : String(pending), 70, 24);
+    faviconLink.href = canvas.toDataURL("image/png");
+  };
+  img.onerror = () => {
+    faviconLink.href = window.managerBaseFaviconHref;
+  };
+  img.src = window.managerBaseFaviconHref;
+}
+
 function renderManagerDashboard(orders){
   const allOrders = orders || [];
   const isManager = isManagerRole(getUser());
@@ -5977,6 +6128,7 @@ function renderManagerDashboard(orders){
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
   window.managerDashFilter = window.managerDashFilter || { type: "status", key: "ALL", label: "All Orders" };
+  window.managerDashBranchFilter = (window.managerDashBranchFilter || "ALL").toString();
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
   window.managerInventoryTabOpen = window.managerInventoryTabOpen === true;
   window.managerInvLookupQuery = (window.managerInvLookupQuery || "").toString();
@@ -6005,15 +6157,17 @@ function renderManagerDashboard(orders){
     if(toDate && d > toDate) return false;
     return true;
   });
+  const dashboardOrders = window.managerDashBranchFilter === "ALL"
+    ? safeOrders
+    : safeOrders.filter(o => (o.Branch || "-") === window.managerDashBranchFilter);
 
   const orderValue = (o) => (o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0);
   const statusKey = (o) => {
     const s = getOrderStatusLabel(o);
-    if(s === "PARTIALLY DISPATCHED" || s === "DISPATCHED") return "DISPATCHED";
     return s;
   };
   const summaryFrom = (list) => ({ count: list.length, value: list.reduce((s, o) => s + orderValue(o), 0) });
-  const byStatus = (k) => summaryFrom(safeOrders.filter(o => statusKey(o) === k));
+  const byStatus = (k) => summaryFrom(dashboardOrders.filter(o => statusKey(o) === k));
   const orderTypeKey = (o) => {
     const t = (o.OrderType || "").toUpperCase();
     if(t === "SOP"){
@@ -6021,27 +6175,49 @@ function renderManagerDashboard(orders){
     }
     return t || "OTHER";
   };
-  const byType = (k) => summaryFrom(safeOrders.filter(o => orderTypeKey(o) === k));
-
+  const byType = (k) => summaryFrom(dashboardOrders.filter(o => orderTypeKey(o) === k));
+  const cardPalette = [
+    { tint:"rgba(148,163,184,0.18)", border:"rgba(148,163,184,0.35)" },
+    { tint:"rgba(245,158,11,0.18)", border:"rgba(245,158,11,0.4)" },
+    { tint:"rgba(34,197,94,0.16)", border:"rgba(34,197,94,0.4)" },
+    { tint:"rgba(239,68,68,0.16)", border:"rgba(239,68,68,0.38)" },
+    { tint:"rgba(250,204,21,0.18)", border:"rgba(250,204,21,0.45)" },
+    { tint:"rgba(20,184,166,0.18)", border:"rgba(20,184,166,0.4)" },
+    { tint:"rgba(99,102,241,0.16)", border:"rgba(129,140,248,0.36)" },
+    { tint:"rgba(14,165,233,0.16)", border:"rgba(56,189,248,0.36)" }
+  ];
+  const formatCardLabel = (value) => (value || "Unknown")
+    .toString()
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+  const statusEntries = Array.from(new Set(dashboardOrders.map(o => statusKey(o) || "UNKNOWN")))
+    .filter(Boolean)
+    .sort((a, b) => byStatus(b).count - byStatus(a).count);
   const statusCards = [
-    { key:"ALL", label:"Total Orders", ...summaryFrom(safeOrders), tint:"rgba(148,163,184,0.18)", border:"rgba(148,163,184,0.35)" },
-    { key:"PENDING APPROVAL", label:"Pending", ...byStatus("PENDING APPROVAL"), tint:"rgba(245,158,11,0.18)", border:"rgba(245,158,11,0.4)" },
-    { key:"APPROVED", label:"Approved", ...byStatus("APPROVED"), tint:"rgba(34,197,94,0.16)", border:"rgba(34,197,94,0.4)" },
-    { key:"REJECTED", label:"Rejected", ...byStatus("REJECTED"), tint:"rgba(239,68,68,0.16)", border:"rgba(239,68,68,0.38)" },
-    { key:"PROCESSED", label:"Processed", ...byStatus("PROCESSED"), tint:"rgba(250,204,21,0.18)", border:"rgba(250,204,21,0.45)" },
-    { key:"DISPATCHED", label:"Dispatched", ...byStatus("DISPATCHED"), tint:"rgba(20,184,166,0.18)", border:"rgba(20,184,166,0.4)" }
+    { key:"ALL", label:"Total Orders", ...summaryFrom(dashboardOrders), ...cardPalette[0] },
+    ...statusEntries.map((k, idx) => ({
+      key: k,
+      label: formatCardLabel(k),
+      ...byStatus(k),
+      ...(cardPalette[(idx + 1) % cardPalette.length])
+    }))
   ];
-  const typeCards = [
-    { key:"VOR", label:"VOR", ...byType("VOR"), tint:"rgba(245,158,11,0.15)", border:"rgba(245,158,11,0.36)" },
-    { key:"ZMAC", label:"ZMAC", ...byType("ZMAC"), tint:"rgba(99,102,241,0.16)", border:"rgba(129,140,248,0.36)" },
-    { key:"ZSPL", label:"ZSPL", ...byType("ZSPL"), tint:"rgba(14,165,233,0.16)", border:"rgba(56,189,248,0.36)" },
-    { key:"LUBES", label:"LUBES", ...byType("LUBES"), tint:"rgba(34,197,94,0.14)", border:"rgba(34,197,94,0.34)" },
-    { key:"SOP_CUSTOMER", label:"SOP Customer", ...byType("SOP_CUSTOMER"), tint:"rgba(20,184,166,0.15)", border:"rgba(20,184,166,0.34)" },
-    { key:"SOP_STOCK", label:"SOP Stock", ...byType("SOP_STOCK"), tint:"rgba(148,163,184,0.16)", border:"rgba(148,163,184,0.34)" }
-  ];
+  const typeEntries = Array.from(new Set(dashboardOrders.map(o => orderTypeKey(o) || "OTHER")))
+    .filter(Boolean)
+    .sort((a, b) => byType(b).count - byType(a).count);
+  const typeCards = typeEntries.map((k, idx) => ({
+    key: k,
+    label: formatCardLabel(k),
+    ...byType(k),
+    ...(cardPalette[idx % cardPalette.length])
+  }));
+  const branchFilterOptions = Array.from(new Set(allOrders.map(o => (o.Branch || "-").toString())))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
 
   const branchMap = {};
-  safeOrders.forEach(o => {
+  dashboardOrders.forEach(o => {
     const b = o.Branch || "-";
     if(!branchMap[b]){
       branchMap[b] = {
@@ -6057,19 +6233,21 @@ function renderManagerDashboard(orders){
     if(sk === "APPROVED"){ row.approvedCount += 1; row.approvedValue += val; }
     if(sk === "REJECTED"){ row.rejectedCount += 1; row.rejectedValue += val; }
     if(sk === "PROCESSED"){ row.processedCount += 1; row.processedValue += val; }
-    if(sk === "DISPATCHED"){ row.dispatchedCount += 1; row.dispatchedValue += val; }
+    if(sk === "DISPATCHED" || sk === "PARTIALLY DISPATCHED"){ row.dispatchedCount += 1; row.dispatchedValue += val; }
   });
   const branchRows = Object.values(branchMap).sort((a,b)=> b.totalValue - a.totalValue);
 
-  let selectedOrders = safeOrders;
+  let selectedOrders = dashboardOrders;
   const activeFilter = window.managerDashFilter;
   if(activeFilter?.type === "status" && activeFilter.key !== "ALL"){
-    selectedOrders = safeOrders.filter(o => statusKey(o) === activeFilter.key);
+    selectedOrders = dashboardOrders.filter(o => statusKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "type"){
-    selectedOrders = safeOrders.filter(o => orderTypeKey(o) === activeFilter.key);
+    selectedOrders = dashboardOrders.filter(o => orderTypeKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "branch"){
-    selectedOrders = safeOrders.filter(o => (o.Branch || "-") === activeFilter.key);
+    selectedOrders = dashboardOrders.filter(o => (o.Branch || "-") === activeFilter.key);
   }
+  window.managerDashSelectedOrders = selectedOrders;
+  updateManagerPendingFavicon(byStatus("PENDING APPROVAL").count);
 
   const totalRow = branchRows.reduce((acc, b) => {
     acc.totalOrders += b.totalOrders; acc.totalValue += b.totalValue;
@@ -6116,19 +6294,24 @@ function renderManagerDashboard(orders){
           </div>
           <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
             <div class="flex items-center gap-2">
+              <span class="mgr-filter-label !mb-0">Branch</span>
+              <select id="mgrDashBranch" class="pc-field h-[38px] min-w-[210px]" onchange="onManagerDashboardBranchFilterChange(this.value)">
+                <option value="ALL" ${window.managerDashBranchFilter === "ALL" ? "selected" : ""}>ALL Branches</option>
+                ${branchFilterOptions.map(b => `<option value="${escapeHtml(b)}" ${window.managerDashBranchFilter === b ? "selected" : ""}>${escapeHtml(b)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">From</span>
-              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" />
+              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
             <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">To</span>
-              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" />
+              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
-            <button class="track-page-btn" onclick="applyManagerDashboardDateRange()">Apply</button>
-            <button class="track-page-btn" onclick="resetManagerDashboardDateRange()">Reset</button>
           </div>
         </div>
 
-        <div class="mgr-kpi-grid">${statusCards.map(cardHtml).join("")}</div>
+        <div class="mgr-kpi-grid-single-row">${statusCards.map(cardHtml).join("")}</div>
         <div class="mgr-kpi-grid mt-2">${typeCards.map(c => cardHtml({ ...c, filterType: "type" })).join("")}</div>
       </section>
 
@@ -6137,7 +6320,10 @@ function renderManagerDashboard(orders){
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">
             ${`Filtered Orders ${activeFilter ? `• ${escapeHtml(sanitizeUiText(activeFilter.label))}` : ""}`}
           </div>
-          <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadManagerDashboardFilteredExcel()" class="table-toggle-btn" style="background:linear-gradient(180deg, rgba(59,130,246,0.95), rgba(37,99,235,0.95)); border-color:#93c5fd; color:#eff6ff;">Download Excel</button>
+            <button onclick="toggleManagerDashboardFilteredTable()" class="table-toggle-btn">${window.managerDashTableVisible ? "Hide Table" : "Show Table"}</button>
+          </div>
         </div>
         <div class="overflow-x-auto ${window.managerDashTableVisible ? "" : "hidden"}">
           <table class="track-table w-full text-sm text-left border rounded-lg overflow-hidden">
@@ -6191,7 +6377,7 @@ function renderManagerDashboard(orders){
     </div>`;
 }
 
-function applyManagerDashboardDateRange(){
+function onManagerDashboardDateChange(){
   const fromInput = document.getElementById("mgrDashFrom");
   const toInput = document.getElementById("mgrDashTo");
   window.managerDashDateRange = {
@@ -6201,8 +6387,8 @@ function applyManagerDashboardDateRange(){
   loadSuper("Dashboard", true);
 }
 
-function resetManagerDashboardDateRange(){
-  window.managerDashDateRange = { from: "", to: new Date().toISOString().slice(0, 10) };
+function onManagerDashboardBranchFilterChange(branch){
+  window.managerDashBranchFilter = (branch || "ALL").toString();
   loadSuper("Dashboard", true);
 }
 
@@ -6227,6 +6413,29 @@ function clearManagerDashboardCardFilter(){
 function toggleManagerDashboardFilteredTable(){
   window.managerDashTableVisible = !window.managerDashTableVisible;
   loadSuper("Dashboard", true);
+}
+
+function downloadManagerDashboardFilteredExcel(){
+  const data = Array.isArray(window.managerDashSelectedOrders) ? window.managerDashSelectedOrders : [];
+  if(!data.length){
+    showPopup("No filtered orders available to download.");
+    return;
+  }
+  const excelData = data.map(o => ({
+    "Created At": formatDateTime(o.created_at),
+    "Order Type": o.OrderType || "",
+    "Order For": (o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock",
+    "Branch": o.Branch || "-",
+    "Qty": (o.items || []).reduce((s, x) => s + Number(getEffectiveQty(x) || 0), 0),
+    "Value": Math.round((o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0)),
+    "Order No": o.OrderNo || "",
+    "Status": getOrderStatusLabel(o) || ""
+  }));
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = Object.keys(excelData[0] || {}).map(key => ({ wch: Math.max(14, key.length + 2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Filtered Orders");
+  XLSX.writeFile(wb, `Manager_Filtered_Orders_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 function openManagerInventoryLookupTab(){
@@ -6502,7 +6711,7 @@ async function loadDeveloperDashboard(){
       if(k === "APPROVED") return `loadSuper('Approved')`;
       if(k === "REJECTED") return `loadSuper('Rejected')`;
       if(k === "PROCESSED") return `loadAdmin('Processed')`;
-      if(k === "DISPATCHED" || k === "PARTIALLY DISPATCHED" || k === "NOT DESPATCHED") return `loadTrack('track')`;
+      if(k === "DISPATCHED" || k === "PARTIALLY DISPATCHED" || k === "PARTIALLY RECEIVED" || k === "RECEIVED" || k === "NOT DESPATCHED") return `loadTrack('track')`;
       return `loadSuper('All')`;
     };
     const statusCards = Object.entries(statusMap)
@@ -6723,7 +6932,7 @@ async function loadDeveloperRequestsEditor(){
                     <td class="px-2 py-2">${escapeHtml(r.OrderNo || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(r.Branch || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(r.PartNo || "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(r.Status || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(getPrintableStatusLabel(r))}</td>
                     <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(r.created_at || ""))}</td>
                     <td class="px-2 py-2"><button class="track-page-btn" onclick="editDeveloperRequestRow('${r.id}')">Edit JSON</button></td>
                   </tr>
@@ -6847,7 +7056,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   const pageSize = 1000;
   let offset = 0;
-  const allRows = [];
+  let allRows = [];
 
   while(true){
     let query = db
@@ -6870,6 +7079,25 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     allRows.push(...data);
     if(data.length < pageSize) break;
     offset += pageSize;
+  }
+
+  const STATUS_SYNC_INTERVAL_MS = 30 * 60 * 1000;
+  const lastSyncAt = Number(localStorage.getItem("request_status_sync_at") || 0);
+  const shouldSyncStatuses = (Date.now() - lastSyncAt) > STATUS_SYNC_INTERVAL_MS;
+
+  if(shouldSyncStatuses && !window.requestStatusSyncInFlight){
+    window.requestStatusSyncInFlight = true;
+    try{
+      const syncedCount = await syncRequestRowStatusesWithRules(allRows);
+      if(syncedCount > 0){
+        allRows = allRows.map(r => ({ ...r, Status: getResolvedRowStatus(r) }));
+      }
+      localStorage.setItem("request_status_sync_at", String(Date.now()));
+    }catch(err){
+      console.error("Status sync failed:", err);
+    }finally{
+      window.requestStatusSyncInFlight = false;
+    }
   }
 
   GLOBAL_DATA = allRows;
@@ -6989,6 +7217,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const tableStatusRaw = getOrderStatusLabel(o);
     const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
       tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "PARTIALLY RECEIVED" ? "Partially Received" :
+      tableStatusRaw === "RECEIVED" ? "Received" :
       tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
       tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
       
@@ -7658,9 +7888,13 @@ function escapeHtml(value){
 }
 
 function getPrintableStatusLabel(status){
-  const s = normalizeRowStatus(status);
+  const s = (status && typeof status === "object")
+    ? getResolvedRowStatus(status)
+    : normalizeRowStatus(status);
   if(s === "PENDING APPROVAL") return "Pending Approval";
   if(s === "PARTIALLY DISPATCHED") return "Partially Dispatched";
+  if(s === "PARTIALLY RECEIVED") return "Partially Received";
+  if(s === "RECEIVED") return "Received";
   if(s === "NOT DESPATCHED") return "Not Dispatched";
   return s.charAt(0) + s.slice(1).toLowerCase();
 }
@@ -7714,7 +7948,7 @@ async function printOrderDetails(orderNo){
         <td>${billed}</td>
         <td>${pending}</td>
         <td class="right">₹ ${Number(getEffectiveValue(r) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-        <td>${escapeHtml(getPrintableStatusLabel(r.Status))}</td>
+        <td>${escapeHtml(getPrintableStatusLabel(r))}</td>
         <td>${escapeHtml(formatDate(r.ProcessedDate))}</td>
         <td>${escapeHtml(formatDate(r.OrderRegDt))}</td>
         <td>${escapeHtml(r.BillNo || "-")}</td>
@@ -7998,7 +8232,7 @@ async function downloadOrderExcel(orderNo){
     "Billed Qty": r.BilledQty || 0,
     "Pending Qty": getEffectiveQty(r) - (r.BilledQty || 0),
     "Value": getEffectiveValue(r),
-    "Status": r.Status,
+    "Status": getResolvedRowStatus(r),
     "Processed Date": r.ProcessedDate || "",
     "Bill No": r.BillNo || "",
     "Transport": r.TransportName || "",
