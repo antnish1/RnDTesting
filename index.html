@@ -5873,7 +5873,7 @@ function renderManagerDashboard(orders){
   const today = new Date().toISOString().slice(0, 10);
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
-  window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
+  window.managerDashFilter = window.managerDashFilter || { type: "status", key: "ALL", label: "All Orders" };
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
   window.managerInventoryTabOpen = window.managerInventoryTabOpen === true;
   window.managerInvLookupQuery = (window.managerInvLookupQuery || "").toString();
@@ -5890,7 +5890,7 @@ function renderManagerDashboard(orders){
     .replace(/>{7}.*$/gm, "")
     .trim();
   if(/[<>]{3,}|={3,}/.test(window.managerDashFilter?.label || "")){
-    window.managerDashFilter = { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
+    window.managerDashFilter = { type: "status", key: "ALL", label: "All Orders" };
   }
 
   const fromDate = window.managerDashDateRange.from ? new Date(window.managerDashDateRange.from + "T00:00:00") : null;
