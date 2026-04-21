@@ -2288,6 +2288,11 @@ renderIcons();
 initResponsiveLayoutObserver();
 applyMobileTableLayoutFixes();
 
+if(!isAdmin && window.pendingCountIntervalId){
+  clearInterval(window.pendingCountIntervalId);
+  window.pendingCountIntervalId = null;
+}
+
     
 // ✅ Load correct screen
 if(window.activeTab === "scanner"){
@@ -2295,9 +2300,7 @@ if(window.activeTab === "scanner"){
 }
 else if(isAdmin){
   loadAdmin(window.activeTab || "Approved");
-
-  // ✅ ADD THIS LINE (VERY IMPORTANT)
-  setTimeout(loadPendingCount, 200);
+  startPendingCountAutoRefresh();
 }
 else if(isDeveloper){
   if(window.activeTab === "DevUsers"){
@@ -2314,7 +2317,10 @@ else if(isSuper){
   loadSuper(window.activeTab || "PendingApproval");
 }
 else{
-  setTimeout(loadPendingCount, 200);
+  if(window.pendingCountIntervalId){
+    clearInterval(window.pendingCountIntervalId);
+    window.pendingCountIntervalId = null;
+  }
 
   if(isViewer){
     loadTrack("track");
@@ -2471,18 +2477,21 @@ function renderDocketMatches(){
   wrap.innerHTML = rows.map(r=>`
     <div class="rounded-xl p-3 space-y-2" style="border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-sm font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
-        <span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getResolvedRowStatus(r))}">${getPrintableStatusLabel(r)}</span>
+        <div class="text-base font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          ${getResolvedRowStatus(r) === "RECEIVED" ? `<span class="px-2 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide" style="background:#16a34a;color:#ecfdf5;border:1px solid #86efac;">Already Received</span>` : ""}
+          <span class="px-3 py-1 rounded text-sm font-bold" style="${getStatusChipStyle(getResolvedRowStatus(r))}">${getPrintableStatusLabel(r)}</span>
+        </div>
       </div>
-      <div class="grid grid-cols-2 gap-2 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
         <div><span style="color:var(--pc-text-muted);">Customer:</span> <span style="color:#e2e8f0;">${escapeHtml(r.CustomerName || "-")}</span></div>
         <div><span style="color:var(--pc-text-muted);">Branch:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Branch || "-")}</span></div>
         <div><span style="color:var(--pc-text-muted);">Docket:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Docket || "-")}</span></div>
         <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Qty ?? "-")}</span></div>
       </div>
       <details class="rounded-lg p-2" style="border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);">
-        <summary class="cursor-pointer text-xs font-semibold" style="color:#bfdbfe;">View complete row details</summary>
-        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+        <summary class="cursor-pointer text-sm font-semibold" style="color:#bfdbfe;">View complete row details</summary>
+        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           ${
             Object.entries(r)
               .sort(([a],[b])=>{
@@ -2497,8 +2506,8 @@ function renderDocketMatches(){
                 const label = key.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
                 const printable = val === null || val === undefined || val === "" ? "-" : String(val);
                 return `<div class="rounded-lg px-2 py-1" style="background:rgba(15,23,42,.75); border:1px solid rgba(71,85,105,.45);">
-                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:10px;">${escapeHtml(label)}</div>
-                  <div style="color:#e2e8f0; word-break:break-word;">${escapeHtml(printable)}</div>
+                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:12px; font-weight:700;">${escapeHtml(label)}</div>
+                  <div style="color:#e2e8f0; word-break:break-word; font-size:14px;">${escapeHtml(printable)}</div>
                 </div>`;
               })
               .join("")
@@ -2506,7 +2515,10 @@ function renderDocketMatches(){
         </div>
       </details>
       <button
-        class="top-btn w-full justify-center ${getResolvedRowStatus(r) === "RECEIVED" ? "opacity-60 cursor-not-allowed" : ""}"
+        class="w-full rounded-lg py-2.5 text-sm font-bold transition-all ${getResolvedRowStatus(r) === "RECEIVED" ? "opacity-80 cursor-not-allowed" : "hover:-translate-y-[1px]"}"
+        style="${getResolvedRowStatus(r) === "RECEIVED"
+          ? "background:rgba(22,163,74,0.24); color:#dcfce7; border:1px solid rgba(74,222,128,0.6);"
+          : "background:linear-gradient(180deg, #2563eb, #1d4ed8); color:#eff6ff; border:1px solid #93c5fd; box-shadow:0 8px 16px rgba(30,64,175,0.35);"}"
         ${getResolvedRowStatus(r) === "RECEIVED" ? "disabled" : ""}
         onclick="markDocketRowReceived('${r.id}')">
         ${getResolvedRowStatus(r) === "RECEIVED" ? "Already Received" : "Mark Received"}
@@ -3626,7 +3638,7 @@ async function loadPendingCount(){
 
   const { data, error } = await db
     .from("requests")
-    .select("OrderNo, Status, ApprovalStatus");
+    .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate");
 
   if(error) return;
 
@@ -3652,6 +3664,17 @@ async function loadPendingCount(){
       el.classList.add("hidden");
     }
   }
+}
+
+function startPendingCountAutoRefresh(){
+  if(window.pendingCountIntervalId){
+    clearInterval(window.pendingCountIntervalId);
+    window.pendingCountIntervalId = null;
+  }
+  loadPendingCount();
+  window.pendingCountIntervalId = setInterval(() => {
+    loadPendingCount();
+  }, 20000);
 }
   
 // ---------- ADMIN ----------
