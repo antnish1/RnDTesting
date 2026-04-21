@@ -10,10 +10,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     
 </head>
@@ -582,7 +578,7 @@ tr[style*="f59e0b"]:hover {
 }
 
 .search-bar {
-  width: clamp(280px, 34vw, 460px);
+  width: 100%;
   height: 42px;
   padding: 0 14px 0 40px;
   border-radius: 12px;
@@ -1241,12 +1237,17 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 .nav-scroll-row{
   width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding-bottom: 2px;
+}
+
+.header-search-shell{
+  flex: 1 1 220px;
+  min-width: 160px;
 }
 
 .mobile-content-shell{
@@ -1295,6 +1296,19 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
   #main table{
     min-width: 860px;
+  }
+}
+
+@media (min-width: 769px){
+  .nav-scroll-row{
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    overflow-x: auto;
+  }
+
+  .header-search-shell{
+    flex: 1 1 260px;
+    max-width: 360px;
   }
 }
 
@@ -2055,7 +2069,7 @@ document.getElementById("app").innerHTML = `
 ">
 <div class="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
 
-<div class="relative flex items-center w-full">
+<div class="relative flex items-center w-full md:w-auto md:flex-none">
 
   <!-- LEFT: LOGO -->
 <div class="flex items-center gap-4">
@@ -2078,9 +2092,9 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  <div class="nav-scroll-row md:justify-end">
+  <div class="nav-scroll-row md:flex-1 md:justify-end">
 
-<div class="relative w-full min-w-0 md:w-auto md:min-w-[280px]">
+<div class="relative w-full min-w-0 md:w-auto md:min-w-[280px] header-search-shell">
 
   <i data-lucide="search" 
      class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">
@@ -2307,6 +2321,10 @@ let docketScannerRaf = null;
 let docketScannerBusy = false;
 let docketScannerDetector = null;
 window.docketScanMatches = [];
+window.docketScanHistory = [];
+let docketLastDetected = "";
+let docketLastDetectedAt = 0;
+const DOCKET_SCAN_COOLDOWN_MS = 1800;
 
 function normalizeDocketNo(val){
   return (val || "").toString().trim().replace(/\s+/g, "").toUpperCase();
@@ -2327,11 +2345,16 @@ function loadDocketScanner(){
   if(!main) return;
 
   main.innerHTML = `
-  <div class="w-full max-w-2xl mx-auto space-y-4">
-    <section class="pc-section p-4 md:p-5 rounded-2xl">
-      <div class="text-[11px] tracking-wider uppercase mb-2" style="color:var(--pc-secondary);">Consignment Docket Scanner</div>
-      <h3 class="text-base md:text-lg font-semibold mb-1">Scan or enter docket number</h3>
-      <p class="text-xs md:text-sm mb-3" style="color:var(--pc-text-muted);">Mobile friendly mode: use camera scan or type docket no manually.</p>
+  <div class="w-full max-w-5xl mx-auto space-y-4">
+    <section class="pc-section p-3 md:p-5 rounded-2xl" style="background:linear-gradient(160deg, rgba(15,23,42,.95), rgba(17,24,39,.92));">
+      <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+        <div>
+          <div class="text-[11px] tracking-wider uppercase mb-1" style="color:var(--pc-secondary);">Consignment Docket Scanner</div>
+          <h3 class="text-base md:text-xl font-semibold">Mobile Scan Console</h3>
+          <p class="text-xs md:text-sm mt-1" style="color:var(--pc-text-muted);">App-like quick workflow: scan, review complete row details, mark received.</p>
+        </div>
+        <span id="docketScannerState" class="text-[11px] px-2 py-1 rounded-full" style="background:rgba(148,163,184,0.16); border:1px solid rgba(148,163,184,0.32); color:#cbd5e1;">Camera idle</span>
+      </div>
 
       <div class="space-y-3">
         <input
@@ -2349,20 +2372,23 @@ function loadDocketScanner(){
         </div>
       </div>
 
-      <div id="docketScannerView" class="hidden mt-4 rounded-xl overflow-hidden" style="border:1px solid var(--pc-border); background:#020617;">
-        <video id="docketScannerVideo" class="w-full h-56 object-cover" playsinline muted></video>
+      <div id="docketScannerView" class="hidden mt-4 rounded-xl overflow-hidden relative" style="border:1px solid var(--pc-border); background:#020617;">
+        <video id="docketScannerVideo" class="w-full h-[62vh] max-h-[520px] min-h-[260px] object-cover" playsinline muted></video>
+        <div class="absolute inset-x-0 bottom-0 p-2 text-[11px]" style="background:linear-gradient(180deg, transparent, rgba(2,6,23,.88)); color:#e2e8f0;">
+          Continuous scan active • keep barcode inside frame
+        </div>
       </div>
       <div id="docketScanHint" class="text-[11px] mt-2" style="color:var(--pc-text-muted);">
         Tip: align barcode/QR inside camera frame. For unsupported browsers, use manual search.
       </div>
     </section>
 
-    <section class="pc-section p-4 md:p-5 rounded-2xl">
+    <section class="pc-section p-3 md:p-5 rounded-2xl">
       <div class="flex items-center justify-between mb-2">
         <h4 class="text-sm font-semibold">Matched rows</h4>
         <span id="docketMatchCount" class="text-xs px-2 py-1 rounded-full" style="background:rgba(96,165,250,0.16); border:1px solid rgba(96,165,250,0.35); color:#bfdbfe;">0 rows</span>
       </div>
-      <div id="docketScanResults" class="space-y-2 text-sm" style="color:var(--pc-text-muted);">
+      <div id="docketScanResults" class="space-y-3 text-sm" style="color:var(--pc-text-muted);">
         Scan a docket number to load row details.
       </div>
     </section>
@@ -2395,7 +2421,7 @@ async function lookupDocketRows(rawValue){
 
   const { data, error } = await db
     .from("requests")
-    .select("id,OrderNo,PartNo,Branch,CustomerName,Qty,Status,Docket,created_at")
+    .select("*")
     .ilike("Docket", docket)
     .order("created_at", { ascending: false })
     .limit(40);
@@ -2408,6 +2434,10 @@ async function lookupDocketRows(rawValue){
 
   const matches = (data || []).filter(row => normalizeDocketNo(row.Docket) === docket);
   window.docketScanMatches = matches;
+  window.docketScanHistory = [
+    { docket, count: matches.length, at: new Date().toISOString() },
+    ...(window.docketScanHistory || []).filter(x => x?.docket !== docket)
+  ].slice(0, 8);
   renderDocketMatches();
   if(countEl) countEl.textContent = `${matches.length} row${matches.length === 1 ? "" : "s"}`;
 }
@@ -2422,6 +2452,11 @@ function renderDocketMatches(){
     return;
   }
 
+  const preferredOrder = [
+    "OrderNo","Status","CustomerName","Branch","OrderType","OrderFor","PartNo","PartName","Qty","Docket","BillNo",
+    "MachineNo","MachineType","CallId","EmployeeName","ApprovedBy","Transporter","VehicleNo","Remarks","created_at"
+  ];
+
   wrap.innerHTML = rows.map(r=>`
     <div class="rounded-xl p-3 space-y-2" style="border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);">
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -2429,11 +2464,36 @@ function renderDocketMatches(){
         <span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(r.Status)}">${normalizeRowStatus(r.Status || "-")}</span>
       </div>
       <div class="grid grid-cols-2 gap-2 text-xs">
-        <div><span style="color:var(--pc-text-muted);">Part:</span> <span style="color:#e2e8f0;">${r.PartNo || "-"}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${r.Qty || 0}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Branch:</span> <span style="color:#e2e8f0;">${r.Branch || "-"}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Docket:</span> <span style="color:#e2e8f0;">${r.Docket || "-"}</span></div>
+        <div><span style="color:var(--pc-text-muted);">Customer:</span> <span style="color:#e2e8f0;">${escapeHtml(r.CustomerName || "-")}</span></div>
+        <div><span style="color:var(--pc-text-muted);">Branch:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Branch || "-")}</span></div>
+        <div><span style="color:var(--pc-text-muted);">Docket:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Docket || "-")}</span></div>
+        <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Qty ?? "-")}</span></div>
       </div>
+      <details class="rounded-lg p-2" style="border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);">
+        <summary class="cursor-pointer text-xs font-semibold" style="color:#bfdbfe;">View complete row details</summary>
+        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+          ${
+            Object.entries(r)
+              .sort(([a],[b])=>{
+                const ai = preferredOrder.indexOf(a);
+                const bi = preferredOrder.indexOf(b);
+                if(ai === -1 && bi === -1) return a.localeCompare(b);
+                if(ai === -1) return 1;
+                if(bi === -1) return -1;
+                return ai - bi;
+              })
+              .map(([key,val])=>{
+                const label = key.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
+                const printable = val === null || val === undefined || val === "" ? "-" : String(val);
+                return `<div class="rounded-lg px-2 py-1" style="background:rgba(15,23,42,.75); border:1px solid rgba(71,85,105,.45);">
+                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:10px;">${escapeHtml(label)}</div>
+                  <div style="color:#e2e8f0; word-break:break-word;">${escapeHtml(printable)}</div>
+                </div>`;
+              })
+              .join("")
+          }
+        </div>
+      </details>
       <button
         class="top-btn w-full justify-center ${normalizeRowStatus(r.Status) === "RECEIVED" ? "opacity-60 cursor-not-allowed" : ""}"
         ${normalizeRowStatus(r.Status) === "RECEIVED" ? "disabled" : ""}
@@ -2482,6 +2542,7 @@ async function startDocketCameraScanner(){
   const hint = document.getElementById("docketScanHint");
 
   if(!view || !video) return;
+  const stateEl = document.getElementById("docketScannerState");
 
   if(!navigator.mediaDevices?.getUserMedia){
     if(hint) hint.textContent = "Camera API unavailable on this browser. Use manual input.";
@@ -2507,6 +2568,12 @@ async function startDocketCameraScanner(){
     await video.play();
     view.classList.remove("hidden");
     if(hint) hint.textContent = "Camera scanning started.";
+    if(stateEl){
+      stateEl.textContent = "Camera live • continuous scan";
+      stateEl.style.background = "rgba(34,197,94,0.18)";
+      stateEl.style.border = "1px solid rgba(34,197,94,0.38)";
+      stateEl.style.color = "#bbf7d0";
+    }
     pollDocketBarcode();
   }catch(err){
     console.error(err);
@@ -2516,6 +2583,7 @@ async function startDocketCameraScanner(){
 
 function stopDocketCameraScanner(){
   const hint = document.getElementById("docketScanHint");
+  const stateEl = document.getElementById("docketScannerState");
   if(docketScannerRaf){
     cancelAnimationFrame(docketScannerRaf);
     docketScannerRaf = null;
@@ -2530,6 +2598,12 @@ function stopDocketCameraScanner(){
     video.srcObject = null;
   }
   if(hint) hint.textContent = "Camera stopped.";
+  if(stateEl){
+    stateEl.textContent = "Camera idle";
+    stateEl.style.background = "rgba(148,163,184,0.16)";
+    stateEl.style.border = "1px solid rgba(148,163,184,0.32)";
+    stateEl.style.color = "#cbd5e1";
+  }
 }
 
 async function pollDocketBarcode(){
@@ -2544,6 +2618,14 @@ async function pollDocketBarcode(){
         const raw = barcodes[0]?.rawValue || "";
         const docket = normalizeDocketNo(raw);
         if(docket){
+          const now = Date.now();
+          if(docket === docketLastDetected && (now - docketLastDetectedAt) < DOCKET_SCAN_COOLDOWN_MS){
+            docketScannerRaf = requestAnimationFrame(pollDocketBarcode);
+            docketScannerBusy = false;
+            return;
+          }
+          docketLastDetected = docket;
+          docketLastDetectedAt = now;
           const input = document.getElementById("docketScanInput");
           if(input) input.value = docket;
           await lookupDocketRows(docket);
