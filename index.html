@@ -2570,14 +2570,14 @@ main.innerHTML = `
 
     <div class="summary-strip">
       <div class="flex items-center gap-3 flex-wrap">
-        <button onclick="addRow()" class="order-cta cta-secondary px-5 py-2.5">
+        <button id="addItemBtn" onclick="addRow()" class="order-cta cta-secondary px-5 py-2.5">
           <span class="pc-btn-inline">
             <i data-lucide="plus-circle" class="pc-icon"></i>
             Add Item
           </span>
         </button>
 
-        <button onclick="document.getElementById('uploadPartsExcel').click()" class="order-cta cta-tertiary px-5 py-2.5">
+        <button onclick="document.getElementById('uploadPartsExcel').click()" class="order-cta cta-tertiary px-5 py-2.5" tabindex="-1">
           <span class="pc-btn-inline">
             <i data-lucide="upload" class="pc-icon"></i>
             Bulk Parts Upload
@@ -2590,7 +2590,7 @@ main.innerHTML = `
         Total: ₹ <span id="total" style="font-size: 22px; color: #facc15;">0</span>
       </div>
 
-      <button onclick="submitOrder()" class="order-cta cta-primary px-6 py-2.5">
+      <button onclick="submitOrder()" class="order-cta cta-primary px-6 py-2.5" tabindex="-1">
         <span class="pc-btn-inline">
           <i data-lucide="send" class="pc-icon"></i>
           Submit Order
@@ -2603,6 +2603,15 @@ main.innerHTML = `
 renderIcons();
     
 addRow();
+const addItemBtn = document.getElementById("addItemBtn");
+if(addItemBtn){
+  addItemBtn.addEventListener("keydown", (e) => {
+    if(e.key === "Tab" && !e.shiftKey){
+      e.preventDefault();
+      focusPartsInput();
+    }
+  });
+}
 // AUTO FILL EMPLOYEE NAME
 const user = getUser();
 document.getElementById("employeeName").value = user.Name || "";
@@ -2728,7 +2737,7 @@ tr.innerHTML = `
 
 <td class="py-1">
   <button class="delete-row-btn text-red-400 hover:text-red-300 font-bold"
-  onclick="this.closest('tr').remove(); calcTotal()">✕</button>
+  onclick="this.closest('tr').remove(); calcTotal()" tabindex="-1">✕</button>
 </td>
 `;
 tr.querySelector(".part").addEventListener("blur", async function(){
@@ -2817,7 +2826,7 @@ showPopup(
   <div class="flex gap-3 justify-center">
 
     <!-- YES → JUST CLOSE -->
-    <button onclick="closePopup()"
+    <button onclick="closePopupAndFocusQty()"
       class="px-5 py-2 rounded-lg font-semibold"
       style="background: #10b981; color:white;">
       Yes
@@ -2909,6 +2918,26 @@ function triggerRowDelete(){
   }
 
   closePopup();
+}
+
+function closePopupAndFocusQty(){
+  closePopup();
+  setTimeout(() => {
+    const rowQty = currentRow?.querySelector(".qty");
+    if(rowQty){
+      rowQty.focus();
+      rowQty.select?.();
+    }
+  }, 0);
+}
+
+function focusPartsInput(){
+  const rows = Array.from(document.querySelectorAll("#tbody tr"));
+  const firstEmptyPart = rows
+    .map(r => r.querySelector(".part"))
+    .find(input => input && !input.value.trim());
+  const target = firstEmptyPart || rows[rows.length - 1]?.querySelector(".part");
+  target?.focus();
 }
 
 function changePrevQtyDays(orderNo, days){
