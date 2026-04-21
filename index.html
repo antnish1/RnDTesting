@@ -1510,7 +1510,7 @@ const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
-const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -6057,8 +6057,10 @@ function updateManagerPendingFavicon(count){
   if(!window.managerBaseFaviconHref){
     window.managerBaseFaviconHref = faviconLink.getAttribute("href") || "F.ico";
   }
-  const titlePrefix = pending > 0 ? `(${pending > 99 ? "99+" : pending}) ` : "";
-  const baseTitle = (window.managerBaseTitle || document.title || "Parts Connect Portal").replace(/^\(\d+\+?\)\s*/, "");
+  const titlePrefix = pending > 0 ? `🔴 Pending ${pending > 99 ? "99+" : pending} | ` : "";
+  const baseTitle = (window.managerBaseTitle || document.title || "Parts Connect Portal")
+    .replace(/^\(\d+\+?\)\s*/, "")
+    .replace(/^🔴 Pending\s+\d+\+?\s+\|\s*/, "");
   window.managerBaseTitle = baseTitle;
   document.title = `${titlePrefix}${baseTitle}`;
 
@@ -7056,13 +7058,18 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
     offset += pageSize;
   }
 
-  if(!window.requestStatusSyncInFlight){
+  const STATUS_SYNC_INTERVAL_MS = 30 * 60 * 1000;
+  const lastSyncAt = Number(localStorage.getItem("request_status_sync_at") || 0);
+  const shouldSyncStatuses = (Date.now() - lastSyncAt) > STATUS_SYNC_INTERVAL_MS;
+
+  if(shouldSyncStatuses && !window.requestStatusSyncInFlight){
     window.requestStatusSyncInFlight = true;
     try{
       const syncedCount = await syncRequestRowStatusesWithRules(allRows);
       if(syncedCount > 0){
         allRows = allRows.map(r => ({ ...r, Status: getResolvedRowStatus(r) }));
       }
+      localStorage.setItem("request_status_sync_at", String(Date.now()));
     }catch(err){
       console.error("Status sync failed:", err);
     }finally{
