@@ -1249,6 +1249,20 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   padding-bottom: 2px;
 }
 
+.mobile-content-shell{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.mobile-table-scroll{
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 768px){
   .top-btn, .menu-btn{
     white-space: nowrap;
@@ -1272,6 +1286,14 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   }
 
   .track-table{
+    min-width: 860px;
+  }
+
+  #main{
+    overflow-x: hidden;
+  }
+
+  #main table{
     min-width: 860px;
   }
 }
@@ -1960,6 +1982,36 @@ function updateMenuHighlight(){
 
 }
 
+let responsiveLayoutObserver = null;
+
+function applyMobileTableLayoutFixes(){
+  const main = document.getElementById("main");
+  if(!main) return;
+
+  const shells = main.querySelectorAll(".track-table-shell, .parts-shell, .admin-strip, .mgr-panel, .pc-section");
+  shells.forEach(shell => shell.classList.add("mobile-content-shell"));
+
+  const tables = main.querySelectorAll("table");
+  tables.forEach(table => {
+    const holder = table.parentElement;
+    if(!holder) return;
+    holder.classList.add("mobile-table-scroll");
+  });
+}
+
+function initResponsiveLayoutObserver(){
+  if(responsiveLayoutObserver) return;
+  const app = document.getElementById("app");
+  if(!app) return;
+
+  applyMobileTableLayoutFixes();
+  responsiveLayoutObserver = new MutationObserver(() => {
+    applyMobileTableLayoutFixes();
+  });
+  responsiveLayoutObserver.observe(app, { childList: true, subtree: true });
+  window.addEventListener("resize", applyMobileTableLayoutFixes);
+}
+
   
   
 // ---------- BRANCH ----------
@@ -2208,6 +2260,8 @@ ${isDeveloper ? `
 `;
 
 renderIcons();
+initResponsiveLayoutObserver();
+applyMobileTableLayoutFixes();
 
     
 // ✅ Load correct screen
