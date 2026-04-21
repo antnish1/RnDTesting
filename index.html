@@ -4000,15 +4000,22 @@ function getEffectiveValue(row){
 function normalizeRowStatus(status){
   const s = (status || "").toString().trim().toUpperCase();
 
+  if(s.includes("RECEIV")){
+    return s.includes("PARTIAL") ? "PARTIALLY RECEIVED" : "RECEIVED";
+  }
+  if((s.includes("DESPATCHED") || s.includes("DISPATCHED")) && s.includes("PART")){
+    return "PARTIALLY DISPATCHED";
+  }
   if(s.includes("DESPATCHED") || s.includes("DISPATCHED")){
-    return s.includes("NOT") ? "NOT DESPATCHED" : "DISPATCHED";
+    if(s.includes("NOT")) return "PROCESSED";
+    return "DISPATCHED";
   }
   if(s.includes("REJECT")) return "REJECTED";
   if(s.includes("PROCESS")) return "PROCESSED";
   if(s.includes("PENDING APPROVAL") || s.includes("APPROVAL PENDING") || s === "PENDINGAPPROVAL"){
     return "PENDING APPROVAL";
   }
-  if(s.includes("PEND")) return "APPROVED";
+  if(s.includes("PEND")) return "PENDING APPROVAL";
 
   return s || "PENDING APPROVAL";
 }
@@ -4025,12 +4032,20 @@ function getOrderStatusLabel(order){
   const hasPendingApproval = items.some(x =>
     normalizeRowStatus(x?.Status) === "PENDING APPROVAL" || isPendingApprovalStatus(x?.ApprovalStatus)
   );
+  const hasFulfillmentStarted = statuses.some(s =>
+    s === "PROCESSED" || s === "PARTIALLY DISPATCHED" || s === "DISPATCHED" || s === "PARTIALLY RECEIVED" || s === "RECEIVED"
+  );
+  const hasAnyReceived = statuses.some(s => s === "RECEIVED" || s === "PARTIALLY RECEIVED");
+  const allReceived = statuses.every(s => s === "RECEIVED");
 
+  if(hasFulfillmentStarted){
+    if(allReceived) return "RECEIVED";
+    if(hasAnyReceived) return "PARTIALLY RECEIVED";
+    if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
+    if(statuses.some(s => s === "DISPATCHED" || s === "PARTIALLY DISPATCHED")) return "PARTIALLY DISPATCHED";
+    if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
+  }
   if(hasRejected) return "REJECTED";
-  if(statuses.every(s => s === "DISPATCHED")) return "DISPATCHED";
-  if(statuses.includes("DISPATCHED")) return "PARTIALLY DISPATCHED";
-  if(statuses.every(s => s === "NOT DESPATCHED")) return "NOT DESPATCHED";
-  if(statuses.every(s => s === "PROCESSED")) return "PROCESSED";
   if(statuses.every(s => s === "PENDING APPROVAL") || hasPendingApproval) return "PENDING APPROVAL";
   if(statuses.some(s => s === "APPROVED")) return "APPROVED";
 
@@ -4045,6 +4060,8 @@ function getStatusChipStyle(status){
     "PROCESSED": { bg:"rgba(245,158,11,0.18)", text:"#fef3c7", border:"rgba(245,158,11,0.46)" },
     "DISPATCHED": { bg:"rgba(34,197,94,0.18)", text:"#dcfce7", border:"rgba(34,197,94,0.44)" },
     "PARTIALLY DISPATCHED": { bg:"rgba(217,119,6,0.22)", text:"#ffedd5", border:"rgba(251,191,36,0.45)" },
+    "PARTIALLY RECEIVED": { bg:"rgba(8,145,178,0.26)", text:"#cffafe", border:"rgba(6,182,212,0.46)" },
+    "RECEIVED": { bg:"rgba(16,185,129,0.28)", text:"#ecfdf5", border:"rgba(52,211,153,0.52)" },
     "NOT DESPATCHED": { bg:"rgba(71,85,105,0.35)", text:"#e2e8f0", border:"rgba(148,163,184,0.45)" },
     "REJECTED": { bg:"rgba(239,68,68,0.18)", text:"#fecaca", border:"rgba(239,68,68,0.4)" }
   };
@@ -5263,12 +5280,15 @@ async function processExcelData(rows){
       (hasExistingDocket && normalizeCompareLocal(existingDocket) !== normalizeCompareLocal(docketNo)) ||
       (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName));
 
-    const normalizedUploadStatus = normalizeRowStatus(status || "");
-    const allowedLifecycleStatuses = ["PENDING APPROVAL", "APPROVED", "PROCESSED", "NOT DISPATCHED", "DISPATCHED"];
-    var resolvedDispatchStatus = "PROCESSED";
-    if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
-      resolvedDispatchStatus = normalizedUploadStatus;
-    }
+    const resolveRowFulfillmentStatus = (rowObj, billedTotal) => {
+      const effectiveQty = Number(getEffectiveQty(rowObj) || 0);
+      const safeBilled = Number(billedTotal || 0);
+      if(safeBilled <= 0) return "PROCESSED";
+      if(effectiveQty <= 0) return "DISPATCHED";
+      if(safeBilled >= effectiveQty) return "DISPATCHED";
+      return "PARTIALLY DISPATCHED";
+    };
+    var resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQty);
 
     if(hasMismatchOnExistingFilledFields){
       const nextRequestId = await allocateRequestId();
@@ -5368,18 +5388,7 @@ async function processExcelData(rows){
     }
 
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
-    const orderedQty = Number(existing.Qty || 0);
-    const pendingQty = Math.max(orderedQty - billedQtyTotal, 0);
-    resolvedDispatchStatus = pendingQty > 0 ? "NOT DISPATCHED" : "DISPATCHED";
-    if(allowedLifecycleStatuses.includes(normalizedUploadStatus)){
-      resolvedDispatchStatus = normalizedUploadStatus;
-    }
-    if(pendingQty > 0 && resolvedDispatchStatus === "DISPATCHED"){
-      resolvedDispatchStatus = "NOT DISPATCHED";
-    }
-    if(pendingQty <= 0 && resolvedDispatchStatus === "NOT DISPATCHED"){
-      resolvedDispatchStatus = "DISPATCHED";
-    }
+    resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQtyTotal);
 
     const { error } = await db
       .from("requests")
@@ -5912,6 +5921,8 @@ function renderSearchResults(data){
     const tableStatusRaw = getOrderStatusLabel(o);
     const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
       tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "PARTIALLY RECEIVED" ? "Partially Received" :
+      tableStatusRaw === "RECEIVED" ? "Received" :
       tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
       tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
 
@@ -6619,7 +6630,7 @@ async function loadDeveloperDashboard(){
       if(k === "APPROVED") return `loadSuper('Approved')`;
       if(k === "REJECTED") return `loadSuper('Rejected')`;
       if(k === "PROCESSED") return `loadAdmin('Processed')`;
-      if(k === "DISPATCHED" || k === "PARTIALLY DISPATCHED" || k === "NOT DESPATCHED") return `loadTrack('track')`;
+      if(k === "DISPATCHED" || k === "PARTIALLY DISPATCHED" || k === "PARTIALLY RECEIVED" || k === "RECEIVED" || k === "NOT DESPATCHED") return `loadTrack('track')`;
       return `loadSuper('All')`;
     };
     const statusCards = Object.entries(statusMap)
@@ -7106,6 +7117,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const tableStatusRaw = getOrderStatusLabel(o);
     const tableStatus = tableStatusRaw === "PENDING APPROVAL" ? "Pending Approval" :
       tableStatusRaw === "PARTIALLY DISPATCHED" ? "Partially Dispatched" :
+      tableStatusRaw === "PARTIALLY RECEIVED" ? "Partially Received" :
+      tableStatusRaw === "RECEIVED" ? "Received" :
       tableStatusRaw === "NOT DESPATCHED" ? "Not Dispatched" :
       tableStatusRaw.charAt(0) + tableStatusRaw.slice(1).toLowerCase();
       
@@ -7778,6 +7791,8 @@ function getPrintableStatusLabel(status){
   const s = normalizeRowStatus(status);
   if(s === "PENDING APPROVAL") return "Pending Approval";
   if(s === "PARTIALLY DISPATCHED") return "Partially Dispatched";
+  if(s === "PARTIALLY RECEIVED") return "Partially Received";
+  if(s === "RECEIVED") return "Received";
   if(s === "NOT DESPATCHED") return "Not Dispatched";
   return s.charAt(0) + s.slice(1).toLowerCase();
 }
