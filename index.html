@@ -6072,7 +6072,6 @@ function renderManagerDashboard(orders){
   const orderValue = (o) => (o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0);
   const statusKey = (o) => {
     const s = getOrderStatusLabel(o);
-    if(s === "PARTIALLY DISPATCHED" || s === "DISPATCHED") return "DISPATCHED";
     return s;
   };
   const summaryFrom = (list) => ({ count: list.length, value: list.reduce((s, o) => s + orderValue(o), 0) });
@@ -6142,7 +6141,7 @@ function renderManagerDashboard(orders){
     if(sk === "APPROVED"){ row.approvedCount += 1; row.approvedValue += val; }
     if(sk === "REJECTED"){ row.rejectedCount += 1; row.rejectedValue += val; }
     if(sk === "PROCESSED"){ row.processedCount += 1; row.processedValue += val; }
-    if(sk === "DISPATCHED"){ row.dispatchedCount += 1; row.dispatchedValue += val; }
+    if(sk === "DISPATCHED" || sk === "PARTIALLY DISPATCHED"){ row.dispatchedCount += 1; row.dispatchedValue += val; }
   });
   const branchRows = Object.values(branchMap).sort((a,b)=> b.totalValue - a.totalValue);
 
