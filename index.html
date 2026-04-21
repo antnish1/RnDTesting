@@ -2472,7 +2472,7 @@ function renderDocketMatches(){
     <div class="rounded-xl p-3 space-y-2" style="border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
-        <span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(r.Status)}">${normalizeRowStatus(r.Status || "-")}</span>
+        <span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getResolvedRowStatus(r))}">${getPrintableStatusLabel(r)}</span>
       </div>
       <div class="grid grid-cols-2 gap-2 text-xs">
         <div><span style="color:var(--pc-text-muted);">Customer:</span> <span style="color:#e2e8f0;">${escapeHtml(r.CustomerName || "-")}</span></div>
@@ -2506,10 +2506,10 @@ function renderDocketMatches(){
         </div>
       </details>
       <button
-        class="top-btn w-full justify-center ${normalizeRowStatus(r.Status) === "RECEIVED" ? "opacity-60 cursor-not-allowed" : ""}"
-        ${normalizeRowStatus(r.Status) === "RECEIVED" ? "disabled" : ""}
+        class="top-btn w-full justify-center ${getResolvedRowStatus(r) === "RECEIVED" ? "opacity-60 cursor-not-allowed" : ""}"
+        ${getResolvedRowStatus(r) === "RECEIVED" ? "disabled" : ""}
         onclick="markDocketRowReceived('${r.id}')">
-        ${normalizeRowStatus(r.Status) === "RECEIVED" ? "Already Received" : "Mark Received"}
+        ${getResolvedRowStatus(r) === "RECEIVED" ? "Already Received" : "Mark Received"}
       </button>
     </div>
   `).join("");
@@ -4020,11 +4020,37 @@ function normalizeRowStatus(status){
   return s || "PENDING APPROVAL";
 }
 
+function getResolvedRowStatus(row){
+  if(!row || typeof row !== "object"){
+    return normalizeRowStatus(row);
+  }
+  const current = normalizeRowStatus(row.Status);
+  if(current === "RECEIVED" || current === "PARTIALLY RECEIVED"){
+    return "RECEIVED";
+  }
+  const billedQty = Number(row.BilledQty || 0);
+  const hasFulfillmentStarted = (
+    current === "PROCESSED" ||
+    current === "PARTIALLY DISPATCHED" ||
+    current === "DISPATCHED" ||
+    !!row.ProcessedDate ||
+    billedQty > 0
+  );
+  if(!hasFulfillmentStarted){
+    return current;
+  }
+  const effectiveQty = Number(getEffectiveQty(row) || 0);
+  if(billedQty <= 0) return "PROCESSED";
+  if(effectiveQty <= 0) return "DISPATCHED";
+  if(billedQty >= effectiveQty) return "DISPATCHED";
+  return "PARTIALLY DISPATCHED";
+}
+
 function getOrderStatusLabel(order){
   const items = Array.isArray(order?.items) ? order.items : (Array.isArray(order) ? order : []);
   if(!items.length) return "PENDING APPROVAL";
 
-  const statuses = items.map(x => normalizeRowStatus(x?.Status));
+  const statuses = items.map(x => getResolvedRowStatus(x));
   const hasRejected = items.some(x => {
     const approval = (x?.ApprovalStatus || "").toString().trim().toUpperCase();
     return normalizeRowStatus(x?.Status) === "REJECTED" || approval === "REJECTED";
@@ -4058,10 +4084,10 @@ function getStatusChipStyle(status){
     "PENDING APPROVAL": { bg:"rgba(59,130,246,0.2)", text:"#dbeafe", border:"rgba(96,165,250,0.45)" },
     "APPROVED": { bg:"rgba(16,185,129,0.16)", text:"#d1fae5", border:"rgba(16,185,129,0.42)" },
     "PROCESSED": { bg:"rgba(245,158,11,0.18)", text:"#fef3c7", border:"rgba(245,158,11,0.46)" },
-    "DISPATCHED": { bg:"rgba(34,197,94,0.18)", text:"#dcfce7", border:"rgba(34,197,94,0.44)" },
+    "DISPATCHED": { bg:"rgba(59,130,246,0.22)", text:"#dbeafe", border:"rgba(96,165,250,0.5)" },
     "PARTIALLY DISPATCHED": { bg:"rgba(217,119,6,0.22)", text:"#ffedd5", border:"rgba(251,191,36,0.45)" },
     "PARTIALLY RECEIVED": { bg:"rgba(8,145,178,0.26)", text:"#cffafe", border:"rgba(6,182,212,0.46)" },
-    "RECEIVED": { bg:"rgba(16,185,129,0.28)", text:"#ecfdf5", border:"rgba(52,211,153,0.52)" },
+    "RECEIVED": { bg:"rgba(22,163,74,0.30)", text:"#ecfdf5", border:"rgba(74,222,128,0.56)" },
     "NOT DESPATCHED": { bg:"rgba(71,85,105,0.35)", text:"#e2e8f0", border:"rgba(148,163,184,0.45)" },
     "REJECTED": { bg:"rgba(239,68,68,0.18)", text:"#fecaca", border:"rgba(239,68,68,0.4)" }
   };
@@ -4386,8 +4412,8 @@ const orderStatus = getOrderStatusLabel(data);
   
 <td>
   <span class="px-2 py-1 rounded text-xs font-semibold"
-    style="${getStatusChipStyle(r.Status)}">
-    ${(r.Status || "").toUpperCase()}
+    style="${getStatusChipStyle(getResolvedRowStatus(r))}">
+    ${getPrintableStatusLabel(r)}
   </span>
 </td>
     <td>${formatDate(r.ProcessedDate)}</td>
@@ -5867,7 +5893,7 @@ function handleUniversalSearch(value){
       (r.MachineNo || "").toLowerCase().includes(search) ||
       (r.Branch || "").toLowerCase().includes(search) ||
       (r.OrderType || "").toLowerCase().includes(search) ||
-      (r.Status || "").toLowerCase().includes(search)
+      getPrintableStatusLabel(r).toLowerCase().includes(search)
     );
 
   });
@@ -6010,7 +6036,7 @@ function updateManagerPendingFavicon(count){
     faviconLink.href = window.managerBaseFaviconHref;
     return;
   }
-  const size = 64;
+  const size = 96;
   const img = new Image();
   img.crossOrigin = "anonymous";
   img.onload = () => {
@@ -6025,13 +6051,13 @@ function updateManagerPendingFavicon(count){
     ctx.drawImage(img, 0, 0, size, size);
     ctx.fillStyle = "#ef4444";
     ctx.beginPath();
-    ctx.arc(48, 16, 14, 0, Math.PI * 2);
+    ctx.arc(70, 24, 20, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 14px Arial";
+    ctx.font = "bold 18px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(pending > 99 ? "99+" : String(pending), 48, 16);
+    ctx.fillText(pending > 99 ? "99+" : String(pending), 70, 24);
     faviconLink.href = canvas.toDataURL("image/png");
   };
   img.onerror = () => {
@@ -6851,7 +6877,7 @@ async function loadDeveloperRequestsEditor(){
                     <td class="px-2 py-2">${escapeHtml(r.OrderNo || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(r.Branch || "-")}</td>
                     <td class="px-2 py-2">${escapeHtml(r.PartNo || "-")}</td>
-                    <td class="px-2 py-2">${escapeHtml(r.Status || "-")}</td>
+                    <td class="px-2 py-2">${escapeHtml(getPrintableStatusLabel(r))}</td>
                     <td class="px-2 py-2">${escapeHtml(formatDateTimeIST(r.created_at || ""))}</td>
                     <td class="px-2 py-2"><button class="track-page-btn" onclick="editDeveloperRequestRow('${r.id}')">Edit JSON</button></td>
                   </tr>
@@ -7788,7 +7814,9 @@ function escapeHtml(value){
 }
 
 function getPrintableStatusLabel(status){
-  const s = normalizeRowStatus(status);
+  const s = (status && typeof status === "object")
+    ? getResolvedRowStatus(status)
+    : normalizeRowStatus(status);
   if(s === "PENDING APPROVAL") return "Pending Approval";
   if(s === "PARTIALLY DISPATCHED") return "Partially Dispatched";
   if(s === "PARTIALLY RECEIVED") return "Partially Received";
@@ -7846,7 +7874,7 @@ async function printOrderDetails(orderNo){
         <td>${billed}</td>
         <td>${pending}</td>
         <td class="right">₹ ${Number(getEffectiveValue(r) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-        <td>${escapeHtml(getPrintableStatusLabel(r.Status))}</td>
+        <td>${escapeHtml(getPrintableStatusLabel(r))}</td>
         <td>${escapeHtml(formatDate(r.ProcessedDate))}</td>
         <td>${escapeHtml(formatDate(r.OrderRegDt))}</td>
         <td>${escapeHtml(r.BillNo || "-")}</td>
@@ -8130,7 +8158,7 @@ async function downloadOrderExcel(orderNo){
     "Billed Qty": r.BilledQty || 0,
     "Pending Qty": getEffectiveQty(r) - (r.BilledQty || 0),
     "Value": getEffectiveValue(r),
-    "Status": r.Status,
+    "Status": getResolvedRowStatus(r),
     "Processed Date": r.ProcessedDate || "",
     "Bill No": r.BillNo || "",
     "Transport": r.TransportName || "",
