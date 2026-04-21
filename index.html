@@ -794,6 +794,17 @@ tr[style*="f59e0b"]:hover {
   grid-template-columns: repeat(6, minmax(0,1fr));
   gap: 10px;
 }
+.mgr-kpi-grid-single-row{
+  display:flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.mgr-kpi-grid-single-row .mgr-kpi-card{
+  min-width: 150px;
+  flex: 0 0 auto;
+}
 .mgr-kpi-card{
   border-radius: 12px;
   padding: 8px;
@@ -5970,6 +5981,54 @@ function renderSearchResults(data){
 }
 
 
+function updateManagerPendingFavicon(count){
+  const pending = Number(count || 0);
+  const faviconLink = document.querySelector('link[rel="icon"]');
+  if(!faviconLink){
+    return;
+  }
+  if(!window.managerBaseFaviconHref){
+    window.managerBaseFaviconHref = faviconLink.getAttribute("href") || "F.ico";
+  }
+  const titlePrefix = pending > 0 ? `(${pending > 99 ? "99+" : pending}) ` : "";
+  const baseTitle = (window.managerBaseTitle || document.title || "Parts Connect Portal").replace(/^\(\d+\+?\)\s*/, "");
+  window.managerBaseTitle = baseTitle;
+  document.title = `${titlePrefix}${baseTitle}`;
+
+  if(pending <= 0){
+    faviconLink.href = window.managerBaseFaviconHref;
+    return;
+  }
+  const size = 64;
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if(!ctx){
+      faviconLink.href = window.managerBaseFaviconHref;
+      return;
+    }
+    ctx.drawImage(img, 0, 0, size, size);
+    ctx.fillStyle = "#ef4444";
+    ctx.beginPath();
+    ctx.arc(48, 16, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(pending > 99 ? "99+" : String(pending), 48, 16);
+    faviconLink.href = canvas.toDataURL("image/png");
+  };
+  img.onerror = () => {
+    faviconLink.href = window.managerBaseFaviconHref;
+  };
+  img.src = window.managerBaseFaviconHref;
+}
+
 function renderManagerDashboard(orders){
   const allOrders = orders || [];
   const isManager = isManagerRole(getUser());
@@ -6006,6 +6065,9 @@ function renderManagerDashboard(orders){
     if(toDate && d > toDate) return false;
     return true;
   });
+  const dashboardOrders = window.managerDashBranchFilter === "ALL"
+    ? safeOrders
+    : safeOrders.filter(o => (o.Branch || "-") === window.managerDashBranchFilter);
 
   const orderValue = (o) => (o.items || []).reduce((s, x) => s + Number(getEffectiveValue(x) || 0), 0);
   const statusKey = (o) => {
@@ -6014,7 +6076,7 @@ function renderManagerDashboard(orders){
     return s;
   };
   const summaryFrom = (list) => ({ count: list.length, value: list.reduce((s, o) => s + orderValue(o), 0) });
-  const byStatus = (k) => summaryFrom(safeOrders.filter(o => statusKey(o) === k));
+  const byStatus = (k) => summaryFrom(dashboardOrders.filter(o => statusKey(o) === k));
   const orderTypeKey = (o) => {
     const t = (o.OrderType || "").toUpperCase();
     if(t === "SOP"){
@@ -6022,7 +6084,7 @@ function renderManagerDashboard(orders){
     }
     return t || "OTHER";
   };
-  const byType = (k) => summaryFrom(safeOrders.filter(o => orderTypeKey(o) === k));
+  const byType = (k) => summaryFrom(dashboardOrders.filter(o => orderTypeKey(o) === k));
   const cardPalette = [
     { tint:"rgba(148,163,184,0.18)", border:"rgba(148,163,184,0.35)" },
     { tint:"rgba(245,158,11,0.18)", border:"rgba(245,158,11,0.4)" },
@@ -6038,11 +6100,11 @@ function renderManagerDashboard(orders){
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, c => c.toUpperCase());
-  const statusEntries = Array.from(new Set(safeOrders.map(o => statusKey(o) || "UNKNOWN")))
+  const statusEntries = Array.from(new Set(dashboardOrders.map(o => statusKey(o) || "UNKNOWN")))
     .filter(Boolean)
     .sort((a, b) => byStatus(b).count - byStatus(a).count);
   const statusCards = [
-    { key:"ALL", label:"Total Orders", ...summaryFrom(safeOrders), ...cardPalette[0] },
+    { key:"ALL", label:"Total Orders", ...summaryFrom(dashboardOrders), ...cardPalette[0] },
     ...statusEntries.map((k, idx) => ({
       key: k,
       label: formatCardLabel(k),
@@ -6050,7 +6112,7 @@ function renderManagerDashboard(orders){
       ...(cardPalette[(idx + 1) % cardPalette.length])
     }))
   ];
-  const typeEntries = Array.from(new Set(safeOrders.map(o => orderTypeKey(o) || "OTHER")))
+  const typeEntries = Array.from(new Set(dashboardOrders.map(o => orderTypeKey(o) || "OTHER")))
     .filter(Boolean)
     .sort((a, b) => byType(b).count - byType(a).count);
   const typeCards = typeEntries.map((k, idx) => ({
@@ -6064,7 +6126,7 @@ function renderManagerDashboard(orders){
     .sort((a, b) => a.localeCompare(b));
 
   const branchMap = {};
-  safeOrders.forEach(o => {
+  dashboardOrders.forEach(o => {
     const b = o.Branch || "-";
     if(!branchMap[b]){
       branchMap[b] = {
@@ -6084,19 +6146,17 @@ function renderManagerDashboard(orders){
   });
   const branchRows = Object.values(branchMap).sort((a,b)=> b.totalValue - a.totalValue);
 
-  let selectedOrders = safeOrders;
+  let selectedOrders = dashboardOrders;
   const activeFilter = window.managerDashFilter;
   if(activeFilter?.type === "status" && activeFilter.key !== "ALL"){
-    selectedOrders = safeOrders.filter(o => statusKey(o) === activeFilter.key);
+    selectedOrders = dashboardOrders.filter(o => statusKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "type"){
-    selectedOrders = safeOrders.filter(o => orderTypeKey(o) === activeFilter.key);
+    selectedOrders = dashboardOrders.filter(o => orderTypeKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "branch"){
-    selectedOrders = safeOrders.filter(o => (o.Branch || "-") === activeFilter.key);
-  }
-  if(window.managerDashBranchFilter !== "ALL"){
-    selectedOrders = selectedOrders.filter(o => (o.Branch || "-") === window.managerDashBranchFilter);
+    selectedOrders = dashboardOrders.filter(o => (o.Branch || "-") === activeFilter.key);
   }
   window.managerDashSelectedOrders = selectedOrders;
+  updateManagerPendingFavicon(byStatus("PENDING APPROVAL").count);
 
   const totalRow = branchRows.reduce((acc, b) => {
     acc.totalOrders += b.totalOrders; acc.totalValue += b.totalValue;
@@ -6160,7 +6220,7 @@ function renderManagerDashboard(orders){
           </div>
         </div>
 
-        <div class="mgr-kpi-grid">${statusCards.map(cardHtml).join("")}</div>
+        <div class="mgr-kpi-grid-single-row">${statusCards.map(cardHtml).join("")}</div>
         <div class="mgr-kpi-grid mt-2">${typeCards.map(c => cardHtml({ ...c, filterType: "type" })).join("")}</div>
       </section>
 
