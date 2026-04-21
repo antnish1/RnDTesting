@@ -3277,23 +3277,40 @@ const isDeveloper = isDeveloperRole(user);
 
 showLoader();
 
-let query = db
-  .from("requests")
-  .select(REQUEST_LIST_SELECT)
-  .order("created_at", { ascending:false });
+const pageSize = 1000;
+let offset = 0;
+const allRows = [];
 
-// ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
-if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
-  query = query.eq("Branch", getUserBranch(user));
+while(true){
+  let query = db
+    .from("requests")
+    .select(REQUEST_LIST_SELECT)
+    .order("created_at", { ascending:false })
+    .range(offset, offset + pageSize - 1);
+
+  // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
+  if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
+    query = query.eq("Branch", getUserBranch(user));
+  }
+
+  const { data, error } = await query;
+  if(error){
+    console.error("loadTrack pagination error:", error.message || error);
+    break;
+  }
+  if(!data || data.length === 0) break;
+
+  allRows.push(...data);
+  if(data.length < pageSize) break;
+  offset += pageSize;
 }
 
-const { data } = await query;
-GLOBAL_DATA = data;
+GLOBAL_DATA = allRows;
 hideLoader();
 
 const grouped = {};
 
-data.forEach(r=>{
+allRows.forEach(r=>{
 if(!grouped[r.OrderNo]){
 grouped[r.OrderNo] = { ...r, items:[] };
 }
