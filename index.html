@@ -5467,6 +5467,8 @@ async function processExcelData(rows){
     }
 
     const billedQtyTotal = (billingRows || []).reduce((sum, row) => sum + Number(row.billed_qty || 0), 0);
+    const effectiveQty = Number(getEffectiveQty(existing) || 0);
+    const pendingQty = Math.max(0, effectiveQty - billedQtyTotal);
     resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQtyTotal);
 
     const { error } = await db
