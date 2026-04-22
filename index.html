@@ -5341,18 +5341,42 @@ async function processExcelData(rows){
     const docketNo = (r["Docket"] || "").toString().trim();
     const transportName = (r["Transport Name"] || "").toString().trim();
 
+    const incomingDispatchFingerprint = {
+      billNo: normalizeCompareLocal(billNo),
+      docketNo: normalizeCompareLocal(docketNo),
+      transportName: normalizeCompareLocal(transportName),
+      deliveryNo: normalizeCompareLocal(deliveryNo)
+    };
+    const hasIncomingDispatchFingerprint = Object.values(incomingDispatchFingerprint).some(Boolean);
+    const hasSameDispatchFingerprint = (row, fingerprint) => {
+      const rowFingerprint = {
+        billNo: normalizeCompareLocal(row?.BillNo || ""),
+        docketNo: normalizeCompareLocal(row?.Docket || ""),
+        transportName: normalizeCompareLocal(row?.TransportName || ""),
+        deliveryNo: normalizeCompareLocal(row?.DeliveryNo || "")
+      };
+      return rowFingerprint.billNo === fingerprint.billNo &&
+        rowFingerprint.docketNo === fingerprint.docketNo &&
+        rowFingerprint.transportName === fingerprint.transportName &&
+        rowFingerprint.deliveryNo === fingerprint.deliveryNo;
+    };
+
     // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE) using OrderNo + PartNo
     let existing = null;
+    let orderPartCandidates = [];
     if(orderNo){
       const { data: matchesByOrder } = await db
         .from("requests")
         .select("*")
         .eq("OrderNo", orderNo)
         .eq("PartNo", normalizedPartNo)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if(matchesByOrder?.length){
-        existing = matchesByOrder[0];
+        .order("created_at", { ascending: false });
+      orderPartCandidates = matchesByOrder || [];
+      if(hasIncomingDispatchFingerprint){
+        existing = orderPartCandidates.find(row => hasSameDispatchFingerprint(row, incomingDispatchFingerprint)) || null;
+      }
+      if(!existing && orderPartCandidates.length){
+        existing = orderPartCandidates[0];
       }
     }
     if(!existing){
@@ -5407,6 +5431,12 @@ async function processExcelData(rows){
     var resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQty);
 
     if(hasMismatchOnExistingFilledFields){
+      const matchingVariant = hasIncomingDispatchFingerprint
+        ? orderPartCandidates.find(row => hasSameDispatchFingerprint(row, incomingDispatchFingerprint))
+        : null;
+      if(matchingVariant){
+        existing = matchingVariant;
+      } else {
       const nextRequestId = await allocateRequestId();
       const insertPayload = {
         ...existing,
@@ -5450,6 +5480,7 @@ async function processExcelData(rows){
         statusLoggedOrders.add(orderNo);
       }
       continue;
+      }
     }
 
     const idempotencyKey = [
