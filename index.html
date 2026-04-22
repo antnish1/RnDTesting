@@ -3447,6 +3447,11 @@ if(!grouped[r.OrderNo]){
 grouped[r.OrderNo] = { ...r, items:[] };
 }
 grouped[r.OrderNo].items.push(r);
+const groupedCreatedAt = new Date(grouped[r.OrderNo].created_at || 0).getTime();
+const rowCreatedAt = new Date(r.created_at || 0).getTime();
+if(rowCreatedAt && (!groupedCreatedAt || rowCreatedAt < groupedCreatedAt)){
+  grouped[r.OrderNo].created_at = r.created_at;
+}
 });
 
 const allOrders = applyOrderSort(
@@ -3731,6 +3736,11 @@ if(!grouped[r.OrderNo]){
 grouped[r.OrderNo] = { ...r, items:[] };
 }
 grouped[r.OrderNo].items.push(r);
+const groupedCreatedAt = new Date(grouped[r.OrderNo].created_at || 0).getTime();
+const rowCreatedAt = new Date(r.created_at || 0).getTime();
+if(rowCreatedAt && (!groupedCreatedAt || rowCreatedAt < groupedCreatedAt)){
+  grouped[r.OrderNo].created_at = r.created_at;
+}
 });
 
 const orders = applyOrderSort(
@@ -5994,6 +6004,11 @@ function renderSearchResults(data){
       grouped[r.OrderNo] = { ...r, items:[] };
     }
     grouped[r.OrderNo].items.push(r);
+    const groupedCreatedAt = new Date(grouped[r.OrderNo].created_at || 0).getTime();
+    const rowCreatedAt = new Date(r.created_at || 0).getTime();
+    if(rowCreatedAt && (!groupedCreatedAt || rowCreatedAt < groupedCreatedAt)){
+      grouped[r.OrderNo].created_at = r.created_at;
+    }
   });
 
   const includeAllForManager = isManagerRole(getUser()) || isDeveloperRole(getUser());
@@ -7146,6 +7161,11 @@ const grouped = {};
     grouped[r.OrderNo] = { ...r, items:[] };
   }
   grouped[r.OrderNo].items.push(r);
+  const groupedCreatedAt = new Date(grouped[r.OrderNo].created_at || 0).getTime();
+  const rowCreatedAt = new Date(r.created_at || 0).getTime();
+  if(rowCreatedAt && (!groupedCreatedAt || rowCreatedAt < groupedCreatedAt)){
+    grouped[r.OrderNo].created_at = r.created_at;
+  }
 });
 
   const allOrders = applyOrderSort(
