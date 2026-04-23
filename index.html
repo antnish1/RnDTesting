@@ -4059,6 +4059,7 @@ function getEffectiveValue(row){
 
 function normalizeRowStatus(status){
   const s = (status || "").toString().trim().toUpperCase();
+  if(s.includes("ISSUED")) return "ISSUED";
 
   if(s.includes("RECEIV")){
     return s.includes("PARTIAL") ? "PARTIALLY RECEIVED" : "RECEIVED";
@@ -4085,6 +4086,9 @@ function getResolvedRowStatus(row){
     return normalizeRowStatus(row);
   }
   const current = normalizeRowStatus(row.Status);
+  if(current === "ISSUED"){
+    return "ISSUED";
+  }
   if(current === "RECEIVED" || current === "PARTIALLY RECEIVED"){
     return "RECEIVED";
   }
@@ -4178,6 +4182,7 @@ function getStatusChipStyle(status){
     "PARTIALLY DISPATCHED": { bg:"rgba(217,119,6,0.22)", text:"#ffedd5", border:"rgba(251,191,36,0.45)" },
     "PARTIALLY RECEIVED": { bg:"rgba(8,145,178,0.26)", text:"#cffafe", border:"rgba(6,182,212,0.46)" },
     "RECEIVED": { bg:"rgba(22,163,74,0.30)", text:"#ecfdf5", border:"rgba(74,222,128,0.56)" },
+    "ISSUED": { bg:"rgba(37,99,235,0.24)", text:"#dbeafe", border:"rgba(96,165,250,0.56)" },
     "NOT DESPATCHED": { bg:"rgba(71,85,105,0.35)", text:"#e2e8f0", border:"rgba(148,163,184,0.45)" },
     "REJECTED": { bg:"rgba(239,68,68,0.18)", text:"#fecaca", border:"rgba(239,68,68,0.4)" }
   };
@@ -4334,7 +4339,8 @@ function getActionEventTitle(action, fallbackText = ""){
     SUPER_REMOVED_ROW: "PART WAS REMOVED FOR REVIEW",
     SUPER_RESET_TO_ORIGINAL: "EDITED QUANTITIES WERE RESET",
     SUPER_ACCEPTED_EDITS: "EDITED QUANTITIES WERE ACCEPTED",
-    STATUS_UPDATED: "STATUS WAS UPDATED"
+    STATUS_UPDATED: "STATUS WAS UPDATED",
+    ORDER_ISSUED: "ORDER WAS MARKED AS ISSUED"
   };
   if(map[action]) return map[action];
   return fallbackText || "Action updated";
@@ -4354,7 +4360,8 @@ function getActionEventColor(action){
     APPROVER_CHANGED: "#6d28d9",
     SUPER_ACCEPTED_EDITS: "#92400e",
     SUPER_RESET_TO_ORIGINAL: "#92400e",
-    SUPER_REMOVED_ROW: "#9f1239"
+    SUPER_REMOVED_ROW: "#9f1239",
+    ORDER_ISSUED: "#2563eb"
   };
   return palette[action] || "#334155";
 }
@@ -4539,6 +4546,11 @@ const orderStatus = getOrderStatusLabel(data);
 
 
 const isAdmin = isAdminRole(user) || isDeveloperRole(user);
+const userBranch = getUserBranch(user).toUpperCase();
+const isCustomerOrder = (order.OrderFor || "").toUpperCase() === "CUSTOMER";
+const canMarkIssued = isCustomerOrder && userBranch && (order.Branch || "").toUpperCase() === userBranch && !isSuperLikeRole(user);
+const issuedInvoiceNo = (order.BillNo || "").toString().trim();
+const issuedInvoiceDate = (order.BillingDt || "").toString().slice(0, 10);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -4668,6 +4680,28 @@ if(isSuper){
 else{
   actionButtons = `
     <div class="flex gap-2 items-center flex-wrap">
+      ${canMarkIssued ? `
+        <div class="flex gap-2 items-center flex-wrap">
+          <input
+            id="issuedInvoiceNo"
+            value="${escapeHtml(issuedInvoiceNo)}"
+            class="pc-field w-[160px] text-sm"
+            placeholder="Invoice No"
+          />
+          <input
+            id="issuedInvoiceDate"
+            type="date"
+            value="${escapeHtml(issuedInvoiceDate)}"
+            class="pc-field w-[150px] text-sm"
+            onclick="this.showPicker && this.showPicker()"
+          />
+          <button onclick="markOrderIssued('${orderNo}')"
+            class="detail-action-btn"
+            style="border-color:rgba(96,165,250,0.45); color:#dbeafe;">
+            ${orderStatus === "ISSUED" ? "Re-Issue" : "Issued"}
+          </button>
+        </div>
+      ` : ""}
 
       ${isAdmin ? `
         <div class="flex gap-2 items-center">
@@ -5034,6 +5068,61 @@ async function processOrder(orderNo){
   } else {
     loadAdmin("Processed");
   }
+}
+
+async function markOrderIssued(orderNo){
+  const invoiceNo = (document.getElementById("issuedInvoiceNo")?.value || "").trim();
+  const invoiceDate = (document.getElementById("issuedInvoiceDate")?.value || "").trim();
+  if(!invoiceNo){
+    return showPopup("Please enter Invoice No. ❗");
+  }
+  if(!invoiceDate){
+    return showPopup("Please choose Invoice Date ❗");
+  }
+
+  const user = getUser();
+  const userBranch = getUserBranch(user).toUpperCase();
+  const { data: rows, error: fetchError } = await db
+    .from("requests")
+    .select("id, OrderFor, Branch")
+    .eq("OrderNo", orderNo);
+
+  if(fetchError || !rows?.length){
+    return showPopup("Order not found ❗");
+  }
+
+  const first = rows[0];
+  if((first.OrderFor || "").toUpperCase() !== "CUSTOMER"){
+    return showPopup("Only customer orders can be marked Issued ❗");
+  }
+  if((first.Branch || "").toUpperCase() !== userBranch){
+    return showPopup("You can only mark your own branch orders as Issued ❗");
+  }
+
+  showLoader();
+  const { error } = await db
+    .from("requests")
+    .update({
+      Status: "Issued",
+      BillNo: invoiceNo,
+      BillingDt: invoiceDate
+    })
+    .eq("OrderNo", orderNo);
+  hideLoader();
+
+  if(error){
+    console.error("markOrderIssued failed:", error);
+    return showPopup("Failed to update order as Issued ❗");
+  }
+
+  await appendOrderActionLog(
+    orderNo,
+    "ORDER_ISSUED",
+    `Order marked as Issued by ${getUser()?.Name || "Unknown User"}.`,
+    { invoiceNo, invoiceDate }
+  );
+  showPopup("Order marked as Issued ✅", "success");
+  openOrderView(orderNo);
 }
 
 
@@ -6243,6 +6332,9 @@ function renderManagerDashboard(orders){
   };
   const summaryFrom = (list) => ({ count: list.length, value: list.reduce((s, o) => s + orderValue(o), 0) });
   const byStatus = (k) => summaryFrom(dashboardOrders.filter(o => statusKey(o) === k));
+  const customerOrders = dashboardOrders.filter(o => (o.OrderFor || "").toUpperCase() === "CUSTOMER");
+  const customerIssuedOrders = customerOrders.filter(o => statusKey(o) === "ISSUED");
+  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) !== "ISSUED");
   const orderTypeKey = (o) => {
     const t = (o.OrderType || "").toUpperCase();
     if(t === "SOP"){
@@ -6268,14 +6360,17 @@ function renderManagerDashboard(orders){
     .replace(/\b\w/g, c => c.toUpperCase());
   const statusEntries = Array.from(new Set(dashboardOrders.map(o => statusKey(o) || "UNKNOWN")))
     .filter(Boolean)
+    .filter(k => k !== "ISSUED")
     .sort((a, b) => byStatus(b).count - byStatus(a).count);
   const statusCards = [
     { key:"ALL", label:"Total Orders", ...summaryFrom(dashboardOrders), ...cardPalette[0] },
+    { key:"ISSUED", label:"Issued (Customer)", ...summaryFrom(customerIssuedOrders), ...cardPalette[1], filterType: "issued_bucket" },
+    { key:"NOT_ISSUED", label:"Not Issued (Customer)", ...summaryFrom(customerNotIssuedOrders), ...cardPalette[2], filterType: "issued_bucket" },
     ...statusEntries.map((k, idx) => ({
       key: k,
       label: formatCardLabel(k),
       ...byStatus(k),
-      ...(cardPalette[(idx + 1) % cardPalette.length])
+      ...(cardPalette[(idx + 3) % cardPalette.length])
     }))
   ];
   const typeEntries = Array.from(new Set(dashboardOrders.map(o => orderTypeKey(o) || "OTHER")))
@@ -6316,6 +6411,10 @@ function renderManagerDashboard(orders){
   const activeFilter = window.managerDashFilter;
   if(activeFilter?.type === "status" && activeFilter.key !== "ALL"){
     selectedOrders = dashboardOrders.filter(o => statusKey(o) === activeFilter.key);
+  } else if(activeFilter?.type === "issued_bucket"){
+    selectedOrders = activeFilter.key === "ISSUED"
+      ? customerIssuedOrders
+      : customerNotIssuedOrders;
   } else if(activeFilter?.type === "type"){
     selectedOrders = dashboardOrders.filter(o => orderTypeKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "branch"){
