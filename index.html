@@ -3680,8 +3680,9 @@ async function loadPendingCount(){
     grouped[r.OrderNo].push(r);
   });
 
-  // ✅ GET UNIQUE APPROVED ORDER COUNT
+  // ✅ GET UNIQUE APPROVED ORDER COUNT (match admin table rules)
   const uniqueOrders = Object.entries(grouped)
+    .filter(([, items]) => shouldShowOrder({ items }))
     .filter(([, items]) => getOrderStatusLabel(items) === "APPROVED")
     .map(([orderNo]) => orderNo);
   const count = uniqueOrders.length;
