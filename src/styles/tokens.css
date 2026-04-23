@@ -1,0 +1,17 @@
+:root {
+  --pc-primary: #60a5fa;
+  --pc-secondary: #22d3ee;
+  --pc-light: #0f172a;
+  --pc-warm: #1e293b;
+
+  --pc-bg: #0b1220;
+  --pc-surface: #111827;
+  --pc-border: #334155;
+  --pc-text: #e5e7eb;
+  --pc-text-muted: #94a3b8;
+  --pc-success: #22c55e;
+  --pc-warning: #f59e0b;
+  --pc-danger: #ef4444;
+  --pc-font-ui: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --pc-font-strong: "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
