@@ -386,6 +386,10 @@ function renderHeader(){
           <span class="text-sm font-semibold tracking-widest uppercase" style="color: var(--pc-text);">
             ${getUserBranch(user)}
           </span>
+          <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider"
+                style="background:rgba(124,155,255,0.2); color:#dbe7ff; border:1px solid rgba(124,155,255,0.45);">
+            REDESIGN 2026
+          </span>
         </div>
       </div>
 
