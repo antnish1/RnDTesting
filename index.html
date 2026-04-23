@@ -1338,6 +1338,42 @@ table thead th.sort-desc::after {
 }
     
     
+
+:root {
+  --pc-density-pad-desktop: 10px;
+  --pc-density-pad-mobile: 8px;
+  --pc-density-row-desktop: 40px;
+  --pc-density-row-mobile: 34px;
+  --pc-font-desktop: 13px;
+  --pc-font-mobile: 12px;
+}
+
+.pc-btn{
+  border-radius: 9px;
+  border: 1px solid rgba(148,163,184,0.35);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  min-height: var(--pc-density-row-desktop);
+  line-height: 1.1;
+}
+.pc-btn-primary{ background: linear-gradient(180deg, rgba(59,130,246,0.95), rgba(37,99,235,0.95)); border-color: rgba(147,197,253,0.75); color: #eff6ff; }
+.pc-btn-secondary{ background: rgba(30,41,59,0.92); color: #e2e8f0; }
+.pc-btn-danger{ background: rgba(127,29,29,0.62); border-color: rgba(248,113,113,0.48); color: #fee2e2; }
+.pc-input-compact{ min-height: var(--pc-density-row-desktop) !important; padding: 6px 10px !important; font-size: var(--pc-font-desktop) !important; }
+.pc-status-chip{ display:inline-flex; align-items:center; border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.pc-section-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px; }
+.pc-table-toolbar{ display:flex; align-items:end; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 10px; }
+.pc-table-controls{ display:flex; align-items:end; gap:8px; flex-wrap:wrap; }
+.pc-dense-table th, .pc-dense-table td{ min-height: var(--pc-density-row-desktop); padding-top: 8px !important; padding-bottom: 8px !important; font-size: var(--pc-font-desktop); }
+.pc-dense-table thead th{ position: sticky; top: 0; z-index: 4; }
+.pc-row-action{ border: 1px solid rgba(148,163,184,0.35); background: rgba(30,41,59,0.85); color:#e2e8f0; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 3px 10px; }
+
+@media (max-width: 768px){
+  .pc-btn, .pc-input-compact{ min-height: var(--pc-density-row-mobile) !important; font-size: var(--pc-font-mobile) !important; }
+  .pc-dense-table th, .pc-dense-table td{ min-height: var(--pc-density-row-mobile); font-size: var(--pc-font-mobile); }
+}
+
 </style>
 
 
@@ -1350,6 +1386,15 @@ const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
+let ORDER_SEARCH_QUERY = "";
+const SCREEN_STYLE_INVENTORY = Object.freeze({
+  login: ["loadLogin"],
+  orderCreate: ["loadCreate"],
+  tracking: ["loadTrack"],
+  managerDashboard: ["renderManagerDashboard"],
+  adminTools: ["loadAdmin", "loadUpload", "renderManagerInventoryLookupTab"],
+  popups: ["showPopup", "showConfirmPopup", "showOrderPlacedPopupSummary"]
+});
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -1384,6 +1429,65 @@ db.channel('requests-changes')
 // ---------- UTIL ----------
 function showLoader(){ document.getElementById("loader").classList.remove("hidden"); }
 function hideLoader(){ document.getElementById("loader").classList.add("hidden"); }
+
+function applyScreenStyleChecklist(screenKey){
+  document.body.setAttribute("data-screen", screenKey || "unknown");
+  const root = document.getElementById("main") || document.getElementById("app") || document;
+  root.querySelectorAll("input.pc-field, select.pc-field, textarea.pc-field").forEach(el => el.classList.add("pc-input-compact"));
+  root.querySelectorAll("button.order-cta, .track-page-btn, .table-toggle-btn, .mgr-inv-lookup-btn").forEach(btn => btn.classList.add("pc-btn", "pc-btn-secondary"));
+  root.querySelectorAll("table.track-table, .parts-table-wrap table").forEach(table => table.classList.add("pc-dense-table"));
+}
+
+function getSortPresetValue(){
+  if(!TABLE_SORT_STATE?.key || !TABLE_SORT_STATE?.dir) return "DATE_DESC";
+  return `${TABLE_SORT_STATE.key.replace(/ /g, "_")}_${TABLE_SORT_STATE.dir.toUpperCase()}`;
+}
+
+function setOrderSearchQuery(value){
+  ORDER_SEARCH_QUERY = (value || "").toString().trim().toLowerCase();
+  CURRENT_PAGE = 1;
+  refreshCurrentView();
+}
+
+function setOrderSortPreset(value){
+  const v = (value || "DATE_DESC").toString();
+  if(v === "NONE"){
+    TABLE_SORT_STATE = null;
+  } else {
+    const [key, dir] = v.split(/_(?=[^_]+$)/);
+    TABLE_SORT_STATE = { key: (key || "DATE").replace(/_/g, " "), dir: (dir || "DESC").toLowerCase() };
+  }
+  CURRENT_PAGE = 1;
+  refreshCurrentView();
+}
+
+function filterOrdersBySearch(orders){
+  if(!ORDER_SEARCH_QUERY) return orders;
+  return (orders || []).filter(o => {
+    const hay = [o.OrderNo, o.Branch, o.OrderType, o.OrderFor, o.CustomerName, getOrderStatusLabel(o)]
+      .map(v => (v || "").toString().toLowerCase())
+      .join(" ");
+    return hay.includes(ORDER_SEARCH_QUERY);
+  });
+}
+
+function renderTableToolbar(contextLabel){
+  return `
+    <div class="pc-table-toolbar">
+      <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">${contextLabel}</div>
+      <div class="pc-table-controls">
+        <input type="search" class="pc-field pc-input-compact min-w-[180px]" placeholder="Search order / branch / status" value="${escapeHtml(ORDER_SEARCH_QUERY)}" oninput="setOrderSearchQuery(this.value)" />
+        <select class="pc-field pc-input-compact" onchange="setOrderSortPreset(this.value)">
+          <option value="DATE_DESC" ${getSortPresetValue()==='DATE_DESC'?'selected':''}>Latest first</option>
+          <option value="DATE_ASC" ${getSortPresetValue()==='DATE_ASC'?'selected':''}>Oldest first</option>
+          <option value="VALUE_DESC" ${getSortPresetValue()==='VALUE_DESC'?'selected':''}>Value high-low</option>
+          <option value="QTY_DESC" ${getSortPresetValue()==='QTY_DESC'?'selected':''}>Qty high-low</option>
+          <option value="STATUS_ASC" ${getSortPresetValue()==='STATUS_ASC'?'selected':''}>Status A-Z</option>
+        </select>
+        <button class="pc-btn pc-btn-secondary" onclick="setOrderSearchQuery('')">Clear</button>
+      </div>
+    </div>`;
+}
 function cancelUpload(){
   cancelUploadFlag = true;
 }
@@ -1462,6 +1566,7 @@ function showPopup(msg, type = "info", actionsHTML = null){
   });
 
   popupEl.classList.remove("hidden");
+  applyScreenStyleChecklist("popups");
   setTimeout(() => {
     popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
   }, 0);
@@ -1504,6 +1609,7 @@ function showOrderPlacedPopupSummary(details = {}){
   `;
 
   popupEl.classList.remove("hidden");
+  applyScreenStyleChecklist("popups");
   setTimeout(() => {
     popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
   }, 0);
@@ -1800,7 +1906,7 @@ document.getElementById("app").innerHTML = `
 `;
 
 renderIcons();
-
+applyScreenStyleChecklist("login");
 
 // ✅ ENTER KEY LOGIN (SAFE - NO LOGIC CHANGE)
 if(!window.loginKeyAttached){
@@ -2706,6 +2812,7 @@ main.innerHTML = `
 </div>
 `;
 renderIcons();
+applyScreenStyleChecklist("orderCreate");
     
 addRow();
 const addItemBtn = document.getElementById("addItemBtn");
@@ -3375,9 +3482,10 @@ dateFilteredOrders.forEach(o => {
   statusCounts[s].value += (o.items || []).reduce((sum, x) => sum + getEffectiveValue(x), 0);
 });
 
-const orders = TRACK_STATUS_FILTER === "ALL"
+const statusFilteredOrders = TRACK_STATUS_FILTER === "ALL"
   ? dateFilteredOrders
   : dateFilteredOrders.filter(o => getOrderStatusLabel(o) === TRACK_STATUS_FILTER);
+const orders = filterOrdersBySearch(statusFilteredOrders);
 
 const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
 if(CURRENT_PAGE > totalPages){
@@ -3437,6 +3545,7 @@ let html = `
     </section>
 
     <section class="track-table-shell">
+      ${renderTableToolbar("Track Orders") }
       <div class="track-table-header">
         <div>
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
@@ -3459,6 +3568,7 @@ let html = `
               <th class="px-4 py-3 text-right">Value</th>
               <th class="px-4 py-3 text-center">Order No</th>
               <th class="px-4 py-3 text-center">Status</th>
+              <th class="px-4 py-3 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -3523,6 +3633,7 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
     ${orderStatus}
   </span>
 </td>
+<td class="px-4 py-3 text-center"><button class="pc-row-action" onclick="event.stopPropagation();openOrderView('${o.OrderNo}')">View</button></td>
 
 </tr>
 `;
@@ -3562,6 +3673,7 @@ html += `
 `;
 
 document.getElementById("main").innerHTML = html;
+applyScreenStyleChecklist("tracking");
 
 }
 
@@ -3669,7 +3781,7 @@ else{
     return status !== "APPROVED" && status !== "PENDING APPROVAL" && status !== "REJECTED";
   });
 }
-
+filtered = filterOrdersBySearch(filtered);
 
 const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 if(CURRENT_PAGE > totalPages){
@@ -3683,6 +3795,7 @@ let html = `
 <div class="admin-shell">
   <div id="resultsContainer" class="space-y-4">
     <section class="track-table-shell">
+      ${renderTableToolbar("Admin Orders") }
       <div class="track-table-header">
         <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">Order Register</div>
         <div class="admin-chip">Page ${CURRENT_PAGE} / ${totalPages}</div>
@@ -3700,6 +3813,7 @@ let html = `
               <th class="px-4 py-3 text-right">Value</th>
               <th class="px-4 py-3 text-center">Order No</th>
               <th class="px-4 py-3 text-center">Status</th>
+              <th class="px-4 py-3 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -3761,6 +3875,7 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
     ${orderStatus}
   </span>
 </td>
+<td class="px-4 py-3 text-center"><button class="pc-row-action" onclick="event.stopPropagation();openOrderView('${o.OrderNo}')">View</button></td>
 </tr>
 
 
@@ -3795,6 +3910,7 @@ html += `
 `;
 
 document.getElementById("main").innerHTML = html;
+applyScreenStyleChecklist("adminTools");
 
 
 }
@@ -6458,6 +6574,7 @@ function renderManagerDashboard(orders){
         </div>
       </section>
     </div>`;
+  applyScreenStyleChecklist("managerDashboard");
 }
 
 function onManagerDashboardDateChange(){
@@ -6710,6 +6827,7 @@ function renderManagerInventoryLookupTab(){
         </div>
       </section>
     </div>`;
+  applyScreenStyleChecklist("adminTools");
 }
 
 function setManagerDashboardBranchFilter(branch){
@@ -8102,7 +8220,9 @@ async function printOrderDetails(orderNo){
           .comment-item { border:1px solid #e5e7eb; padding:6px 8px; margin-bottom:5px; }
           .meta { color:#6b7280; font-size:10px; margin-top:2px; }
           @media print { .no-print { display:none !important; } }
-        </style>
+        
+
+</style>
       </head>
       <body>
         <div class="doc">
