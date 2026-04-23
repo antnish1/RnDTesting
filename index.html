@@ -17,18 +17,24 @@
 
 <body class="pc-app min-h-screen w-full">
 
+<a href="#main" class="sr-only focus:not-sr-only fixed left-2 top-2 z-[70] rounded px-3 py-2 text-xs font-bold"
+   style="background:#facc15;color:#111827;">Skip to main content</a>
+
 <div id="app" class="w-full"></div>
 
 <!-- LOADER -->
-<div id="loader" class="pc-dialog-overlay hidden fixed inset-0 flex items-center justify-center z-50">
-  <div class="pc-card pc-loader-card px-6 py-5 rounded-xl flex flex-col items-center gap-4">
-    <div class="pc-loader-spinner w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"></div>
-    <p class="pc-loader-text font-semibold">Processing...</p>
+<div id="loader" class="hidden fixed inset-0 flex items-center justify-center z-50" role="status" aria-live="polite" aria-label="Loading"
+     style="background: rgba(15,23,32,0.72);">
+  <div class="px-6 py-5 rounded-xl flex flex-col items-center gap-4" style="background: var(--pc-surface); border: 1px solid var(--pc-border);">
+    <div class="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style="border-color: var(--pc-primary); border-top-color: transparent;"></div>
+    <p class="font-semibold" style="color: var(--pc-primary);">Processing...</p>
   </div>
 </div>
 
 <!-- POPUP -->
-<div id="popup" class="pc-dialog-overlay pc-dialog-overlay--blur hidden fixed inset-0 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-live="polite">
+<div id="popup" class="hidden fixed inset-0 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-live="polite"
+     aria-labelledby="popupTitle" aria-describedby="popupMsg"
+     style="background: rgba(15,23,32,0.65); backdrop-filter: blur(6px);">
 
   <div id="popupCard" class="pc-dialog pc-dialog-card w-[min(92vw,420px)] p-5 rounded-2xl shadow-2xl text-center space-y-3">
 
@@ -53,13 +59,13 @@
 
 
 <!-- ================= UPLOAD PROGRESS ================= -->
-<div id="uploadProgress" class="hidden fixed bottom-6 right-6 z-50 w-[92vw] max-w-[320px]">
+<div id="uploadProgress" class="hidden fixed bottom-6 right-6 z-50 w-[320px]" role="status" aria-live="polite" aria-label="Upload progress">
 
   <div class="pc-card p-4 rounded-xl shadow-2xl">
 
     <div class="flex justify-between text-xs mb-2">
       <span id="progressText">Uploading...</span>
-      <button onclick="cancelUpload()" class="text-red-500 font-bold">✕</button>
+      <button onclick="cancelUpload()" class="text-red-500 font-bold" aria-label="Cancel upload">✕</button>
     </div>
 
     <!-- BAR -->
@@ -171,6 +177,33 @@
 }
 
 * { box-sizing: border-box; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.focus\:not-sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+:focus-visible {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 2px;
+}
 
 html, body {
   max-width: 100%;
@@ -1429,64 +1462,50 @@ db.channel('requests-changes')
 // ---------- UTIL ----------
 function showLoader(){ document.getElementById("loader").classList.remove("hidden"); }
 function hideLoader(){ document.getElementById("loader").classList.add("hidden"); }
-
-function applyScreenStyleChecklist(screenKey){
-  document.body.setAttribute("data-screen", screenKey || "unknown");
-  const root = document.getElementById("main") || document.getElementById("app") || document;
-  root.querySelectorAll("input.pc-field, select.pc-field, textarea.pc-field").forEach(el => el.classList.add("pc-input-compact"));
-  root.querySelectorAll("button.order-cta, .track-page-btn, .table-toggle-btn, .mgr-inv-lookup-btn").forEach(btn => btn.classList.add("pc-btn", "pc-btn-secondary"));
-  root.querySelectorAll("table.track-table, .parts-table-wrap table").forEach(table => table.classList.add("pc-dense-table"));
+let lastFocusedElementBeforePopup = null;
+function renderInlineState(targetEl, kind, message){
+  if(!targetEl) return;
+  targetEl.textContent = "";
+  const note = document.createElement("div");
+  note.className = "text-xs";
+  note.setAttribute("role", kind === "error" ? "alert" : "status");
+  note.setAttribute("aria-live", kind === "error" ? "assertive" : "polite");
+  note.style.color = kind === "error" ? "#fca5a5" : "var(--pc-text-muted)";
+  note.textContent = message;
+  targetEl.appendChild(note);
 }
-
-function getSortPresetValue(){
-  if(!TABLE_SORT_STATE?.key || !TABLE_SORT_STATE?.dir) return "DATE_DESC";
-  return `${TABLE_SORT_STATE.key.replace(/ /g, "_")}_${TABLE_SORT_STATE.dir.toUpperCase()}`;
+function createEl(tag, className, text){
+  const el = document.createElement(tag);
+  if(className) el.className = className;
+  if(text !== undefined && text !== null) el.textContent = text;
+  return el;
 }
-
-function setOrderSearchQuery(value){
-  ORDER_SEARCH_QUERY = (value || "").toString().trim().toLowerCase();
-  CURRENT_PAGE = 1;
-  refreshCurrentView();
+function getFocusableChildren(root){
+  if(!root) return [];
+  return Array.from(root.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"))
+    .filter(el => !el.disabled && el.offsetParent !== null);
 }
-
-function setOrderSortPreset(value){
-  const v = (value || "DATE_DESC").toString();
-  if(v === "NONE"){
-    TABLE_SORT_STATE = null;
-  } else {
-    const [key, dir] = v.split(/_(?=[^_]+$)/);
-    TABLE_SORT_STATE = { key: (key || "DATE").replace(/_/g, " "), dir: (dir || "DESC").toLowerCase() };
-  }
-  CURRENT_PAGE = 1;
-  refreshCurrentView();
-}
-
-function filterOrdersBySearch(orders){
-  if(!ORDER_SEARCH_QUERY) return orders;
-  return (orders || []).filter(o => {
-    const hay = [o.OrderNo, o.Branch, o.OrderType, o.OrderFor, o.CustomerName, getOrderStatusLabel(o)]
-      .map(v => (v || "").toString().toLowerCase())
-      .join(" ");
-    return hay.includes(ORDER_SEARCH_QUERY);
+function enhanceAccessibility(root = document){
+  root.querySelectorAll("button").forEach((btn) => {
+    const text = (btn.textContent || "").trim();
+    if(text || btn.getAttribute("aria-label")) return;
+    const icon = btn.querySelector("i[data-lucide]")?.getAttribute("data-lucide");
+    if(icon){
+      btn.setAttribute("aria-label", icon.replace(/-/g, " "));
+    }
   });
-}
 
-function renderTableToolbar(contextLabel){
-  return `
-    <div class="pc-table-toolbar">
-      <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">${contextLabel}</div>
-      <div class="pc-table-controls">
-        <input type="search" class="pc-field pc-input-compact min-w-[180px]" placeholder="Search order / branch / status" value="${escapeHtml(ORDER_SEARCH_QUERY)}" oninput="setOrderSearchQuery(this.value)" />
-        <select class="pc-field pc-input-compact" onchange="setOrderSortPreset(this.value)">
-          <option value="DATE_DESC" ${getSortPresetValue()==='DATE_DESC'?'selected':''}>Latest first</option>
-          <option value="DATE_ASC" ${getSortPresetValue()==='DATE_ASC'?'selected':''}>Oldest first</option>
-          <option value="VALUE_DESC" ${getSortPresetValue()==='VALUE_DESC'?'selected':''}>Value high-low</option>
-          <option value="QTY_DESC" ${getSortPresetValue()==='QTY_DESC'?'selected':''}>Qty high-low</option>
-          <option value="STATUS_ASC" ${getSortPresetValue()==='STATUS_ASC'?'selected':''}>Status A-Z</option>
-        </select>
-        <button class="pc-btn pc-btn-secondary" onclick="setOrderSearchQuery('')">Clear</button>
-      </div>
-    </div>`;
+  root.querySelectorAll("table thead th").forEach((th) => {
+    th.setAttribute("tabindex", "0");
+    th.setAttribute("role", "button");
+    const isAsc = th.classList.contains("sort-asc");
+    const isDesc = th.classList.contains("sort-desc");
+    th.setAttribute("aria-sort", isAsc ? "ascending" : isDesc ? "descending" : "none");
+    if(!th.getAttribute("aria-label")){
+      const label = (th.textContent || "").replace(/[▲▼]/g, "").trim();
+      th.setAttribute("aria-label", `Sort by ${label}`);
+    }
+  });
 }
 function cancelUpload(){
   cancelUploadFlag = true;
@@ -1519,6 +1538,7 @@ function showPopup(msg, type = "info", actionsHTML = null){
   const iconEl = document.getElementById("popupIcon");
   const titleEl = document.getElementById("popupTitle");
   const popupEl = document.getElementById("popup");
+  lastFocusedElementBeforePopup = document.activeElement;
 
   // ICON STYLE
   if(type === "success"){
@@ -1566,10 +1586,7 @@ function showPopup(msg, type = "info", actionsHTML = null){
   });
 
   popupEl.classList.remove("hidden");
-  applyScreenStyleChecklist("popups");
-  setTimeout(() => {
-    popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
-  }, 0);
+  setTimeout(() => { getFocusableChildren(popupEl)[0]?.focus(); }, 0);
 }
 
 function escapeHtml(value){
@@ -1617,11 +1634,30 @@ function showOrderPlacedPopupSummary(details = {}){
   
 function closePopup(){
   document.getElementById("popup").classList.add("hidden");
+  if(lastFocusedElementBeforePopup && typeof lastFocusedElementBeforePopup.focus === "function"){
+    lastFocusedElementBeforePopup.focus();
+  }
 }
 
 document.addEventListener("keydown", (e) => {
-  if(e.key === "Escape" && !document.getElementById("popup").classList.contains("hidden")){
+  const popup = document.getElementById("popup");
+  if(e.key === "Escape" && !popup.classList.contains("hidden")){
     closePopup();
+    return;
+  }
+
+  if(e.key === "Tab" && !popup.classList.contains("hidden")){
+    const focusables = getFocusableChildren(popup);
+    if(!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if(e.shiftKey && document.activeElement === first){
+      e.preventDefault();
+      last.focus();
+    }else if(!e.shiftKey && document.activeElement === last){
+      e.preventDefault();
+      first.focus();
+    }
   }
 });
 
@@ -1871,7 +1907,7 @@ async function loadLogin(){
 
 document.getElementById("app").innerHTML = `
 <div class="login-shell">
-  <main class="login-grid" aria-label="Parts Connect Portal Login">
+  <main id="main" class="login-grid" aria-label="Parts Connect Portal Login">
     <section class="login-aside">
       <div class="login-logo-wrap mb-5">
         <img src="HDU4w-removebg-preview.png" alt="Parts Connect Portal" class="login-logo" />
@@ -1906,7 +1942,8 @@ document.getElementById("app").innerHTML = `
 `;
 
 renderIcons();
-applyScreenStyleChecklist("login");
+enhanceAccessibility(document.getElementById("app"));
+
 
 // ✅ ENTER KEY LOGIN (SAFE - NO LOGIC CHANGE)
 if(!window.loginKeyAttached){
@@ -1924,8 +1961,9 @@ const { data } = await db.from("users").select("*");
 const unique = [...new Set((data || []).map(d => getUserBranch(d)).filter(Boolean))];
 
 const el = document.getElementById("branch");
-el.innerHTML = `<option value="">Select Branch</option>`;
-unique.forEach(b => el.innerHTML += `<option>${b}</option>`);
+el.innerHTML = "";
+el.appendChild(new Option("Select Branch", ""));
+unique.forEach(b => el.appendChild(new Option(b, b)));
 }
 
 async function login(){
@@ -2040,6 +2078,37 @@ function updateMenuHighlight(){
 
 }
 
+let responsiveLayoutObserver = null;
+
+function applyMobileTableLayoutFixes(){
+  const main = document.getElementById("main");
+  if(!main) return;
+
+  const shells = main.querySelectorAll(".track-table-shell, .parts-shell, .admin-strip, .mgr-panel, .pc-section");
+  shells.forEach(shell => shell.classList.add("mobile-content-shell"));
+
+  const tables = main.querySelectorAll("table");
+  tables.forEach(table => {
+    const holder = table.parentElement;
+    if(!holder) return;
+    holder.classList.add("mobile-table-scroll");
+  });
+}
+
+function initResponsiveLayoutObserver(){
+  if(responsiveLayoutObserver) return;
+  const app = document.getElementById("app");
+  if(!app) return;
+
+  applyMobileTableLayoutFixes();
+  responsiveLayoutObserver = new MutationObserver(() => {
+    applyMobileTableLayoutFixes();
+    enhanceAccessibility(app);
+  });
+  responsiveLayoutObserver.observe(app, { childList: true, subtree: true });
+  window.addEventListener("resize", applyMobileTableLayoutFixes);
+}
+
   
   
 // ---------- BRANCH ----------
@@ -2072,7 +2141,7 @@ if(isDeveloper){
 document.getElementById("app").innerHTML = `
 <div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
 
-  <div class="space-y-0">
+  <header class="space-y-0" role="banner">
 
 <!-- HEADER WITH LOGOUT -->
 <div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md mx-[-1rem] md:mx-0"
@@ -2106,7 +2175,7 @@ document.getElementById("app").innerHTML = `
 
 </div>
 
-  <div class="nav-scroll-row md:flex-1 md:justify-end">
+  <nav class="nav-scroll-row md:flex-1 md:justify-end" aria-label="Primary navigation">
 
 <div class="relative w-full min-w-0 md:w-auto md:min-w-[280px] header-search-shell">
 
@@ -2116,6 +2185,7 @@ document.getElementById("app").innerHTML = `
 
   <input 
     id="universalSearch"
+    aria-label="Search orders, parts, and customers"
     placeholder="Search Orders, Parts, Customers..."
     class="pc-field search-bar"
     oninput="handleUniversalSearch(this.value)"
@@ -2257,15 +2327,16 @@ ${isDeveloper ? `
     </span>
     </button>
 
-  </div>
+  </nav>
 
 </div>
 
 
 
   </div>
+  </header>
 
-  <div class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0">
+  <section class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0" aria-label="Operational announcements">
     <div class="offer-marquee items-center gap-3">
       <span class="offer-pill">⚠ Mandatory</span>
       <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
@@ -2280,14 +2351,17 @@ ${isDeveloper ? `
       <span class="offer-pill">🔥 Pitch Every Time</span>
       <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
     </div>
-  </div>
+  </section>
 
-<div id="main" class="w-full rl-container"></div>
+  <main id="main" class="w-full" tabindex="-1"></main>
 
 </div>
 `;
 
 renderIcons();
+initResponsiveLayoutObserver();
+applyMobileTableLayoutFixes();
+enhanceAccessibility(document.getElementById("app"));
 
 if(!isAdmin && window.pendingCountIntervalId){
   clearInterval(window.pendingCountIntervalId);
@@ -2378,6 +2452,7 @@ function loadDocketScanner(){
         <input
           id="docketScanInput"
           type="text"
+          aria-label="Docket number"
           inputmode="text"
           autocomplete="off"
           placeholder="Enter / scan docket no."
@@ -2414,6 +2489,7 @@ function loadDocketScanner(){
   `;
 
   renderIcons();
+  enhanceAccessibility(main);
   const input = document.getElementById("docketScanInput");
   if(input){
     input.focus();
@@ -2431,11 +2507,11 @@ async function lookupDocketRows(rawValue){
 
   if(inputEl && docket) inputEl.value = docket;
   if(!docket){
-    if(resultsEl) resultsEl.innerHTML = `<div class="text-xs" style="color:#fca5a5;">Enter docket number first.</div>`;
+    renderInlineState(resultsEl, "error", "Enter docket number first.");
     return;
   }
 
-  if(resultsEl) resultsEl.innerHTML = `<div class="text-xs">Searching...</div>`;
+  renderInlineState(resultsEl, "loading", "Searching...");
 
   const { data, error } = await db
     .from("requests")
@@ -2446,7 +2522,7 @@ async function lookupDocketRows(rawValue){
 
   if(error){
     console.error(error);
-    if(resultsEl) resultsEl.innerHTML = `<div class="text-xs" style="color:#fca5a5;">Search failed. Try again.</div>`;
+    renderInlineState(resultsEl, "error", "Search failed. Try again.");
     return;
   }
 
@@ -2466,7 +2542,7 @@ function renderDocketMatches(){
   if(!wrap) return;
 
   if(!rows.length){
-    wrap.innerHTML = `<div class="text-xs" style="color:var(--pc-text-muted);">No rows found for this docket.</div>`;
+    renderInlineState(wrap, "empty", "No rows found for this docket.");
     return;
   }
 
@@ -2475,57 +2551,87 @@ function renderDocketMatches(){
     "MachineNo","MachineType","CallId","EmployeeName","ApprovedBy","Transporter","VehicleNo","Remarks","created_at"
   ];
 
-  wrap.innerHTML = rows.map(r=>`
-    <div class="rounded-xl p-3 space-y-2" style="border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-base font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
-        <div class="flex items-center gap-2 flex-wrap justify-end">
-          ${getResolvedRowStatus(r) === "RECEIVED" ? `<span class="px-2 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide" style="background:#16a34a;color:#ecfdf5;border:1px solid #86efac;">Already Received</span>` : ""}
-          <span class="px-3 py-1 rounded text-sm font-bold" style="${getStatusChipStyle(getResolvedRowStatus(r))}">${getPrintableStatusLabel(r)}</span>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-        <div><span style="color:var(--pc-text-muted);">Customer:</span> <span style="color:#e2e8f0;">${escapeHtml(r.CustomerName || "-")}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Branch:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Branch || "-")}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Docket:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Docket || "-")}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Qty ?? "-")}</span></div>
-      </div>
-      <details class="rounded-lg p-2" style="border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);">
-        <summary class="cursor-pointer text-sm font-semibold" style="color:#bfdbfe;">View complete row details</summary>
-        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          ${
-            Object.entries(r)
-              .sort(([a],[b])=>{
-                const ai = preferredOrder.indexOf(a);
-                const bi = preferredOrder.indexOf(b);
-                if(ai === -1 && bi === -1) return a.localeCompare(b);
-                if(ai === -1) return 1;
-                if(bi === -1) return -1;
-                return ai - bi;
-              })
-              .map(([key,val])=>{
-                const label = key.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
-                const printable = val === null || val === undefined || val === "" ? "-" : String(val);
-                return `<div class="rounded-lg px-2 py-1" style="background:rgba(15,23,42,.75); border:1px solid rgba(71,85,105,.45);">
-                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:12px; font-weight:700;">${escapeHtml(label)}</div>
-                  <div style="color:#e2e8f0; word-break:break-word; font-size:14px;">${escapeHtml(printable)}</div>
-                </div>`;
-              })
-              .join("")
-          }
-        </div>
-      </details>
-      <button
-        class="w-full rounded-lg py-2.5 text-sm font-bold transition-all ${getResolvedRowStatus(r) === "RECEIVED" ? "opacity-80 cursor-not-allowed" : "hover:-translate-y-[1px]"}"
-        style="${getResolvedRowStatus(r) === "RECEIVED"
-          ? "background:rgba(22,163,74,0.24); color:#dcfce7; border:1px solid rgba(74,222,128,0.6);"
-          : "background:linear-gradient(180deg, #2563eb, #1d4ed8); color:#eff6ff; border:1px solid #93c5fd; box-shadow:0 8px 16px rgba(30,64,175,0.35);"}"
-        ${getResolvedRowStatus(r) === "RECEIVED" ? "disabled" : ""}
-        onclick="markDocketRowReceived('${r.id}')">
-        ${getResolvedRowStatus(r) === "RECEIVED" ? "Already Received" : "Mark Received"}
-      </button>
-    </div>
-  `).join("");
+  wrap.textContent = "";
+
+  rows.forEach((r) => {
+    const card = createEl("article", "rounded-xl p-3 space-y-2");
+    card.style.cssText = "border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);";
+
+    const top = createEl("div", "flex flex-wrap items-center justify-between gap-2");
+    const title = createEl("h5", "text-base font-semibold", `Order: ${r.OrderNo || "-"}`);
+    title.style.color = "#e2e8f0";
+    top.appendChild(title);
+    const statusRow = createEl("div", "flex items-center gap-2 flex-wrap justify-end");
+    if(getResolvedRowStatus(r) === "RECEIVED"){
+      const already = createEl("span", "px-2 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide", "Already Received");
+      already.style.cssText = "background:#16a34a;color:#ecfdf5;border:1px solid #86efac;";
+      statusRow.appendChild(already);
+    }
+    const statusChip = createEl("span", "px-3 py-1 rounded text-sm font-bold", getPrintableStatusLabel(r));
+    statusChip.style.cssText = getStatusChipStyle(getResolvedRowStatus(r));
+    statusRow.appendChild(statusChip);
+    top.appendChild(statusRow);
+    card.appendChild(top);
+
+    const meta = createEl("div", "grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm");
+    [
+      ["Customer", r.CustomerName || "-"],
+      ["Branch", r.Branch || "-"],
+      ["Docket", r.Docket || "-"],
+      ["Qty", r.Qty ?? "-"]
+    ].forEach(([label, value]) => {
+      const row = createEl("div");
+      const l = createEl("span", "", `${label}: `);
+      l.style.color = "var(--pc-text-muted)";
+      const v = createEl("span", "", String(value));
+      v.style.color = "#e2e8f0";
+      row.append(l, v);
+      meta.appendChild(row);
+    });
+    card.appendChild(meta);
+
+    const details = createEl("details", "rounded-lg p-2");
+    details.style.cssText = "border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);";
+    const summary = createEl("summary", "cursor-pointer text-sm font-semibold", "View complete row details");
+    summary.style.color = "#bfdbfe";
+    details.appendChild(summary);
+    const grid = createEl("div", "mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm");
+    Object.entries(r)
+      .sort(([a],[b])=>{
+        const ai = preferredOrder.indexOf(a);
+        const bi = preferredOrder.indexOf(b);
+        if(ai === -1 && bi === -1) return a.localeCompare(b);
+        if(ai === -1) return 1;
+        if(bi === -1) return -1;
+        return ai - bi;
+      })
+      .forEach(([key,val])=>{
+        const label = key.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
+        const printable = val === null || val === undefined || val === "" ? "-" : String(val);
+        const item = createEl("div", "rounded-lg px-2 py-1");
+        item.style.cssText = "background:rgba(15,23,42,.75); border:1px solid rgba(71,85,105,.45);";
+        const keyEl = createEl("div", "", label);
+        keyEl.style.cssText = "color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:12px; font-weight:700;";
+        const valueEl = createEl("div", "", printable);
+        valueEl.style.cssText = "color:#e2e8f0; word-break:break-word; font-size:14px;";
+        item.append(keyEl, valueEl);
+        grid.appendChild(item);
+      });
+    details.appendChild(grid);
+    card.appendChild(details);
+
+    const received = getResolvedRowStatus(r) === "RECEIVED";
+    const btn = createEl("button", `w-full rounded-lg py-2.5 text-sm font-bold transition-all ${received ? "opacity-80 cursor-not-allowed" : "hover:-translate-y-[1px]"}`, received ? "Already Received" : "Mark Received");
+    btn.style.cssText = received
+      ? "background:rgba(22,163,74,0.24); color:#dcfce7; border:1px solid rgba(74,222,128,0.6);"
+      : "background:linear-gradient(180deg, #2563eb, #1d4ed8); color:#eff6ff; border:1px solid #93c5fd; box-shadow:0 8px 16px rgba(30,64,175,0.35);";
+    btn.setAttribute("aria-label", received ? `Order ${r.OrderNo || ""} already received` : `Mark order ${r.OrderNo || ""} as received`);
+    btn.disabled = received;
+    btn.addEventListener("click", () => markDocketRowReceived(r.id));
+    card.appendChild(btn);
+    wrap.appendChild(card);
+  });
+  enhanceAccessibility(wrap);
 }
 
 async function markDocketRowReceived(rowId){
@@ -8491,8 +8597,12 @@ document.addEventListener("click", function(evt){
   const next = current === "asc" ? "desc" : "asc";
   const headerKey = (th.innerText || "").replace(/[▲▼]/g, "").trim().toUpperCase();
 
-  headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
+  headers.forEach(h => {
+    h.classList.remove("sort-asc", "sort-desc");
+    h.setAttribute("aria-sort", "none");
+  });
   th.classList.add(next === "asc" ? "sort-asc" : "sort-desc");
+  th.setAttribute("aria-sort", next === "asc" ? "ascending" : "descending");
 
   if(table.classList.contains("track-table")){
     TABLE_SORT_STATE = { key: headerKey, dir: next };
@@ -8518,6 +8628,14 @@ document.addEventListener("click", function(evt){
   });
 
   rows.forEach(r => tbody.appendChild(r));
+});
+
+document.addEventListener("keydown", function(evt){
+  const th = evt.target.closest("th");
+  if(!th || !th.closest("thead")) return;
+  if(evt.key !== "Enter" && evt.key !== " ") return;
+  evt.preventDefault();
+  th.click();
 });
     
 </script>
