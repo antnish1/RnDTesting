@@ -367,66 +367,85 @@ function renderHeader(){
 
   const user = getUser();
   const isAdmin = isAdminRole(user);
+  const isSuper = isSuperLikeRole(user);
+  const isManager = isManagerRole(user);
   const isViewer = isViewerRole(user);
+  const isDeveloper = isDeveloperRole(user);
 
   return `
-  <div class="space-y-0">
+<header class="space-y-0" role="banner">
+  <div class="w-full rounded-2xl px-6 py-3 backdrop-blur-md mx-[-1rem] md:mx-0"
+       style="background: rgba(15,23,42,0.88); border: 1px solid var(--pc-border); box-shadow: 0 8px 18px rgba(2,6,23,0.45);">
+    <div class="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+      <div class="relative flex items-center w-full md:w-auto md:flex-none">
+        <div class="flex items-center gap-4">
+          <div class="header-logo-shell">
+            <img src="HDU4w-removebg-preview.png" class="header-logo" />
+          </div>
+          <div class="h-6 w-px bg-gray-400 opacity-50"></div>
+          <span class="text-sm font-semibold tracking-widest uppercase" style="color: var(--pc-text);">
+            ${getUserBranch(user)}
+          </span>
+        </div>
+      </div>
 
-  <!-- HEADER -->
-<div class="w-full rounded-2xl px-6 py-4 shadow-xl flex flex-col gap-3 md:flex-row md:justify-between md:items-center"
-     style="background: linear-gradient(90deg, rgba(170,205,220,0.10), rgba(129,166,198,0.10)); border: 1px solid var(--pc-border);">
+      <nav class="nav-scroll-row md:flex-1 md:justify-end" aria-label="Primary navigation">
+        <div class="relative w-full min-w-0 md:w-auto md:min-w-[280px] header-search-shell">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+          <input
+            id="universalSearch"
+            aria-label="Search orders, parts, and customers"
+            placeholder="Search Orders, Parts, Customers..."
+            class="pc-field search-bar"
+            oninput="handleUniversalSearch(this.value)"
+          />
+        </div>
 
-  <h1 class="text-2xl font-bold tracking-wide" style="color: var(--pc-light);">
-    PARTS CONNECT PORTAL :
-    <span class="ml-2" style="color: var(--pc-secondary);">${getUserBranch(user)}</span>
-  </h1>
+        ${isDeveloper ? `
+          <button onclick="loadDeveloperDashboard()" class="top-btn dev-nav-btn ${window.activeTab==='DevDashboard' ? 'active-top-btn' : ''}" data-tab="DevDashboard">Workspace</button>
+          <button onclick="loadDeveloperUsers()" class="top-btn dev-nav-btn ${window.activeTab==='DevUsers' ? 'active-top-btn' : ''}" data-tab="DevUsers">Users</button>
+          <button onclick="loadDeveloperRequestsEditor()" class="top-btn dev-nav-btn ${window.activeTab==='DevRequests' ? 'active-top-btn' : ''}" data-tab="DevRequests">Requests</button>
+          <button onclick="loadDeveloperCommentsInbox()" class="top-btn dev-nav-btn ${window.activeTab==='DevComments' ? 'active-top-btn' : ''}" data-tab="DevComments">Comments</button>
+          <button onclick="openDeveloperInventoryLookup()" class="top-btn dev-nav-btn ${window.activeTab==='DevInventory' ? 'active-top-btn' : ''}" data-tab="DevInventory">Inventory</button>
+          <button onclick="loadUpload()" class="top-btn dev-nav-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}" data-tab="upload">Reports</button>
+          <button onclick="loadDocketScanner()" class="top-btn dev-nav-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}" data-tab="scanner">Docket</button>
+          <button onclick="loadCreate('create')" class="top-btn dev-nav-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}" data-tab="create">New Order</button>
+          <button onclick="loadTrack('track')" class="top-btn dev-nav-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}" data-tab="track">Track</button>
+        ` : !isAdmin && !isSuper && !isViewer ? `
+          <button onclick="loadCreate('create')" class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}" data-tab="create">
+            <span class="flex items-center gap-2"><i data-lucide="file-plus-2" class="w-4 h-4"></i>New Order</span>
+          </button>
+          <button onclick="loadTrack('track')" class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}" data-tab="track">
+            <span class="flex items-center gap-2"><i data-lucide="search-check" class="w-4 h-4"></i>Track Orders</span>
+          </button>
+        ` : isViewer ? `` : isSuper ? `
+          ${isManager ? `` : `
+            <button onclick="loadSuper('PendingApproval')" class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}" data-tab="PendingApproval">Pending Approvals</button>
+            <button onclick="loadSuper('Approved')" class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}" data-tab="Approved">Approved</button>
+            <button onclick="loadSuper('Rejected')" class="top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}" data-tab="Rejected">Rejected</button>
+            <button onclick="loadSuper('All')" class="top-btn ${window.activeTab==='All' ? 'active-top-btn' : ''}" data-tab="All">All Orders</button>
+          `}
+        ` : `
+          <button onclick="loadAdmin('Approved')" class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}" data-tab="Approved">
+            <span class="flex items-center gap-2">Approved <span id="pendingCount" class="hidden bg-red-500 text-white text-xs px-2 py-[2px] rounded-full"></span></span>
+          </button>
+          <button onclick="loadAdmin('Processed')" class="top-btn ${window.activeTab==='Processed' ? 'active-top-btn' : ''}" data-tab="Processed">Processed</button>
+          <button onclick="loadUpload()" class="top-btn ${window.activeTab==='upload' ? 'active-top-btn' : ''}" data-tab="upload">Upload</button>
+        `}
 
-  <div class="nav-scroll-row md:w-auto">
+        ${isAdmin ? `
+          <button onclick="loadDocketScanner()" class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}" data-tab="scanner">
+            <span class="flex items-center gap-2"><i data-lucide="scan-line" class="w-4 h-4"></i>Docket Scan</span>
+          </button>
+        ` : ``}
 
-    ${!isAdmin && !isViewer ? `
-        <button onclick="loadCreate('create')" 
-        class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
-        data-tab="create">
-        New Order
-      </button>
-
-      <button onclick="loadTrack('track')" 
-      class="top-btn ${window.activeTab==='track' ? 'active-top-btn' : ''}">
-        Track Orders
-      </button>
-    ` : ``}
-
-    <button onclick="logout()" 
-    class="top-btn logout-btn">
-      Logout
-    </button>
-
-  </div>
-
-</div>
-
-  <!-- MENU -->
-  <div class="w-full px-4 py-3 rounded-xl" style="background: rgba(170,205,220,0.06); border: 1px solid var(--pc-border);">
-
-    <div class="nav-scroll-row">
-
-      ${!isAdmin && !isViewer ? `
-        <button onclick="loadCreate('create')" 
-        class="menu-btn ${window.activeTab==='create' ? 'active-tab' : ''}">
-          New Order
+        <button onclick="logout()" class="top-btn logout-btn">
+          <span class="flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4"></i>Logout</span>
         </button>
-
-        <button onclick="loadTrack('track')" 
-        class="menu-btn ${window.activeTab==='track' ? 'active-tab' : ''}">
-          Track Orders
-        </button>
-      ` : ``}
-
+      </nav>
     </div>
-
   </div>
-
-  </div>
+</header>
   `;
 }
 
@@ -502,7 +521,22 @@ if(isDeveloper){
 }else{
   window.activeTab = window.activeTab || "create";
 }
-document.getElementById("app").innerHTML = window.AppRenderers.renderBranchShell({ branch: getUserBranch(user) });
+document.getElementById("app").innerHTML = `
+<div class="w-full px-4 md:px-6 lg:px-10 py-5 space-y-5">
+  ${renderHeader()}
+  <section class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0" aria-label="Operational announcements">
+    <div class="offer-marquee items-center gap-3">
+      <span class="offer-pill">⚠ Mandatory</span>
+      <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
+      <span class="offer-pill">✅ UW Service</span>
+      <span class="offer-note">Ensure 100% adherence to grease quotation in all UW service calls.</span>
+      <span class="offer-pill">🔥 Pitch Every Time</span>
+      <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS &amp; GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
+    </div>
+  </section>
+  <main id="main" class="w-full" tabindex="-1"></main>
+</div>
+`;
 
 renderIcons();
 initResponsiveLayoutObserver();
