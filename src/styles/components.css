@@ -1388,5 +1388,144 @@ table thead th.sort-asc::after {
 table thead th.sort-desc::after {
   content: " ▼";
 }
-    
-    
+
+/* =========================
+   2026 THEME REDESIGN LAYER
+   ========================= */
+:root{
+  --pc-primary: #7c9bff;
+  --pc-secondary: #22d3ee;
+  --pc-bg: #070b14;
+  --pc-surface: #0f172a;
+  --pc-border: #243247;
+  --pc-text: #e7edf7;
+  --pc-text-muted: #9fb2cc;
+}
+
+body{
+  background:
+    radial-gradient(900px 460px at 8% -8%, rgba(124,155,255,0.18), transparent 60%),
+    radial-gradient(880px 420px at 96% -12%, rgba(34,211,238,0.14), transparent 60%),
+    linear-gradient(180deg, #070b14 0%, #0a1120 55%, #0b1324 100%);
+  color: var(--pc-text);
+}
+
+.pc-section{
+  border: 1px solid rgba(124,155,255,0.18) !important;
+  background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(10,16,32,0.94)) !important;
+  box-shadow: 0 12px 32px rgba(2,8,22,0.55) !important;
+  border-radius: 14px;
+}
+
+.top-btn,
+.menu-btn,
+.table-toggle-btn{
+  min-height: 34px;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(124,155,255,0.24) !important;
+  color: #d8e6ff !important;
+  background: linear-gradient(180deg, rgba(20,31,54,0.92), rgba(11,18,33,0.94)) !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+
+.top-btn:hover,
+.menu-btn:hover,
+.table-toggle-btn:hover{
+  color: #ffffff !important;
+  border-color: rgba(124,155,255,0.58) !important;
+  background: linear-gradient(180deg, rgba(44,69,118,0.92), rgba(20,31,54,0.95)) !important;
+}
+
+.active-top-btn,
+.active-tab{
+  color: #f4f8ff !important;
+  border-color: rgba(141,180,255,0.76) !important;
+  background: linear-gradient(180deg, rgba(72,104,172,0.95), rgba(34,53,95,0.95)) !important;
+}
+
+.logout-btn{
+  border-color: rgba(248,113,113,0.52) !important;
+  background: linear-gradient(180deg, rgba(127,29,29,0.48), rgba(69,10,10,0.60)) !important;
+  color: #fee2e2 !important;
+}
+
+.search-bar,
+#universalSearch{
+  min-height: 38px;
+  border-radius: 11px;
+  border: 1px solid rgba(124,155,255,0.3) !important;
+  background: linear-gradient(180deg, rgba(11,18,33,0.95), rgba(8,13,24,0.97)) !important;
+  color: #ecf2ff !important;
+}
+
+.search-bar::placeholder,
+#universalSearch::placeholder{
+  color: #96adcf !important;
+}
+
+.pc-field,
+.login-input,
+select,
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="password"],
+textarea{
+  border-radius: 10px !important;
+  border-color: rgba(124,155,255,0.28) !important;
+  background: linear-gradient(180deg, rgba(8,14,28,0.96), rgba(6,11,22,0.98)) !important;
+  color: #e7edf7 !important;
+}
+
+.pc-field:focus,
+.login-input:focus,
+select:focus,
+input:focus,
+textarea:focus{
+  border-color: rgba(140,186,255,0.78) !important;
+  box-shadow: 0 0 0 3px rgba(124,155,255,0.2), 0 6px 18px rgba(26,44,79,0.38) !important;
+}
+
+table{
+  border-color: rgba(124,155,255,0.2) !important;
+}
+
+thead th{
+  background: linear-gradient(180deg, #1d2a45, #121d33) !important;
+  color: #eaf1ff !important;
+  border-color: rgba(124,155,255,0.3) !important;
+}
+
+.track-table tbody tr{
+  background: rgba(10,18,35,0.88) !important;
+}
+
+.track-table tbody tr:nth-child(even){
+  background: rgba(12,22,40,0.92) !important;
+}
+
+.track-table tbody tr:hover{
+  background: linear-gradient(135deg, rgba(52,82,139,0.48), rgba(27,50,88,0.45)) !important;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px){
+  .top-btn,
+  .menu-btn,
+  .table-toggle-btn{
+    min-height: 36px;
+    padding: 7px 11px !important;
+    font-size: 12px !important;
+  }
+
+  .header-search-shell{
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .pc-section{
+    padding: 12px !important;
+    border-radius: 12px;
+  }
+}
