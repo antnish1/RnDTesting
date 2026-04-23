@@ -1,6 +1,7 @@
     <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -30,7 +31,7 @@
 <div id="popup" class="hidden fixed inset-0 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-live="polite"
      style="background: rgba(15,23,32,0.65); backdrop-filter: blur(6px);">
 
-  <div id="popupCard" class="w-[min(92vw,420px)] p-5 rounded-2xl shadow-2xl text-center space-y-3"
+  <div id="popupCard" class="w-[92vw] max-w-[420px] p-5 rounded-2xl shadow-2xl text-center space-y-3"
        style="background: linear-gradient(165deg, rgba(17,24,39,0.98), rgba(15,23,42,0.98)); border: 1px solid rgba(250,204,21,0.25); box-shadow: 0 26px 56px rgba(0,0,0,0.5);">
 
     <!-- ICON -->
@@ -56,7 +57,7 @@
 
 
 <!-- ================= UPLOAD PROGRESS ================= -->
-<div id="uploadProgress" class="hidden fixed bottom-6 right-6 z-50 w-[320px]">
+<div id="uploadProgress" class="hidden fixed bottom-6 right-6 z-50 w-[92vw] max-w-[320px]">
 
   <div class="p-4 rounded-xl shadow-2xl"
        style="background: var(--pc-surface); border:1px solid var(--pc-border);">
@@ -696,7 +697,7 @@ tr[style*="f59e0b"]:hover {
 }
 
 .track-table{
-  min-width: 980px;
+  width: 100%;
 }
 
 .track-table tbody tr{
@@ -1261,20 +1262,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   min-width: 160px;
 }
 
-.mobile-content-shell{
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.mobile-table-scroll{
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
 @media (max-width: 768px){
   .top-btn, .menu-btn{
     white-space: nowrap;
@@ -1297,16 +1284,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{
     -webkit-overflow-scrolling: touch;
   }
 
-  .track-table{
-    min-width: 860px;
-  }
-
   #main{
     overflow-x: hidden;
-  }
-
-  #main table{
-    min-width: 860px;
   }
 }
 
@@ -1326,6 +1305,81 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 @keyframes offerShine {
   from { transform: translateX(-120%); }
   to { transform: translateX(120%); }
+}
+
+.rl-container{
+  width: min(1200px, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.rl-section{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.rl-card-grid{
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+}
+
+.rl-form-row{
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+.rl-table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rl-mobile-list{
+  display: grid;
+  gap: 10px;
+}
+
+.rl-mobile-card{
+  border: 1px solid rgba(148,163,184,0.35);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(15,23,42,0.62);
+}
+
+.rl-mobile-item{
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.rl-mobile-item strong{
+  color: #fcd34d;
+}
+
+@media (min-width: 768px){
+  .rl-form-row{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rl-mobile-list{
+    display: none;
+  }
+}
+
+@media (min-width: 1024px){
+  .rl-form-row{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px){
+  .rl-desktop-table{
+    display: none;
+  }
 }
 
 /* ===== Premium Login Experience ===== */
@@ -1866,6 +1920,51 @@ function renderIcons(){
   if (window.lucide && typeof window.lucide.createIcons === "function") {
     window.lucide.createIcons();
   }
+  applyResponsiveLayoutPrimitives();
+}
+
+function applyResponsiveLayoutPrimitives(){
+  const main = document.getElementById("main");
+  if(!main) return;
+
+  main.querySelectorAll(".new-order-grid, .track-shell, .mgr-shell").forEach(el => el.classList.add("rl-section"));
+  main.querySelectorAll(".new-order-fields, .track-summary-grid, .mgr-kpi-grid, .mgr-kpi-grid-single-row").forEach(el => el.classList.add("rl-card-grid"));
+  main.querySelectorAll(".track-filter-grid, .mgr-filter-bar").forEach(el => el.classList.add("rl-form-row"));
+
+  main.querySelectorAll("table").forEach((table) => {
+    table.classList.add("rl-desktop-table");
+    const holder = table.parentElement;
+    if(holder) holder.classList.add("rl-table-wrap");
+    if(table.dataset.mobileBound === "1") return;
+
+    const headers = Array.from(table.querySelectorAll("thead th")).map((h) => h.textContent.trim()).filter(Boolean);
+    if(headers.length < 4) return;
+
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    if(!rows.length) return;
+
+    const mobileList = document.createElement("div");
+    mobileList.className = "rl-mobile-list";
+
+    rows.forEach((tr) => {
+      const cols = Array.from(tr.querySelectorAll("td"));
+      if(!cols.length) return;
+      const card = document.createElement("article");
+      card.className = "rl-mobile-card";
+
+      cols.forEach((td, idx) => {
+        const item = document.createElement("div");
+        item.className = "rl-mobile-item";
+        const label = headers[idx] || `Field ${idx + 1}`;
+        item.innerHTML = `<strong>${label}</strong><span>${td.innerText.trim() || "-"}</span>`;
+        card.appendChild(item);
+      });
+      mobileList.appendChild(card);
+    });
+
+    table.insertAdjacentElement("afterend", mobileList);
+    table.dataset.mobileBound = "1";
+  });
 }
     
 // ---------- INIT ----------
@@ -2047,36 +2146,6 @@ function updateMenuHighlight(){
     }
   });
 
-}
-
-let responsiveLayoutObserver = null;
-
-function applyMobileTableLayoutFixes(){
-  const main = document.getElementById("main");
-  if(!main) return;
-
-  const shells = main.querySelectorAll(".track-table-shell, .parts-shell, .admin-strip, .mgr-panel, .pc-section");
-  shells.forEach(shell => shell.classList.add("mobile-content-shell"));
-
-  const tables = main.querySelectorAll("table");
-  tables.forEach(table => {
-    const holder = table.parentElement;
-    if(!holder) return;
-    holder.classList.add("mobile-table-scroll");
-  });
-}
-
-function initResponsiveLayoutObserver(){
-  if(responsiveLayoutObserver) return;
-  const app = document.getElementById("app");
-  if(!app) return;
-
-  applyMobileTableLayoutFixes();
-  responsiveLayoutObserver = new MutationObserver(() => {
-    applyMobileTableLayoutFixes();
-  });
-  responsiveLayoutObserver.observe(app, { childList: true, subtree: true });
-  window.addEventListener("resize", applyMobileTableLayoutFixes);
 }
 
   
@@ -2321,14 +2390,12 @@ ${isDeveloper ? `
     </div>
   </div>
 
-  <div id="main" class="w-full"></div>
+<div id="main" class="w-full rl-container"></div>
 
 </div>
 `;
 
 renderIcons();
-initResponsiveLayoutObserver();
-applyMobileTableLayoutFixes();
 
 if(!isAdmin && window.pendingCountIntervalId){
   clearInterval(window.pendingCountIntervalId);
@@ -2803,17 +2870,17 @@ main.innerHTML = `
   <div class="parts-shell">
     <div class="new-order-tag mb-3">Parts Builder</div>
     <div class="parts-table-wrap">
-      <table class="w-full text-sm text-center rounded-lg overflow-hidden table-fixed min-w-[980px]">
+      <table class="w-full text-sm text-center rounded-lg overflow-hidden table-fixed md:table-auto">
         <thead class="backdrop-blur-sm text-xs uppercase tracking-wider border-b">
           <tr>
-            <th class="py-3 w-[18%]">Part</th>
-            <th class="py-3 w-[10%]">Qty</th>
-            <th class="py-3 w-[12%]">30D Qty</th>
-            <th class="py-3 w-[26%]">Description</th>
-            <th class="py-3 w-[10%]">DNP</th>
-            <th class="py-3 w-[10%]">Category</th>
-            <th class="py-3 w-[14%]">Value</th>
-            <th class="py-3 w-[10%]"></th>
+            <th class="py-3">Part</th>
+            <th class="py-3">Qty</th>
+            <th class="py-3">30D Qty</th>
+            <th class="py-3">Description</th>
+            <th class="py-3">DNP</th>
+            <th class="py-3">Category</th>
+            <th class="py-3">Value</th>
+            <th class="py-3"></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -4004,11 +4071,11 @@ function loadUpload(){
   <div class="flex flex-wrap justify-center items-end gap-3 mt-4">
     <div class="text-left">
       <label for="inventoryReportDate" class="text-xs block mb-1" style="color:var(--pc-text-muted);">Report Date</label>
-      <input id="inventoryReportDate" type="date" class="pc-field min-w-[180px]" value="${new Date().toISOString().slice(0,10)}" />
+      <input id="inventoryReportDate" type="date" class="pc-field w-full sm:w-auto sm:min-w-[180px]" value="${new Date().toISOString().slice(0,10)}" />
     </div>
     <input type="file" id="uploadInventoryExcel" accept=".xlsx" class="pc-field max-w-xs"/>
   </div>
-  <div id="inventorySyncWrap" class="hidden max-w-[560px] mx-auto mt-4">
+  <div id="inventorySyncWrap" class="hidden max-w-xl mx-auto mt-4">
     <div class="text-xs mb-1 text-center" id="inventorySyncText" style="color:var(--pc-text-muted);">Preparing inventory upload...</div>
     <div class="w-full h-2 rounded-full overflow-hidden" style="background:rgba(148,163,184,0.24);">
       <div id="inventorySyncBar" class="h-full" style="width:0%; background:linear-gradient(90deg,#f59e0b,#facc15); transition:width .25s ease;"></div>
@@ -4687,7 +4754,7 @@ if(isSuper){
           <input
             id="processOrderNo"
             value="${orderNo}"
-            class="pc-field admin-orderno-input w-[170px] text-sm"
+            class="pc-field admin-orderno-input w-full sm:w-44 text-sm"
             placeholder="Enter Order No"
           />
           <button onclick="processOrder('${orderNo}')" class="detail-action-btn">Process</button>
@@ -4741,14 +4808,14 @@ else{
           <input
             id="issuedInvoiceNo"
             value="${escapeHtml(issuedInvoiceNo)}"
-            class="pc-field w-[160px] text-sm"
+            class="pc-field w-full sm:w-40 text-sm"
             placeholder="Invoice No"
           />
           <input
             id="issuedInvoiceDate"
             type="date"
             value="${escapeHtml(issuedInvoiceDate)}"
-            class="pc-field w-[150px] text-sm"
+            class="pc-field w-full sm:w-36 text-sm"
             onclick="this.showPicker && this.showPicker()"
           />
           <button onclick="markOrderIssued('${orderNo}')"
@@ -4764,7 +4831,7 @@ else{
           <input
             id="processOrderNo"
             value="${orderNo}"
-            class="pc-field admin-orderno-input w-[170px] text-sm"
+            class="pc-field admin-orderno-input w-full sm:w-44 text-sm"
             placeholder="Enter Order No"
           />
 
@@ -5239,13 +5306,13 @@ document.getElementById("popupActions").innerHTML = `
 <div class="flex gap-3 justify-center w-full">
 
 <button onclick="saveNewMachine('${machineNo}')"
-  class="order-action-btn px-5 py-2 rounded min-w-[100px]"
+  class="order-action-btn px-5 py-2 rounded w-full sm:w-auto sm:min-w-[100px]"
   style="background:#16a34a;color:white;">
   Save
 </button>
 
 <button onclick="closePopup()"
-  class="order-action-btn px-5 py-2 rounded min-w-[100px]"
+  class="order-action-btn px-5 py-2 rounded w-full sm:w-auto sm:min-w-[100px]"
   style="background:#e2e8f0;color:#0f172a;">
   Cancel
 </button>
@@ -6522,21 +6589,21 @@ function renderManagerDashboard(orders){
           <div>
             ${isManager ? `<button class="mgr-inv-lookup-btn" onclick="openManagerInventoryLookupTab()">Inventory Lookup</button>` : ``}
           </div>
-          <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
+          <div class="mgr-filter-bar mb-2 w-full max-w-5xl">
             <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">Branch</span>
-              <select id="mgrDashBranch" class="pc-field h-[38px] min-w-[210px]" onchange="onManagerDashboardBranchFilterChange(this.value)">
+              <select id="mgrDashBranch" class="pc-field h-[38px] w-full sm:w-auto sm:min-w-[210px]" onchange="onManagerDashboardBranchFilterChange(this.value)">
                 <option value="ALL" ${window.managerDashBranchFilter === "ALL" ? "selected" : ""}>ALL Branches</option>
                 ${branchFilterOptions.map(b => `<option value="${escapeHtml(b)}" ${window.managerDashBranchFilter === b ? "selected" : ""}>${escapeHtml(b)}</option>`).join("")}
               </select>
             </div>
             <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">From</span>
-              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
+              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] w-full sm:w-44" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
             <div class="flex items-center gap-2">
               <span class="mgr-filter-label !mb-0">To</span>
-              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
+              <input id="mgrDashTo" type="date" class="pc-field h-[38px] w-full sm:w-44" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
           </div>
         </div>
@@ -6827,7 +6894,7 @@ function renderManagerInventoryLookupTab(){
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <div class="text-sm font-extrabold uppercase tracking-[0.1em]" style="color:#fcd34d;">Inventory Lookup</div>
           <div class="flex items-center gap-2 flex-wrap justify-end">
-            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] max-w-[220px]" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
+            <input id="mgrInvLookupPartNo" type="text" class="pc-field h-[34px] w-full sm:w-56" value="${escapeHtml(window.managerInvLookupQuery || "")}" placeholder="Part Number" onkeydown="if(event.key==='Enter'){performManagerInventoryLookup();}" />
             <button class="track-page-btn mgr-compact-btn" onclick="performManagerInventoryLookup()">Search</button>
             <button class="track-page-btn mgr-compact-btn" onclick="closeManagerInventoryLookupTab()">Back</button>
           </div>
@@ -7062,7 +7129,7 @@ async function loadDeveloperUsers(){
           <div class="text-xs uppercase font-bold tracking-[0.12em] mb-2" style="color:#cbd5e1;">User Directory</div>
           <div class="overflow-x-auto">
             <table class="track-table w-full text-sm table-fixed">
-              <thead><tr><th class="w-[60px]">ID</th><th>Name</th><th>Branch</th><th class="w-[120px]">Role</th><th class="w-[140px]">Password</th><th class="w-[220px]">Actions</th></tr></thead>
+              <thead><tr><th class="w-16">ID</th><th>Name</th><th>Branch</th><th class="sm:w-28">Role</th><th class="sm:w-32">Password</th><th class="sm:w-56">Actions</th></tr></thead>
               <tbody>
                 ${(data || []).map(u => `
                   <tr>
@@ -7229,7 +7296,7 @@ async function loadDeveloperCommentsInbox(){
           </div>
           <div class="overflow-x-auto mt-2">
             <table class="track-table w-full text-sm table-fixed">
-              <thead><tr><th class="w-[120px]">Order</th><th class="w-[140px]">Branch</th><th class="w-[110px]">Type</th><th class="w-[160px]">Status</th><th class="w-[160px]">By</th><th>Comment</th><th class="w-[170px]">At</th></tr></thead>
+              <thead><tr><th class="sm:w-28">Order</th><th class="sm:w-32">Branch</th><th class="sm:w-24">Type</th><th class="sm:w-40">Status</th><th class="sm:w-40">By</th><th>Comment</th><th class="sm:w-44">At</th></tr></thead>
               <tbody>
                 ${rowsToShow.map(c => `
                   <tr class="cursor-pointer" onclick="openOrderView('${c.OrderNo}')">
