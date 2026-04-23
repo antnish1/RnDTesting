@@ -1626,6 +1626,48 @@ function showPopup(msg, type = "info", actionsHTML = null){
     popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
   }, 0);
 }
+
+function escapeHtml(value){
+  return (value ?? "").toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function showOrderPlacedPopupSummary(details = {}){
+  const popupEl = document.getElementById("popup");
+  const iconEl = document.getElementById("popupIcon");
+  const titleEl = document.getElementById("popupTitle");
+  const msgEl = document.getElementById("popupMsg");
+  const actionsEl = document.getElementById("popupActions");
+
+  iconEl.innerHTML = "✓";
+  iconEl.style.background = "rgba(16,185,129,0.18)";
+  iconEl.style.color = "#34d399";
+  titleEl.innerText = "Order Placed";
+
+  msgEl.innerHTML = `
+    <div class="text-left text-xs leading-5 space-y-1.5" style="color:#e2e8f0;">
+      <div><span style="color:#94a3b8;">Order No:</span> <span class="font-bold" style="color:#fef3c7;">${escapeHtml(details.orderNo || "-")}</span></div>
+      <div><span style="color:#94a3b8;">Type:</span> ${escapeHtml(details.orderType || "-")} · <span style="color:#94a3b8;">For:</span> ${escapeHtml(details.orderForDisplay || "-")}</div>
+      <div><span style="color:#94a3b8;">Branch:</span> ${escapeHtml(details.branch || "-")}</div>
+      <div><span style="color:#94a3b8;">Items:</span> ${escapeHtml(details.totalItems || 0)} · <span style="color:#94a3b8;">Value:</span> ₹ ${Number(details.totalValue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</div>
+    </div>
+  `;
+
+  actionsEl.innerHTML = `
+    <button onclick="closePopup()" class="popup-btn popup-btn-primary">
+      OK
+    </button>
+  `;
+
+  popupEl.classList.remove("hidden");
+  setTimeout(() => {
+    popupEl.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")?.focus();
+  }, 0);
+}
   
 function closePopup(){
   document.getElementById("popup").classList.add("hidden");
@@ -3357,7 +3399,20 @@ if(submitError){
 }
 
 await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
-showPopup("Submitted ✅ Order No: "+orderNo);
+const totalItems = inserts.reduce((sum, item) => sum + Number(item?.Qty || 0), 0);
+const totalValue = inserts.reduce((sum, item) => sum + Number(item?.Value || 0), 0);
+const orderForDisplay = orderFor === "Customer"
+  ? (customerName || "Customer")
+  : (orderFor || "-");
+
+showOrderPlacedPopupSummary({
+  orderNo,
+  orderType,
+  orderForDisplay,
+  branch: getUserBranch(user),
+  totalItems,
+  totalValue
+});
 
 loadCreate();
 }
@@ -3680,8 +3735,9 @@ async function loadPendingCount(){
     grouped[r.OrderNo].push(r);
   });
 
-  // ✅ GET UNIQUE APPROVED ORDER COUNT
+  // ✅ GET UNIQUE APPROVED ORDER COUNT (match admin table rules)
   const uniqueOrders = Object.entries(grouped)
+    .filter(([, items]) => shouldShowOrder({ items }))
     .filter(([, items]) => getOrderStatusLabel(items) === "APPROVED")
     .map(([orderNo]) => orderNo);
   const count = uniqueOrders.length;
