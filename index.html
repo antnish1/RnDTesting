@@ -2596,7 +2596,7 @@ async function markDocketRowReceived(rowId){
     .from("requests")
     .update({
       Status: "RECEIVED",
-      ProcessedDate: new Date().toISOString()
+      receivedDate: new Date().toISOString()
     })
     .eq("id", rowId);
 
@@ -4625,8 +4625,8 @@ const isAdmin = isAdminRole(user) || isDeveloperRole(user);
 const userBranch = getUserBranch(user).toUpperCase();
 const isCustomerOrder = (order.OrderFor || "").toUpperCase() === "CUSTOMER";
 const canMarkIssued = isCustomerOrder && userBranch && (order.Branch || "").toUpperCase() === userBranch && !isSuperLikeRole(user);
-const issuedInvoiceNo = (order.BillNo || "").toString().trim();
-const issuedInvoiceDate = (order.BillingDt || "").toString().slice(0, 10);
+const issuedInvoiceNo = (order.DBMSinvoiceNo || order.BillNo || "").toString().trim();
+const issuedInvoiceDate = (order.DBMSinvoiceDate || order.BillingDt || "").toString().slice(0, 10);
 const orderComments = getOrderComments({ items: data, OrderComments: order.OrderComments })
   .sort((a, b) => new Date(a?.at || 0).getTime() - new Date(b?.at || 0).getTime());
 const hasManagerApprovedLog = orderComments.some(c => c?.action === "MANAGER_APPROVED");
@@ -5125,7 +5125,8 @@ async function processOrder(orderNo){
     .from("requests")
     .update({ 
       OrderNo: inputOrderNo,
-      Status: "Processed"
+      Status: "Processed",
+      ProcessedDate: new Date().toISOString()
     })
     .eq("OrderNo", orderNo);
 
@@ -5180,8 +5181,8 @@ async function markOrderIssued(orderNo){
     .from("requests")
     .update({
       Status: "Issued",
-      BillNo: invoiceNo,
-      BillingDt: invoiceDate
+      DBMSinvoiceNo: invoiceNo,
+      DBMSinvoiceDate: invoiceDate
     })
     .eq("OrderNo", orderNo);
   hideLoader();
@@ -5607,7 +5608,6 @@ async function processExcelData(rows){
         ...existing,
         id: nextRequestId,
         Status: resolvedDispatchStatus,
-        ProcessedDate: new Date().toISOString(),
         OrderRegDt: r["Order Reg. Dt"] || "",
         DeliveryNo: deliveryNo || "",
         BillNo: billNo || "",
@@ -5708,7 +5708,6 @@ async function processExcelData(rows){
       .from("requests")
       .update({
         Status: resolvedDispatchStatus,
-        ProcessedDate: new Date().toISOString(),
         OrderRegDt: r["Order Reg. Dt"] || "",
         DeliveryNo: deliveryNo || "",
         BillNo: billNo || "",
