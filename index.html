@@ -3970,6 +3970,8 @@ html += `
 
 document.getElementById("main").innerHTML = html;
 
+await maybeShowRoleNotifications();
+
 
 }
 
@@ -4366,6 +4368,54 @@ function getOrderComments(orderObj){
 
 function getUserComments(orderObj){
   return getOrderComments(orderObj).filter(c => !isSystemActionComment(c));
+}
+
+function getRoleNotificationSeenAtKey(user){
+  const role = isAdminRole(user) ? "admin" : (isManagerRole(user) ? "manager" : "");
+  const name = (user?.Name || "").toString().trim().toLowerCase().replace(/\s+/g, "_");
+  return role && name ? `role_notification_seen_at:${role}:${name}` : "";
+}
+
+async function maybeShowRoleNotifications(){
+  const user = getUser();
+  const targetRole = isAdminRole(user) ? "admin" : (isManagerRole(user) ? "manager" : "");
+  if(!targetRole) return;
+
+  const seenKey = getRoleNotificationSeenAtKey(user);
+  const seenAt = seenKey ? (localStorage.getItem(seenKey) || "") : "";
+
+  const { data, error } = await db
+    .from("requests")
+    .select("OrderNo,OrderComments,created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if(error) return;
+
+  const notifications = (data || [])
+    .flatMap(row =>
+      getOrderComments({ OrderComments: row?.OrderComments }).map(c => ({
+        ...c,
+        OrderNo: row?.OrderNo || ""
+      }))
+    )
+    .filter(c =>
+      c?.action === "ROLE_NOTIFICATION" &&
+      (c?.meta?.target_role || "").toString().trim().toLowerCase() === targetRole
+    )
+    .sort((a, b) => new Date(b?.at || 0).getTime() - new Date(a?.at || 0).getTime());
+
+  const unread = seenAt
+    ? notifications.filter(n => new Date(n?.at || 0).getTime() > new Date(seenAt).getTime())
+    : notifications;
+
+  if(unread.length){
+    const preview = unread.slice(0, 3).map(n => `• ${n.OrderNo}: ${n.text || "Notification"}`).join("<br>");
+    showPopup(`You have ${unread.length} new notification${unread.length > 1 ? "s" : ""} 🔔<br><br>${preview}`);
+  }
+
+  if(seenKey){
+    localStorage.setItem(seenKey, new Date().toISOString());
+  }
 }
 
 function getOrderCommentCount(orderObj){
@@ -7575,6 +7625,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   </div>`;
 
   document.getElementById("main").innerHTML = html;
+  await maybeShowRoleNotifications();
 }
 
 
