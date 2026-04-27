@@ -3418,6 +3418,13 @@ if(submitError){
 }
 
 await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
+await pushRoleNotification(
+  orderNo,
+  "manager",
+  "ORDER_PENDING_APPROVAL",
+  `New order ${orderNo} is waiting for manager approval.`,
+  { order_status: "PENDING APPROVAL", approval_status: "PendingApproval" }
+);
 const totalItems = inserts.reduce((sum, item) => sum + Number(item?.Qty || 0), 0);
 const totalValue = inserts.reduce((sum, item) => sum + Number(item?.Value || 0), 0);
 const orderForDisplay = orderFor === "Customer"
@@ -7682,6 +7689,16 @@ async function updateApproval(orderNo, status){
           : `Order approved by ${user.Name || "Unknown User"} and forwarded to manager.`)
       : `Order rejected by ${user.Name || "Unknown User"}.`
   );
+
+  if(status === "Approved" && isManager){
+    await pushRoleNotification(
+      orderNo,
+      "admin",
+      "ORDER_READY_FOR_PROCESSING",
+      `Order ${orderNo} approved by manager and ready for processing.`,
+      { order_status: "APPROVED", approval_status: "Approved" }
+    );
+  }
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
@@ -7919,6 +7936,23 @@ async function appendOrderActionLog(orderNo, action, text, meta = {}){
   }catch(err){
     console.warn("appendOrderActionLog failed", err);
   }
+}
+
+async function pushRoleNotification(orderNo, targetRole, eventKey, message, meta = {}){
+  const safeRole = (targetRole || "").toString().trim().toLowerCase();
+  if(!orderNo || !safeRole || !eventKey || !message) return;
+
+  await appendOrderActionLog(
+    orderNo,
+    "ROLE_NOTIFICATION",
+    message,
+    {
+      notification: true,
+      target_role: safeRole,
+      event_key: eventKey,
+      ...meta
+    }
+  );
 }
 
 async function addOrderComment(orderNo){
