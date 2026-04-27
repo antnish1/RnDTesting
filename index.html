@@ -6419,7 +6419,7 @@ function renderManagerDashboard(orders){
   const byStatus = (k) => summaryFrom(dashboardOrders.filter(o => statusKey(o) === k));
   const customerOrders = dashboardOrders.filter(o => (o.OrderFor || "").toUpperCase() === "CUSTOMER");
   const customerIssuedOrders = customerOrders.filter(o => statusKey(o) === "ISSUED");
-  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) !== "ISSUED");
+  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) === "RECEIVED");
   const orderTypeKey = (o) => {
     const t = (o.OrderType || "").toUpperCase();
     if(t === "SOP"){
