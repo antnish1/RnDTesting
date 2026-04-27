@@ -3418,6 +3418,13 @@ if(submitError){
 }
 
 await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
+await pushRoleNotification(
+  orderNo,
+  "manager",
+  "ORDER_PENDING_APPROVAL",
+  `New order ${orderNo} is waiting for manager approval.`,
+  { order_status: "PENDING APPROVAL", approval_status: "PendingApproval" }
+);
 const totalItems = inserts.reduce((sum, item) => sum + Number(item?.Qty || 0), 0);
 const totalValue = inserts.reduce((sum, item) => sum + Number(item?.Value || 0), 0);
 const orderForDisplay = orderFor === "Customer"
@@ -3963,6 +3970,8 @@ html += `
 
 document.getElementById("main").innerHTML = html;
 
+await maybeShowRoleNotifications();
+
 
 }
 
@@ -4359,6 +4368,54 @@ function getOrderComments(orderObj){
 
 function getUserComments(orderObj){
   return getOrderComments(orderObj).filter(c => !isSystemActionComment(c));
+}
+
+function getRoleNotificationSeenAtKey(user){
+  const role = isAdminRole(user) ? "admin" : (isManagerRole(user) ? "manager" : "");
+  const name = (user?.Name || "").toString().trim().toLowerCase().replace(/\s+/g, "_");
+  return role && name ? `role_notification_seen_at:${role}:${name}` : "";
+}
+
+async function maybeShowRoleNotifications(){
+  const user = getUser();
+  const targetRole = isAdminRole(user) ? "admin" : (isManagerRole(user) ? "manager" : "");
+  if(!targetRole) return;
+
+  const seenKey = getRoleNotificationSeenAtKey(user);
+  const seenAt = seenKey ? (localStorage.getItem(seenKey) || "") : "";
+
+  const { data, error } = await db
+    .from("requests")
+    .select("OrderNo,OrderComments,created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if(error) return;
+
+  const notifications = (data || [])
+    .flatMap(row =>
+      getOrderComments({ OrderComments: row?.OrderComments }).map(c => ({
+        ...c,
+        OrderNo: row?.OrderNo || ""
+      }))
+    )
+    .filter(c =>
+      c?.action === "ROLE_NOTIFICATION" &&
+      (c?.meta?.target_role || "").toString().trim().toLowerCase() === targetRole
+    )
+    .sort((a, b) => new Date(b?.at || 0).getTime() - new Date(a?.at || 0).getTime());
+
+  const unread = seenAt
+    ? notifications.filter(n => new Date(n?.at || 0).getTime() > new Date(seenAt).getTime())
+    : notifications;
+
+  if(unread.length){
+    const preview = unread.slice(0, 3).map(n => `• ${n.OrderNo}: ${n.text || "Notification"}`).join("<br>");
+    showPopup(`You have ${unread.length} new notification${unread.length > 1 ? "s" : ""} 🔔<br><br>${preview}`);
+  }
+
+  if(seenKey){
+    localStorage.setItem(seenKey, new Date().toISOString());
+  }
 }
 
 function getOrderCommentCount(orderObj){
@@ -5569,22 +5626,26 @@ async function processExcelData(rows){
       console.log("DB Row:", existing);
     }
 
-    if(isReceivedLockedStatus(existing.Status)){
-      console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
-      skipped++;
-      continue;
-    }
-
     const existingBillNo = (existing.BillNo || "").toString().trim();
     const existingDocket = (existing.Docket || "").toString().trim();
     const existingTransport = (existing.TransportName || "").toString().trim();
+    const existingDeliveryNo = (existing.DeliveryNo || "").toString().trim();
+    const existingTransportMode = (existing.TransportMode || "").toString().trim();
+    const existingBillingDt = normalizeBillingDateValue(existing.BillingDt);
+    const incomingTransportMode = (r["Transport Mode"] || "").toString().trim();
     const hasExistingBill = !!existingBillNo;
     const hasExistingDocket = !!existingDocket;
     const hasExistingTransport = !!existingTransport;
+    const hasExistingDeliveryNo = !!existingDeliveryNo;
+    const hasExistingTransportMode = !!existingTransportMode;
+    const hasExistingBillingDt = !!existingBillingDt;
     const hasMismatchOnExistingFilledFields =
       (hasExistingBill && normalizeCompareLocal(existingBillNo) !== normalizeCompareLocal(billNo)) ||
       (hasExistingDocket && normalizeCompareLocal(existingDocket) !== normalizeCompareLocal(docketNo)) ||
-      (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName));
+      (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName)) ||
+      (hasExistingDeliveryNo && normalizeCompareLocal(existingDeliveryNo) !== normalizeCompareLocal(deliveryNo)) ||
+      (hasExistingTransportMode && normalizeCompareLocal(existingTransportMode) !== normalizeCompareLocal(incomingTransportMode)) ||
+      (hasExistingBillingDt && (existingBillingDt || "") !== (billingDt || ""));
 
     const resolveRowFulfillmentStatus = (rowObj, billedTotal) => {
       const effectiveQty = Number(getEffectiveQty(rowObj) || 0);
@@ -5614,7 +5675,7 @@ async function processExcelData(rows){
         BillingDt: r["Billing Dt"] || "",
         BilledQty: billedQty,
         TransportName: transportName || "",
-        TransportMode: (r["Transport Mode"] || "").toString().trim(),
+        TransportMode: incomingTransportMode,
         Docket: docketNo || "",
         PackingDetail: (r["Packing Detail"] || "").toString().trim(),
         EWayBillNo: (r["E-Way Bill No"] || "").toString().trim(),
@@ -5648,6 +5709,12 @@ async function processExcelData(rows){
       }
     }
 
+    if(isReceivedLockedStatus(existing.Status)){
+      console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
+      skipped++;
+      continue;
+    }
+
     const idempotencyKey = [
       String(existing.id),
       orderNo,
@@ -5668,7 +5735,7 @@ async function processExcelData(rows){
       bill_no: billNo || null,
       docket: docketNo || null,
       transport_name: transportName || null,
-      transport_mode: (r["Transport Mode"] || "").toString().trim() || null,
+      transport_mode: incomingTransportMode || null,
       packing_detail: (r["Packing Detail"] || "").toString().trim() || null,
       eway_bill_no: (r["E-Way Bill No"] || "").toString().trim() || null,
       gst_invoice_no: (r["GST Invoice No."] || "").toString().trim() || null,
@@ -5717,7 +5784,7 @@ async function processExcelData(rows){
         pending_qty: pendingQty,
         dispatch_status: resolvedDispatchStatus,
         TransportName: transportName || "",
-        TransportMode: r["Transport Mode"] || "",
+        TransportMode: incomingTransportMode,
         Docket: docketNo || "",
         PackingDetail: r["Packing Detail"] || "",
         EWayBillNo: r["E-Way Bill No"] || "",
@@ -6409,7 +6476,7 @@ function renderManagerDashboard(orders){
   const byStatus = (k) => summaryFrom(dashboardOrders.filter(o => statusKey(o) === k));
   const customerOrders = dashboardOrders.filter(o => (o.OrderFor || "").toUpperCase() === "CUSTOMER");
   const customerIssuedOrders = customerOrders.filter(o => statusKey(o) === "ISSUED");
-  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) !== "ISSUED");
+  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) === "RECEIVED");
   const orderTypeKey = (o) => {
     const t = (o.OrderType || "").toUpperCase();
     if(t === "SOP"){
@@ -7558,6 +7625,7 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   </div>`;
 
   document.getElementById("main").innerHTML = html;
+  await maybeShowRoleNotifications();
 }
 
 
@@ -7672,6 +7740,16 @@ async function updateApproval(orderNo, status){
           : `Order approved by ${user.Name || "Unknown User"} and forwarded to manager.`)
       : `Order rejected by ${user.Name || "Unknown User"}.`
   );
+
+  if(status === "Approved" && isManager){
+    await pushRoleNotification(
+      orderNo,
+      "admin",
+      "ORDER_READY_FOR_PROCESSING",
+      `Order ${orderNo} approved by manager and ready for processing.`,
+      { order_status: "APPROVED", approval_status: "Approved" }
+    );
+  }
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
@@ -7909,6 +7987,23 @@ async function appendOrderActionLog(orderNo, action, text, meta = {}){
   }catch(err){
     console.warn("appendOrderActionLog failed", err);
   }
+}
+
+async function pushRoleNotification(orderNo, targetRole, eventKey, message, meta = {}){
+  const safeRole = (targetRole || "").toString().trim().toLowerCase();
+  if(!orderNo || !safeRole || !eventKey || !message) return;
+
+  await appendOrderActionLog(
+    orderNo,
+    "ROLE_NOTIFICATION",
+    message,
+    {
+      notification: true,
+      target_role: safeRole,
+      event_key: eventKey,
+      ...meta
+    }
+  );
 }
 
 async function addOrderComment(orderNo){
