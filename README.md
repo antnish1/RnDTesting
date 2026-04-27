@@ -22,3 +22,5 @@ const GEMINI_BROWSER_API_KEY = "";
 ```
 
 Paste the key there only if you accept that anyone who can open the website files can read and reuse the key. Restrict the key to your website domain and the Generative Language API before using this option.
+
+The manager AI agent builds a compact database snapshot from the tables the current logged-in user can read, including recent requests plus relevant users, inventory, branch, and machine data when the question needs it. Supabase row-level security and the browser publishable key still control what data is available.

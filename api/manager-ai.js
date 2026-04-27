@@ -9,17 +9,20 @@ function sendJson(res, statusCode, payload) {
 function buildPrompt({ mode, question, context }) {
   return [
     "You are the Manager AI Agent for a parts ordering portal.",
-    "Use only the provided dashboard context. Do not invent orders, customers, branches, or values.",
+    "Use the provided dashboard context and database snapshot. Do not invent orders, customers, branches, users, inventory, or values.",
+    "The database snapshot may be partial because browser apps must keep prompts compact; use counts and sample rows carefully.",
     "Write concise, manager-ready output with practical next actions.",
     "If data is insufficient, say what is missing.",
+    "Return JSON only. No markdown fences.",
+    "JSON schema: {\"answer\":\"short manager answer\", \"suggestions\":[\"suggestion 1\"], \"actions\":[{\"label\":\"button text\", \"action\":\"open_pending|open_approved|open_rejected|open_all|open_inventory|download_excel|clear_filters\", \"primary\":true}]}",
     "",
     `Mode: ${mode || "briefing"}`,
     question ? `Manager question: ${question}` : "Manager question: none",
     "",
-    "Dashboard context JSON:",
+    "Context JSON:",
     JSON.stringify(context || {}, null, 2),
     "",
-    "Return a short briefing with: current situation, risks, and recommended actions."
+    "Choose 1 to 4 useful actions. Prefer actions that match the answer."
   ].join("\n");
 }
 

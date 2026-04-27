@@ -844,9 +844,11 @@ tr[style*="f59e0b"]:hover {
   color:#dbeafe;
   line-height: 1.55;
   font-size: 13px;
-  white-space: pre-wrap;
 }
 .mgr-ai-body strong{ color:#fef3c7; }
+.mgr-ai-body p{ margin: 0 0 10px; }
+.mgr-ai-body ul{ margin: 8px 0 0; padding-left: 18px; }
+.mgr-ai-body li{ margin-bottom: 6px; }
 .mgr-ai-actions{
   display:flex;
   align-items:center;
@@ -889,6 +891,30 @@ tr[style*="f59e0b"]:hover {
   color:#dbeafe;
   font-size: 13px;
   line-height: 1.55;
+}
+.mgr-ai-cta-row{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148,163,184,0.18);
+}
+.mgr-ai-cta{
+  min-height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(250,204,21,0.38);
+  background: rgba(30,41,59,0.9);
+  color:#fef3c7;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 11px;
+}
+.mgr-ai-cta.primary{
+  border-color: rgba(56,189,248,0.5);
+  background: linear-gradient(180deg, rgba(14,165,233,0.9), rgba(37,99,235,0.9));
+  color:#eff6ff;
 }
 .mgr-filter-bar{
   display:flex;
@@ -6651,7 +6677,7 @@ function buildManagerAiContext(orders){
 }
 
 function buildLocalManagerBriefing(context, question){
-  const metrics = context.metrics || {};
+  const metrics = context.dashboard?.metrics || context.metrics || {};
   const statusCounts = metrics.statusCounts || {};
   const pending = statusCounts["PENDING APPROVAL"] || 0;
   const approved = statusCounts["APPROVED"] || 0;
@@ -6668,26 +6694,218 @@ function buildLocalManagerBriefing(context, question){
     `Suggested next action: review pending approvals first, then inspect high-value recent orders with comments.`;
 }
 
+async function fetchManagerAiDatabaseContext(question = ""){
+  const lowerQuestion = question.toLowerCase();
+  const wantsInventory = /stock|inventory|part|item|qty|quantity|branch/.test(lowerQuestion);
+  const wantsPeople = /user|manager|admin|branch|approver|person|staff/.test(lowerQuestion);
+  const wantsMachines = /machine|customer/.test(lowerQuestion);
+  const result = {
+    scope: "database snapshot available to the current logged-in user through Supabase permissions",
+    fetchedAt: new Date().toISOString(),
+    tables: {},
+    errors: []
+  };
+
+  const safeQuery = async (label, query) => {
+    try {
+      const { data, error, count } = await query;
+      if(error) throw error;
+      result.tables[label] = {
+        count: typeof count === "number" ? count : (Array.isArray(data) ? data.length : 0),
+        rows: Array.isArray(data) ? data : []
+      };
+    } catch (error) {
+      result.errors.push(`${label}: ${error.message || error}`);
+    }
+  };
+
+  await safeQuery("requests_recent", db
+    .from("requests")
+    .select(REQUEST_LIST_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .limit(650));
+
+  if(wantsPeople || !question){
+    await safeQuery("users", db
+      .from("users")
+      .select("id,Name,Branch,Role", { count: "exact" })
+      .order("Name", { ascending: true })
+      .limit(500));
+  }
+
+  if(wantsInventory || !question){
+    await safeQuery("inventory_current", db
+      .from("inventory_current")
+      .select("*", { count: "exact" })
+      .limit(500));
+    await safeQuery("inventory_staging_recent", db
+      .from("inventory_staging")
+      .select("*", { count: "exact" })
+      .limit(500));
+    await safeQuery("inventory_changes_recent", db
+      .from("inventory_changes")
+      .select("*", { count: "exact" })
+      .limit(250));
+    await safeQuery("branch_mapping", db
+      .from("branch_mapping")
+      .select("*", { count: "exact" })
+      .limit(500));
+  }
+
+  if(wantsMachines || !question){
+    await safeQuery("machine_master", db
+      .from("machine_master")
+      .select("*", { count: "exact" })
+      .limit(500));
+  }
+
+  return result;
+}
+
+function summarizeManagerAiDatabase(database){
+  const tables = database?.tables || {};
+  const summary = {};
+  Object.entries(tables).forEach(([name, table]) => {
+    const rows = table.rows || [];
+    summary[name] = {
+      count: table.count,
+      columns: Object.keys(rows[0] || {}).slice(0, 20),
+      sampleRows: rows.slice(0, 35)
+    };
+  });
+  return {
+    scope: database?.scope,
+    fetchedAt: database?.fetchedAt,
+    errors: database?.errors || [],
+    tables: summary
+  };
+}
+
+async function buildManagerAiFullContext(orders, question){
+  return {
+    dashboard: buildManagerAiContext(orders),
+    database: summarizeManagerAiDatabase(await fetchManagerAiDatabaseContext(question))
+  };
+}
+
 function buildManagerAiPrompt(mode, question, context){
   return [
     "You are the Manager AI Agent for a parts ordering portal.",
-    "Use only the provided dashboard context. Do not invent orders, customers, branches, or values.",
+    "Use the provided dashboard context and database snapshot. Do not invent orders, customers, branches, users, inventory, or values.",
+    "The database snapshot may be partial because browser apps must keep prompts compact; use counts and sample rows carefully.",
     "Write concise, manager-ready output with practical next actions.",
     "If data is insufficient, say what is missing.",
+    "Return JSON only. No markdown fences.",
+    "JSON schema: {\"answer\":\"short manager answer\", \"suggestions\":[\"suggestion 1\"], \"actions\":[{\"label\":\"button text\", \"action\":\"open_pending|open_approved|open_rejected|open_all|open_inventory|download_excel|clear_filters\", \"primary\":true}]}",
     "",
     `Mode: ${mode || "briefing"}`,
     question ? `Manager question: ${question}` : "Manager question: none",
     "",
-    "Dashboard context JSON:",
+    "Context JSON:",
     JSON.stringify(context || {}, null, 2),
     "",
-    "Return a short briefing with: current situation, risks, and recommended actions."
+    "Choose 1 to 4 useful actions. Prefer actions that match the answer."
   ].join("\n");
 }
 
 function extractGeminiBrowserText(data){
   const parts = data?.candidates?.[0]?.content?.parts || [];
   return parts.map(part => part.text || "").join("").trim();
+}
+
+function parseManagerAiPayload(raw){
+  if(!raw || typeof raw !== "string"){
+    return { answer: "No AI answer returned.", suggestions: [], actions: [] };
+  }
+  const cleaned = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      answer: parsed.answer || cleaned,
+      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 6) : [],
+      actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 4) : []
+    };
+  } catch {
+    return { answer: cleaned, suggestions: [], actions: defaultManagerAiActions() };
+  }
+}
+
+function defaultManagerAiActions(){
+  return [
+    { label: "Review Pending", action: "open_pending", primary: true },
+    { label: "Open All Orders", action: "open_all" },
+    { label: "Inventory Lookup", action: "open_inventory" }
+  ];
+}
+
+function renderManagerAiResponse(raw){
+  const output = document.getElementById("managerAiOutput");
+  if(!output) return;
+  const payload = typeof raw === "string" ? parseManagerAiPayload(raw) : {
+    answer: raw?.answer || "No AI answer returned.",
+    suggestions: Array.isArray(raw?.suggestions) ? raw.suggestions : [],
+    actions: Array.isArray(raw?.actions) ? raw.actions : []
+  };
+  const suggestionsHtml = payload.suggestions.length
+    ? `<ul>${payload.suggestions.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    : "";
+  const validActions = new Set(["open_pending","open_approved","open_rejected","open_all","open_inventory","download_excel","clear_filters"]);
+  const actions = (payload.actions.length ? payload.actions : defaultManagerAiActions())
+    .filter(action => validActions.has(action.action));
+  const actionsHtml = actions.length
+    ? `<div class="mgr-ai-cta-row">${actions.map(action => `
+        <button class="mgr-ai-cta ${action.primary ? "primary" : ""}" onclick="handleManagerAiAction('${action.action}')">${escapeHtml(action.label || "Open")}</button>
+      `).join("")}</div>`
+    : "";
+  output.innerHTML = `
+    <p>${escapeHtml(payload.answer).replace(/\n/g, "<br>")}</p>
+    ${suggestionsHtml}
+    ${actionsHtml}
+  `;
+}
+
+function handleManagerAiAction(action){
+  if(action === "open_pending"){
+    window.managerDashFilter = { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
+    window.managerDashTableVisible = true;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  if(action === "open_approved"){
+    window.managerDashFilter = { type: "status", key: "APPROVED", label: "Approved" };
+    window.managerDashTableVisible = true;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  if(action === "open_rejected"){
+    window.managerDashFilter = { type: "status", key: "REJECTED", label: "Rejected" };
+    window.managerDashTableVisible = true;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  if(action === "open_all"){
+    window.managerDashFilter = { type: "status", key: "ALL", label: "All Orders" };
+    window.managerDashTableVisible = true;
+    loadSuper("Dashboard", true);
+    return;
+  }
+  if(action === "open_inventory"){
+    openManagerInventoryLookupTab();
+    return;
+  }
+  if(action === "download_excel"){
+    downloadManagerDashboardFilteredExcel();
+    return;
+  }
+  if(action === "clear_filters"){
+    window.managerDashFilter = { type: "status", key: "ALL", label: "All Orders" };
+    window.managerDashBranchFilter = "ALL";
+    loadSuper("Dashboard", true);
+  }
 }
 
 async function callGeminiFromBrowser(mode, question, context){
@@ -6723,7 +6941,7 @@ async function callGeminiFromBrowser(mode, question, context){
   if(!response.ok){
     throw new Error(data?.error?.message || "Gemini request failed");
   }
-  return extractGeminiBrowserText(data) || "Gemini returned an empty response.";
+  return extractGeminiBrowserText(data) || "{\"answer\":\"Gemini returned an empty response.\",\"suggestions\":[],\"actions\":[]}";
 }
 
 async function runManagerAiAgent(mode = "briefing"){
@@ -6733,8 +6951,8 @@ async function runManagerAiAgent(mode = "briefing"){
     return;
   }
   const question = (questionEl?.value || "").trim();
-  const context = buildManagerAiContext(window.managerDashSelectedOrders || []);
-  output.textContent = "Thinking with current dashboard data...";
+  output.innerHTML = "Thinking across dashboard and database data...";
+  const context = await buildManagerAiFullContext(window.managerDashSelectedOrders || [], question);
 
   try {
     const response = await fetch("/api/manager-ai", {
@@ -6748,13 +6966,20 @@ async function runManagerAiAgent(mode = "briefing"){
     }
 
     const data = await response.json();
-    output.textContent = data.answer || buildLocalManagerBriefing(context, question);
+    renderManagerAiResponse(data.answer || buildLocalManagerBriefing(context, question));
   } catch (error) {
     try {
-      output.textContent = await callGeminiFromBrowser(mode, question, context);
+      renderManagerAiResponse(await callGeminiFromBrowser(mode, question, context));
     } catch (browserError) {
-      output.textContent = buildLocalManagerBriefing(context, question) +
-        "\n\nLive Gemini note: add GEMINI_BROWSER_API_KEY in index.html or connect /api/manager-ai with GEMINI_API_KEY.";
+      renderManagerAiResponse({
+        answer: buildLocalManagerBriefing(context, question) +
+          "\n\nLive Gemini note: add GEMINI_BROWSER_API_KEY in index.html or connect /api/manager-ai with GEMINI_API_KEY.",
+        suggestions: [
+          "Check whether Supabase row-level permissions allow this manager to read the needed tables.",
+          "Use a specific question when you want the agent to fetch inventory, users, or machine data."
+        ],
+        actions: defaultManagerAiActions()
+      });
     }
   }
 }
@@ -6763,7 +6988,7 @@ function clearManagerAiQuestion(){
   const questionEl = document.getElementById("managerAiQuestion");
   const output = document.getElementById("managerAiOutput");
   if(questionEl) questionEl.value = "";
-  if(output) output.textContent = "Ask for a briefing, risk scan, or report summary using the current dashboard filters.";
+  if(output) output.textContent = "Ask for a briefing, risk scan, inventory check, user lookup, or report summary.";
 }
 
 function renderManagerDashboard(orders){
@@ -6980,11 +7205,11 @@ function renderManagerDashboard(orders){
               <button class="mgr-ai-btn secondary" onclick="runManagerAiAgent('risk_scan')">Risk Scan</button>
             </div>
           </div>
-          <div id="managerAiOutput" class="mgr-ai-body">Ask for a briefing, risk scan, or report summary using the current dashboard filters.</div>
+          <div id="managerAiOutput" class="mgr-ai-body">Ask for a briefing, risk scan, inventory check, user lookup, or report summary.</div>
         </div>
         <div class="mgr-ai-panel p-4">
           <div class="mgr-ai-title mb-3"><i data-lucide="messages-square"></i> Ask About This View</div>
-          <textarea id="managerAiQuestion" class="mgr-ai-question" placeholder="Example: Which orders should I review first today?"></textarea>
+          <textarea id="managerAiQuestion" class="mgr-ai-question" placeholder="Example: Which orders, inventory items, or branches need attention today?"></textarea>
           <div class="mgr-ai-actions mt-3">
             <button class="mgr-ai-btn" onclick="runManagerAiAgent('question')">Ask AI</button>
             <button class="mgr-ai-btn secondary" onclick="clearManagerAiQuestion()">Clear</button>
