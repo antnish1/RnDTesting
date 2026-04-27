@@ -1527,16 +1527,9 @@ let currentRow = null;
 
 
 
-// ✅ REALTIME LISTENER FOR PENDING COUNT (NO LOGIC CHANGE)
-db.channel('requests-changes')
-  .on(
-    'postgres_changes',
-    { event: '*', schema: 'public', table: 'requests' },
-    payload => {
-      loadPendingCount();
-    }
-  )
-  .subscribe();
+// ✅ PENDING COUNT REFRESH
+// Realtime sockets were causing intermittent websocket warnings in some environments.
+// We keep pending counters fresh via polling (`startPendingCountAutoRefresh`) instead.
 
 
 
@@ -7463,6 +7456,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   const user = getUser();
   const isManager = isManagerRole(user) || isDeveloperRole(user);
+  const userName = (user?.Name || "").toString().trim();
 
   const pageSize = 1000;
   let offset = 0;
@@ -7476,7 +7470,12 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
       .range(offset, offset + pageSize - 1);
 
     if(!isManager){
-      query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
+      if(!userName){
+        console.warn("loadSuper: missing user name for non-manager role; skipping scoped fetch.");
+        break;
+      }
+      const safeUserName = userName.replace(/,/g, "\\,");
+      query = query.or(`ApprovedBy.eq.${safeUserName},ApprovedBySuper.eq.${safeUserName}`);
     }
 
     const { data, error } = await query;
