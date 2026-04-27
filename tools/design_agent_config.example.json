@@ -1,8 +1,0 @@
-{
-  "target": "https://example.com",
-  "benchmarks": [
-    "https://stripe.com",
-    "https://www.notion.com",
-    "https://www.airbnb.com"
-  ]
-}

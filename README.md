@@ -1,27 +1,24 @@
 # RnDTesting
 
-Website trial project with a built-in **Website Modernization Agent** that can monitor a target site, compare it against similar websites, and continuously suggest theme/styling improvements.
+Website trial project.
 
-## Website Modernization Agent
+## Manager AI Agent
 
-Use `tools/design_agent.py` to:
-- inspect your website's style signals (colors, classes, UI patterns),
-- compare against benchmark websites,
-- generate ongoing design ideas in a JSON report.
+The manager dashboard includes an AI briefing panel that sends current dashboard metrics to a server-side Gemini endpoint at `/api/manager-ai`.
 
-### Quick start
+Set these environment variables in your hosting provider:
 
 ```bash
-python3 tools/design_agent.py \
-  --config tools/design_agent_config.example.json \
-  --output design_agent_report.json
+GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_MODEL=gemini-3-flash-preview
 ```
 
-### Example benchmark sources to research
+Keep the Gemini key server-side only. Do not paste it into `index.html`.
 
-When building your benchmark list, include sites in your domain (for example auto-parts or B2B ordering portals), then rotate them monthly.
+For internal-only testing, `index.html` also has a browser-side fallback:
 
-## Supporting docs
+```js
+const GEMINI_BROWSER_API_KEY = "";
+```
 
-- Agent overview: `agents/website_design_agent.md`
-- Config template: `tools/design_agent_config.example.json`
+Paste the key there only if you accept that anyone who can open the website files can read and reuse the key. Restrict the key to your website domain and the Generative Language API before using this option.

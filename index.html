@@ -816,6 +816,80 @@ tr[style*="f59e0b"]:hover {
 .mgr-kpi-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
 .mgr-kpi-count{ font-size: 1.35rem; font-weight: 900; line-height: 1; color:#f8fafc; }
 .mgr-kpi-value{ font-size: 0.86rem; font-weight: 800; color:#fde68a; margin-top: 16px; }
+.mgr-ai-grid{
+  display:grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.mgr-ai-panel{
+  border-radius: 14px;
+  border: 1px solid rgba(56,189,248,0.28);
+  background: linear-gradient(145deg, rgba(8,20,35,0.96), rgba(15,23,42,0.94));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.mgr-ai-title{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  color:#e0f2fe;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.mgr-ai-title svg{ width:17px; height:17px; color:#38bdf8; }
+.mgr-ai-body{
+  min-height: 132px;
+  color:#dbeafe;
+  line-height: 1.55;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.mgr-ai-body strong{ color:#fef3c7; }
+.mgr-ai-actions{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mgr-ai-btn{
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(56,189,248,0.42);
+  background: linear-gradient(180deg, rgba(14,165,233,0.88), rgba(37,99,235,0.88));
+  color:#eff6ff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 12px;
+}
+.mgr-ai-btn.secondary{
+  background: rgba(30,41,59,0.9);
+  border-color: rgba(250,204,21,0.34);
+  color:#fef3c7;
+}
+.mgr-ai-question{
+  width:100%;
+  min-height: 76px;
+  resize: vertical;
+  border-radius: 12px;
+  border:1px solid rgba(56,189,248,0.26);
+  background: rgba(2,6,23,0.52);
+  color:#e2e8f0;
+  padding: 10px;
+  outline: none;
+}
+.mgr-ai-question:focus{
+  border-color:#38bdf8;
+  box-shadow: 0 0 0 3px rgba(56,189,248,0.16);
+}
+.mgr-ai-list{
+  margin: 0;
+  padding-left: 18px;
+  color:#dbeafe;
+  font-size: 13px;
+  line-height: 1.55;
+}
 .mgr-filter-bar{
   display:flex;
   gap: 10px;
@@ -920,6 +994,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 
 @media (max-width: 1200px){
   .mgr-kpi-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .mgr-ai-grid{ grid-template-columns: 1fr; }
 }
 @media (max-width: 768px){
   .mgr-kpi-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -1514,6 +1589,8 @@ const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,Cus
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
+const GEMINI_BROWSER_API_KEY = ""; // Paste your Gemini API key here only if you accept browser-side exposure risk.
+const GEMINI_BROWSER_MODEL = "gemini-3-flash-preview";
     const db = createClient(
 
 
@@ -6513,6 +6590,182 @@ function updateManagerPendingFavicon(count){
   img.src = window.managerBaseFaviconHref;
 }
 
+function buildManagerAiContext(orders){
+  const sourceOrders = Array.isArray(orders) ? orders : [];
+  const selectedOrders = Array.isArray(window.managerDashSelectedOrders) ? window.managerDashSelectedOrders : sourceOrders;
+  const dashboardOrders = selectedOrders.slice(0, 120);
+  const totalValue = dashboardOrders.reduce((sum, order) => {
+    const items = Array.isArray(order.items) ? order.items : [];
+    return sum + items.reduce((itemSum, item) => itemSum + Number(getEffectiveValue(item) || 0), 0);
+  }, 0);
+  const statusCounts = {};
+  const branchCounts = {};
+  const typeCounts = {};
+
+  dashboardOrders.forEach(order => {
+    const status = getOrderStatusLabel(order) || "UNKNOWN";
+    const branch = order.Branch || "-";
+    const type = order.OrderType || "OTHER";
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+    branchCounts[branch] = (branchCounts[branch] || 0) + 1;
+    typeCounts[type] = (typeCounts[type] || 0) + 1;
+  });
+
+  const recentOrders = dashboardOrders
+    .slice()
+    .sort((a, b) => getISTSortTimestamp(b.created_at) - getISTSortTimestamp(a.created_at))
+    .slice(0, 12)
+    .map(order => ({
+      orderNo: order.OrderNo || "",
+      createdAt: order.created_at || "",
+      branch: order.Branch || "-",
+      status: getOrderStatusLabel(order) || "",
+      type: order.OrderType || "",
+      orderFor: order.OrderFor || "",
+      customer: order.CustomerName || "",
+      itemCount: Array.isArray(order.items) ? order.items.length : 0,
+      qty: (order.items || []).reduce((sum, item) => sum + Number(getEffectiveQty(item) || 0), 0),
+      value: Math.round((order.items || []).reduce((sum, item) => sum + Number(getEffectiveValue(item) || 0), 0)),
+      comments: getOrderCommentCount(order)
+    }));
+
+  return {
+    user: {
+      name: getUser()?.Name || "",
+      role: getUserRole(getUser()) || ""
+    },
+    filters: {
+      dateRange: window.managerDashDateRange || {},
+      branch: window.managerDashBranchFilter || "ALL",
+      active: window.managerDashFilter || {}
+    },
+    metrics: {
+      totalOrders: dashboardOrders.length,
+      totalValue: Math.round(totalValue),
+      statusCounts,
+      branchCounts,
+      typeCounts
+    },
+    recentOrders
+  };
+}
+
+function buildLocalManagerBriefing(context, question){
+  const metrics = context.metrics || {};
+  const statusCounts = metrics.statusCounts || {};
+  const pending = statusCounts["PENDING APPROVAL"] || 0;
+  const approved = statusCounts["APPROVED"] || 0;
+  const rejected = statusCounts["REJECTED"] || 0;
+  const processed = statusCounts["PROCESSED"] || 0;
+  const topBranch = Object.entries(metrics.branchCounts || {}).sort((a, b) => b[1] - a[1])[0];
+  const focus = question ? `Question: ${question}\n\n` : "";
+  return `${focus}Manager briefing is ready from live dashboard data.\n\n` +
+    `- Total orders in the current view: ${metrics.totalOrders || 0}\n` +
+    `- Approx. order value: INR ${(metrics.totalValue || 0).toLocaleString("en-IN")}\n` +
+    `- Pending approval: ${pending}\n` +
+    `- Approved: ${approved}, processed: ${processed}, rejected: ${rejected}\n` +
+    `- Busiest branch: ${topBranch ? `${topBranch[0]} (${topBranch[1]} orders)` : "not available"}\n\n` +
+    `Suggested next action: review pending approvals first, then inspect high-value recent orders with comments.`;
+}
+
+function buildManagerAiPrompt(mode, question, context){
+  return [
+    "You are the Manager AI Agent for a parts ordering portal.",
+    "Use only the provided dashboard context. Do not invent orders, customers, branches, or values.",
+    "Write concise, manager-ready output with practical next actions.",
+    "If data is insufficient, say what is missing.",
+    "",
+    `Mode: ${mode || "briefing"}`,
+    question ? `Manager question: ${question}` : "Manager question: none",
+    "",
+    "Dashboard context JSON:",
+    JSON.stringify(context || {}, null, 2),
+    "",
+    "Return a short briefing with: current situation, risks, and recommended actions."
+  ].join("\n");
+}
+
+function extractGeminiBrowserText(data){
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  return parts.map(part => part.text || "").join("").trim();
+}
+
+async function callGeminiFromBrowser(mode, question, context){
+  const key = (GEMINI_BROWSER_API_KEY || "").trim();
+  if(!key){
+    throw new Error("Browser Gemini API key is not configured");
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_BROWSER_MODEL)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: buildManagerAiPrompt(mode, question, context) }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.25,
+          maxOutputTokens: 900
+        }
+      })
+    }
+  );
+
+  const data = await response.json();
+  if(!response.ok){
+    throw new Error(data?.error?.message || "Gemini request failed");
+  }
+  return extractGeminiBrowserText(data) || "Gemini returned an empty response.";
+}
+
+async function runManagerAiAgent(mode = "briefing"){
+  const output = document.getElementById("managerAiOutput");
+  const questionEl = document.getElementById("managerAiQuestion");
+  if(!output){
+    return;
+  }
+  const question = (questionEl?.value || "").trim();
+  const context = buildManagerAiContext(window.managerDashSelectedOrders || []);
+  output.textContent = "Thinking with current dashboard data...";
+
+  try {
+    const response = await fetch("/api/manager-ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, question, context })
+    });
+
+    if(!response.ok){
+      throw new Error(`AI endpoint unavailable (${response.status})`);
+    }
+
+    const data = await response.json();
+    output.textContent = data.answer || buildLocalManagerBriefing(context, question);
+  } catch (error) {
+    try {
+      output.textContent = await callGeminiFromBrowser(mode, question, context);
+    } catch (browserError) {
+      output.textContent = buildLocalManagerBriefing(context, question) +
+        "\n\nLive Gemini note: add GEMINI_BROWSER_API_KEY in index.html or connect /api/manager-ai with GEMINI_API_KEY.";
+    }
+  }
+}
+
+function clearManagerAiQuestion(){
+  const questionEl = document.getElementById("managerAiQuestion");
+  const output = document.getElementById("managerAiOutput");
+  if(questionEl) questionEl.value = "";
+  if(output) output.textContent = "Ask for a briefing, risk scan, or report summary using the current dashboard filters.";
+}
+
 function renderManagerDashboard(orders){
   const allOrders = orders || [];
   const isManager = isManagerRole(getUser());
@@ -6718,6 +6971,27 @@ function renderManagerDashboard(orders){
         <div class="mgr-kpi-grid mt-2">${typeCards.map(c => cardHtml({ ...c, filterType: "type" })).join("")}</div>
       </section>
 
+      <section class="mgr-ai-grid">
+        <div class="mgr-ai-panel p-4">
+          <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+            <div class="mgr-ai-title"><i data-lucide="sparkles"></i> Manager AI Agent</div>
+            <div class="mgr-ai-actions">
+              <button class="mgr-ai-btn" onclick="runManagerAiAgent('briefing')">Generate Briefing</button>
+              <button class="mgr-ai-btn secondary" onclick="runManagerAiAgent('risk_scan')">Risk Scan</button>
+            </div>
+          </div>
+          <div id="managerAiOutput" class="mgr-ai-body">Ask for a briefing, risk scan, or report summary using the current dashboard filters.</div>
+        </div>
+        <div class="mgr-ai-panel p-4">
+          <div class="mgr-ai-title mb-3"><i data-lucide="messages-square"></i> Ask About This View</div>
+          <textarea id="managerAiQuestion" class="mgr-ai-question" placeholder="Example: Which orders should I review first today?"></textarea>
+          <div class="mgr-ai-actions mt-3">
+            <button class="mgr-ai-btn" onclick="runManagerAiAgent('question')">Ask AI</button>
+            <button class="mgr-ai-btn secondary" onclick="clearManagerAiQuestion()">Clear</button>
+          </div>
+        </div>
+      </section>
+
       <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
         <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
           <div class="text-[11px] uppercase tracking-[0.1em] font-semibold" style="color:#fcd34d;">
@@ -6778,6 +7052,7 @@ function renderManagerDashboard(orders){
         </div>
       </section>
     </div>`;
+  renderIcons();
 }
 
 function onManagerDashboardDateChange(){
