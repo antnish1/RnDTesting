@@ -916,6 +916,32 @@ tr[style*="f59e0b"]:hover {
   background: linear-gradient(180deg, rgba(14,165,233,0.9), rgba(37,99,235,0.9));
   color:#eff6ff;
 }
+.mgr-ai-report-table-wrap{
+  margin-top: 12px;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid rgba(148,163,184,0.24);
+  border-radius: 10px;
+}
+.mgr-ai-report-table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  font-size: 12px;
+}
+.mgr-ai-report-table th,
+.mgr-ai-report-table td{
+  padding: 8px 9px;
+  border-bottom: 1px solid rgba(148,163,184,0.18);
+  text-align: left;
+}
+.mgr-ai-report-table th{
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #0f172a !important;
+  color:#fef3c7 !important;
+}
 .mgr-filter-bar{
   display:flex;
   gap: 10px;
@@ -1615,8 +1641,8 @@ const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,Cus
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
-const GEMINI_BROWSER_API_KEY = "AIzaSyDvodiD6QJ6ftaJjQUHg-3Qx6QfWhaeKZg"; // Paste your Gemini API key here only if you accept browser-side exposure risk.
-const GEMINI_BROWSER_MODEL = "gemini-3-flash-preview";
+const GEMINI_BROWSER_API_KEY = ""; // Do not commit a real key. Use localStorage key setup in the browser.
+const GEMINI_BROWSER_MODEL = "gemini-2.5-flash";
     const db = createClient(
 
 
@@ -6582,7 +6608,7 @@ function updateManagerPendingFavicon(count){
   window.managerBaseTitle = baseTitle;
   document.title = `${titlePrefix}${baseTitle}`;
 
-  if(pending <= 0){
+  if(pending <= 0 || window.location.protocol === "file:"){
     faviconLink.href = window.managerBaseFaviconHref;
     return;
   }
@@ -6762,6 +6788,93 @@ async function fetchManagerAiDatabaseContext(question = ""){
   return result;
 }
 
+function isOrderedPartsReportQuestion(question = ""){
+  const text = question.toLowerCase();
+  return /part|parts|item|items/.test(text) && /order|ordered|request|requested/.test(text) && /today|date|daily|all|list|report/.test(text);
+}
+
+function getLocalDayRange(date = new Date()){
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return {
+    from: start.toISOString(),
+    to: end.toISOString(),
+    label: start.toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "2-digit" })
+  };
+}
+
+async function fetchOrderedPartsReport(question = ""){
+  if(!isOrderedPartsReportQuestion(question)){
+    return null;
+  }
+
+  const range = getLocalDayRange();
+  const pageSize = 1000;
+  let offset = 0;
+  let rows = [];
+
+  while(true){
+    const { data, error } = await db
+      .from("requests")
+      .select(REQUEST_LIST_SELECT)
+      .gte("created_at", range.from)
+      .lte("created_at", range.to)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if(error) throw error;
+    if(!data || !data.length) break;
+    rows.push(...data);
+    if(data.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  const reportRows = rows
+    .filter(row => (row.PartNo || "").toString().trim())
+    .map(row => ({
+      "Date": formatDateTime(row.created_at),
+      "Order No": row.OrderNo || "",
+      "Part No": row.PartNo || "",
+      "Qty": Number(row.editedqty || row.BilledQty || row.Qty || 0),
+      "Value": Math.round(Number(row.editedvalue || row.Value || 0)),
+      "Branch": row.Branch || "",
+      "Customer": row.CustomerName || "",
+      "Order Type": row.OrderType || "",
+      "Order For": row.OrderFor || "",
+      "Status": getPrintableStatusLabel(row)
+    }));
+
+  const partSummary = {};
+  reportRows.forEach(row => {
+    const partNo = row["Part No"];
+    if(!partSummary[partNo]){
+      partSummary[partNo] = { partNo, totalQty: 0, totalValue: 0, orders: new Set() };
+    }
+    partSummary[partNo].totalQty += Number(row.Qty || 0);
+    partSummary[partNo].totalValue += Number(row.Value || 0);
+    partSummary[partNo].orders.add(row["Order No"]);
+  });
+
+  return {
+    title: `Parts Ordered Today - ${range.label}`,
+    generatedAt: new Date().toISOString(),
+    rowCount: reportRows.length,
+    uniquePartCount: Object.keys(partSummary).length,
+    columns: ["Date", "Order No", "Part No", "Qty", "Value", "Branch", "Customer", "Order Type", "Order For", "Status"],
+    rows: reportRows,
+    summaryRows: Object.values(partSummary)
+      .map(item => ({
+        "Part No": item.partNo,
+        "Total Qty": item.totalQty,
+        "Total Value": Math.round(item.totalValue),
+        "Order Count": item.orders.size
+      }))
+      .sort((a, b) => Number(b["Total Qty"]) - Number(a["Total Qty"]))
+  };
+}
+
 function summarizeManagerAiDatabase(database){
   const tables = database?.tables || {};
   const summary = {};
@@ -6782,9 +6895,11 @@ function summarizeManagerAiDatabase(database){
 }
 
 async function buildManagerAiFullContext(orders, question){
+  const generatedReport = await fetchOrderedPartsReport(question);
   return {
     dashboard: buildManagerAiContext(orders),
-    database: summarizeManagerAiDatabase(await fetchManagerAiDatabaseContext(question))
+    database: summarizeManagerAiDatabase(await fetchManagerAiDatabaseContext(question)),
+    generatedReport
   };
 }
 
@@ -6795,8 +6910,9 @@ function buildManagerAiPrompt(mode, question, context){
     "The database snapshot may be partial because browser apps must keep prompts compact; use counts and sample rows carefully.",
     "Write concise, manager-ready output with practical next actions.",
     "If data is insufficient, say what is missing.",
+    "If context.generatedReport exists, answer from it and do not truncate the result. Summarize totals in answer, include suggestions, and set action download_ai_excel.",
     "Return JSON only. No markdown fences.",
-    "JSON schema: {\"answer\":\"short manager answer\", \"suggestions\":[\"suggestion 1\"], \"actions\":[{\"label\":\"button text\", \"action\":\"open_pending|open_approved|open_rejected|open_all|open_inventory|download_excel|clear_filters\", \"primary\":true}]}",
+    "JSON schema: {\"answer\":\"short manager answer\", \"suggestions\":[\"suggestion 1\"], \"actions\":[{\"label\":\"button text\", \"action\":\"open_pending|open_approved|open_rejected|open_all|open_inventory|download_excel|download_ai_excel|clear_filters\", \"primary\":true}]}",
     "",
     `Mode: ${mode || "briefing"}`,
     question ? `Manager question: ${question}` : "Manager question: none",
@@ -6827,7 +6943,8 @@ function parseManagerAiPayload(raw){
     return {
       answer: parsed.answer || cleaned,
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 6) : [],
-      actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 4) : []
+      actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 5) : [],
+      report: parsed.report || null
     };
   } catch {
     return { answer: cleaned, suggestions: [], actions: defaultManagerAiActions() };
@@ -6848,14 +6965,23 @@ function renderManagerAiResponse(raw){
   const payload = typeof raw === "string" ? parseManagerAiPayload(raw) : {
     answer: raw?.answer || "No AI answer returned.",
     suggestions: Array.isArray(raw?.suggestions) ? raw.suggestions : [],
-    actions: Array.isArray(raw?.actions) ? raw.actions : []
+    actions: Array.isArray(raw?.actions) ? raw.actions : [],
+    report: raw?.report || null
   };
+  if(payload.report && Array.isArray(payload.report.rows)){
+    window.managerAiLastReport = payload.report;
+  }
+  const generatedReport = window.managerAiLastReport || null;
+  if(generatedReport && !payload.actions.some(action => action.action === "download_ai_excel")){
+    payload.actions.unshift({ label: "Download AI Excel", action: "download_ai_excel", primary: true });
+  }
   const suggestionsHtml = payload.suggestions.length
     ? `<ul>${payload.suggestions.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
     : "";
-  const validActions = new Set(["open_pending","open_approved","open_rejected","open_all","open_inventory","download_excel","clear_filters"]);
+  const validActions = new Set(["open_pending","open_approved","open_rejected","open_all","open_inventory","download_excel","download_ai_excel","clear_filters"]);
   const actions = (payload.actions.length ? payload.actions : defaultManagerAiActions())
     .filter(action => validActions.has(action.action));
+  const reportHtml = generatedReport ? renderManagerAiReportTable(generatedReport) : "";
   const actionsHtml = actions.length
     ? `<div class="mgr-ai-cta-row">${actions.map(action => `
         <button class="mgr-ai-cta ${action.primary ? "primary" : ""}" onclick="handleManagerAiAction('${action.action}')">${escapeHtml(action.label || "Open")}</button>
@@ -6864,11 +6990,93 @@ function renderManagerAiResponse(raw){
   output.innerHTML = `
     <p>${escapeHtml(payload.answer).replace(/\n/g, "<br>")}</p>
     ${suggestionsHtml}
+    ${reportHtml}
     ${actionsHtml}
   `;
 }
 
-function handleManagerAiAction(action){
+function renderManagerAiReportTable(report){
+  const rows = Array.isArray(report.rows) ? report.rows : [];
+  const summaryRows = Array.isArray(report.summaryRows) ? report.summaryRows : [];
+  const preview = rows.slice(0, 80);
+  if(!rows.length){
+    return `<p>No report rows found.</p>`;
+  }
+  const columns = report.columns || Object.keys(rows[0] || {});
+  return `
+    <div class="mt-3 text-xs" style="color:#bfdbfe;">
+      ${escapeHtml(report.title || "AI Report")} - ${rows.length} rows, ${report.uniquePartCount || summaryRows.length || 0} unique parts.
+      ${rows.length > preview.length ? ` Showing first ${preview.length}; download Excel for full report.` : ""}
+    </div>
+    <div class="mgr-ai-report-table-wrap">
+      <table class="mgr-ai-report-table">
+        <thead><tr>${columns.map(col => `<th>${escapeHtml(col)}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${preview.map(row => `<tr>${columns.map(col => `<td>${escapeHtml(row[col] ?? "")}</td>`).join("")}</tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function downloadManagerAiReportExcel(){
+  const report = window.managerAiLastReport;
+  const rows = Array.isArray(report?.rows) ? report.rows : [];
+  const summaryRows = Array.isArray(report?.summaryRows) ? report.summaryRows : [];
+  if(!report || (!rows.length && !summaryRows.length)){
+    showPopup("No AI report available to download.");
+    return;
+  }
+  if(!window.XLSX){
+    showPopup("Excel library is still loading. Please try again.");
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  if(summaryRows.length){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "Part Summary");
+  }
+  if(rows.length){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Report Rows");
+  }
+  const safeTitle = (report.title || "AI_Report").replace(/[^a-z0-9_-]+/gi, "_").replace(/^_+|_+$/g, "");
+  XLSX.writeFile(wb, `${safeTitle || "AI_Report"}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+async function ensureManagerAiReportForDownload(){
+  const rows = Array.isArray(window.managerAiLastReport?.rows) ? window.managerAiLastReport.rows : [];
+  const summaryRows = Array.isArray(window.managerAiLastReport?.summaryRows) ? window.managerAiLastReport.summaryRows : [];
+  if(rows.length || summaryRows.length){
+    return true;
+  }
+
+  const question = window.managerAiLastQuestion || document.getElementById("managerAiQuestion")?.value || "";
+  try {
+    const report = await fetchOrderedPartsReport(question || "list all parts ordered today");
+    if(report){
+      window.managerAiLastReport = report;
+      renderManagerAiResponse({
+        answer: `${report.title}: found ${report.rowCount} ordered part rows across ${report.uniquePartCount} unique parts. The report is ready to download.`,
+        suggestions: [
+          "Use the Part Summary sheet to review total quantity by part number.",
+          "Use the Report Rows sheet for branch, customer, order, and status details."
+        ],
+        actions: [
+          { label: "Download AI Excel", action: "download_ai_excel", primary: true },
+          { label: "Open All Orders", action: "open_all" }
+        ]
+      });
+      return true;
+    }
+  } catch (error) {
+    showPopup(`Could not prepare AI report: ${error.message || error}`);
+    return false;
+  }
+
+  showPopup("No AI report available to download. Ask for a report like: list all parts ordered today.");
+  return false;
+}
+
+async function handleManagerAiAction(action){
   if(action === "open_pending"){
     window.managerDashFilter = { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
     window.managerDashTableVisible = true;
@@ -6901,6 +7109,12 @@ function handleManagerAiAction(action){
     downloadManagerDashboardFilteredExcel();
     return;
   }
+  if(action === "download_ai_excel"){
+    if(await ensureManagerAiReportForDownload()){
+      downloadManagerAiReportExcel();
+    }
+    return;
+  }
   if(action === "clear_filters"){
     window.managerDashFilter = { type: "status", key: "ALL", label: "All Orders" };
     window.managerDashBranchFilter = "ALL";
@@ -6909,7 +7123,7 @@ function handleManagerAiAction(action){
 }
 
 async function callGeminiFromBrowser(mode, question, context){
-  const key = (GEMINI_BROWSER_API_KEY || "").trim();
+  const key = getGeminiBrowserApiKey();
   if(!key){
     throw new Error("Browser Gemini API key is not configured");
   }
@@ -6944,6 +7158,24 @@ async function callGeminiFromBrowser(mode, question, context){
   return extractGeminiBrowserText(data) || "{\"answer\":\"Gemini returned an empty response.\",\"suggestions\":[],\"actions\":[]}";
 }
 
+function getGeminiBrowserApiKey(){
+  return (GEMINI_BROWSER_API_KEY || localStorage.getItem("gemini_browser_api_key") || "").trim();
+}
+
+function setGeminiBrowserApiKey(){
+  const existing = getGeminiBrowserApiKey();
+  const key = prompt("Paste Gemini API key for this browser only", existing);
+  if(key === null) return;
+  const cleaned = key.trim();
+  if(!cleaned){
+    localStorage.removeItem("gemini_browser_api_key");
+    showPopup("Gemini browser key cleared.");
+    return;
+  }
+  localStorage.setItem("gemini_browser_api_key", cleaned);
+  showPopup("Gemini key saved in this browser only.", "success");
+}
+
 async function runManagerAiAgent(mode = "briefing"){
   const output = document.getElementById("managerAiOutput");
   const questionEl = document.getElementById("managerAiQuestion");
@@ -6951,10 +7183,33 @@ async function runManagerAiAgent(mode = "briefing"){
     return;
   }
   const question = (questionEl?.value || "").trim();
+  window.managerAiLastQuestion = question;
   output.innerHTML = "Thinking across dashboard and database data...";
   const context = await buildManagerAiFullContext(window.managerDashSelectedOrders || [], question);
+  window.managerAiLastReport = context.generatedReport || null;
+  if(context.generatedReport){
+    const report = context.generatedReport;
+    renderManagerAiResponse({
+      answer: `${report.title}: found ${report.rowCount} ordered part rows across ${report.uniquePartCount} unique parts. The full list is shown below and can be downloaded as Excel.`,
+      suggestions: [
+        "Use the Part Summary sheet in the Excel file to review total quantity by part number.",
+        "Check high-quantity and high-value parts first for approval or stock planning."
+      ],
+      actions: [
+        { label: "Download AI Excel", action: "download_ai_excel", primary: true },
+        { label: "Open All Orders", action: "open_all" },
+        { label: "Review Pending", action: "open_pending" }
+      ]
+    });
+  }
+
+  const isStaticLocalServer = ["localhost", "127.0.0.1", ""].includes(window.location.hostname) && window.location.port === "8000";
+  const canUseServerEndpoint = (window.location.protocol === "http:" || window.location.protocol === "https:") && !isStaticLocalServer;
 
   try {
+    if(!canUseServerEndpoint){
+      throw new Error("Server AI endpoint is unavailable from file:// pages");
+    }
     const response = await fetch("/api/manager-ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -6971,12 +7226,14 @@ async function runManagerAiAgent(mode = "briefing"){
     try {
       renderManagerAiResponse(await callGeminiFromBrowser(mode, question, context));
     } catch (browserError) {
+      const liveError = browserError?.message || error?.message || "Gemini request failed";
       renderManagerAiResponse({
         answer: buildLocalManagerBriefing(context, question) +
-          "\n\nLive Gemini note: add GEMINI_BROWSER_API_KEY in index.html or connect /api/manager-ai with GEMINI_API_KEY.",
+          `\n\nLive Gemini error: ${liveError}. Check the API key, allowed API, model, billing/quota, and HTTP referrer restrictions.`,
         suggestions: [
-          "Check whether Supabase row-level permissions allow this manager to read the needed tables.",
-          "Use a specific question when you want the agent to fetch inventory, users, or machine data."
+          "In Google Cloud/API key restrictions, allow the Generative Language API.",
+          "If HTTP referrers are restricted, allow http://localhost:8000/* and your deployed website domain.",
+          "Use the Set Key button to save the Gemini key in this browser, and confirm it has quota/billing available."
         ],
         actions: defaultManagerAiActions()
       });
@@ -7203,6 +7460,7 @@ function renderManagerDashboard(orders){
             <div class="mgr-ai-actions">
               <button class="mgr-ai-btn" onclick="runManagerAiAgent('briefing')">Generate Briefing</button>
               <button class="mgr-ai-btn secondary" onclick="runManagerAiAgent('risk_scan')">Risk Scan</button>
+              <button class="mgr-ai-btn secondary" onclick="setGeminiBrowserApiKey()">Set Key</button>
             </div>
           </div>
           <div id="managerAiOutput" class="mgr-ai-body">Ask for a briefing, risk scan, inventory check, user lookup, or report summary.</div>

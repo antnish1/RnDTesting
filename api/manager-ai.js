@@ -1,4 +1,4 @@
-const DEFAULT_MODEL = "gemini-3-flash-preview";
+const DEFAULT_MODEL = "gemini-2.5-flash";
 
 function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode;
@@ -13,8 +13,9 @@ function buildPrompt({ mode, question, context }) {
     "The database snapshot may be partial because browser apps must keep prompts compact; use counts and sample rows carefully.",
     "Write concise, manager-ready output with practical next actions.",
     "If data is insufficient, say what is missing.",
+    "If context.generatedReport exists, answer from it and do not truncate the result. Summarize totals in answer, include suggestions, and set action download_ai_excel.",
     "Return JSON only. No markdown fences.",
-    "JSON schema: {\"answer\":\"short manager answer\", \"suggestions\":[\"suggestion 1\"], \"actions\":[{\"label\":\"button text\", \"action\":\"open_pending|open_approved|open_rejected|open_all|open_inventory|download_excel|clear_filters\", \"primary\":true}]}",
+    "JSON schema: {\"answer\":\"short manager answer\", \"suggestions\":[\"suggestion 1\"], \"actions\":[{\"label\":\"button text\", \"action\":\"open_pending|open_approved|open_rejected|open_all|open_inventory|download_excel|download_ai_excel|clear_filters\", \"primary\":true}]}",
     "",
     `Mode: ${mode || "briefing"}`,
     question ? `Manager question: ${question}` : "Manager question: none",
