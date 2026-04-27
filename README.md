@@ -25,3 +25,16 @@ When building your benchmark list, include sites in your domain (for example aut
 
 - Agent overview: `agents/website_design_agent.md`
 - Config template: `tools/design_agent_config.example.json`
+
+## Make a local copy of this repository
+
+```bash
+git clone <repo-url>
+cd RnDTesting
+```
+
+If you already have access to the remote and want the latest updates:
+
+```bash
+git pull --rebase
+```
