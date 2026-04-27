@@ -3418,6 +3418,13 @@ if(submitError){
 }
 
 await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
+await pushRoleNotification(
+  orderNo,
+  "manager",
+  "ORDER_PENDING_APPROVAL",
+  `New order ${orderNo} is waiting for manager approval.`,
+  { order_status: "PENDING APPROVAL", approval_status: "PendingApproval" }
+);
 const totalItems = inserts.reduce((sum, item) => sum + Number(item?.Qty || 0), 0);
 const totalValue = inserts.reduce((sum, item) => sum + Number(item?.Value || 0), 0);
 const orderForDisplay = orderFor === "Customer"
@@ -3784,6 +3791,33 @@ function startPendingCountAutoRefresh(){
     loadPendingCount();
   }, 20000);
 }
+
+function stopRoleDashboardAutoRefresh(){
+  if(window.roleDashboardAutoRefreshTimer){
+    clearInterval(window.roleDashboardAutoRefreshTimer);
+    window.roleDashboardAutoRefreshTimer = null;
+  }
+  window.roleDashboardAutoRefreshMode = "";
+}
+
+function startRoleDashboardAutoRefresh(mode){
+  if(window.roleDashboardAutoRefreshMode === mode && window.roleDashboardAutoRefreshTimer) return;
+  stopRoleDashboardAutoRefresh();
+  window.roleDashboardAutoRefreshMode = mode;
+  window.roleDashboardAutoRefreshTimer = setInterval(() => {
+    if(mode === "manager"){
+      if(window.activeTab === "Dashboard"){
+        loadSuper("Dashboard", true);
+      }
+      return;
+    }
+    if(mode === "admin"){
+      if(window.activeTab === "Approved" || window.activeTab === "Processed"){
+        loadAdmin(window.activeTab, true);
+      }
+    }
+  }, 30000);
+}
   
 // ---------- ADMIN ----------
 async function loadAdmin(activeTab = "Approved", skipReset = false){
@@ -3962,6 +3996,9 @@ html += `
 `;
 
 document.getElementById("main").innerHTML = html;
+
+await maybeShowRoleNotifications();
+startRoleDashboardAutoRefresh("admin");
 
 
 }
@@ -4359,6 +4396,119 @@ function getOrderComments(orderObj){
 
 function getUserComments(orderObj){
   return getOrderComments(orderObj).filter(c => !isSystemActionComment(c));
+}
+
+function getISTSortTimestamp(dateValue){
+  if(!dateValue) return 0;
+  const source = new Date(dateValue);
+  if(Number.isNaN(source.getTime())) return 0;
+  const istText = source.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+  const istDate = new Date(istText);
+  return Number.isNaN(istDate.getTime()) ? source.getTime() : istDate.getTime();
+}
+
+function getRoleNotificationSeenAtKey(user){
+  const role = isAdminRole(user) ? "admin" : (isManagerRole(user) ? "manager" : "");
+  const name = (user?.Name || "").toString().trim().toLowerCase().replace(/\s+/g, "_");
+  return role && name ? `role_notification_seen_at:${role}:${name}` : "";
+}
+
+function openRoleNotificationTarget(role){
+  closePopup();
+  if(role === "manager"){
+    window.managerDashFilter = { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
+    loadSuper("Dashboard", true);
+    return;
+  }
+  if(role === "admin"){
+    loadAdmin("Approved", true);
+  }
+}
+
+function showRoleNotificationPopup(role, unread){
+  const count = unread.length;
+  const title = role === "manager" ? "Manager Alerts" : "Admin Alerts";
+  const cta = role === "manager" ? "Open Pending Approval" : "Open Approved Orders";
+  const subtitle = role === "manager"
+    ? "New orders need your approval."
+    : "Orders approved by manager are ready for processing.";
+  const latestItems = unread.slice(0, 3).map(n => `
+    <div class="rounded-xl px-3 py-2 text-left" style="background:rgba(15,23,42,0.75); border:1px solid rgba(148,163,184,0.24);">
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-xs font-semibold" style="color:#fde68a;">🔔 ${escapeHtml(n.OrderNo || "-")}</div>
+        <div class="text-[11px]" style="color:#94a3b8;">${escapeHtml(formatDateTimeIST(n.at || ""))}</div>
+      </div>
+      <div class="text-xs mt-1" style="color:#e2e8f0;">${escapeHtml(n.text || "You have a new notification.")}</div>
+    </div>
+  `).join("");
+
+  document.getElementById("popupMsg").innerHTML = `
+    <div class="space-y-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background:linear-gradient(160deg,#1d4ed8,#7c3aed); box-shadow:0 6px 20px rgba(59,130,246,0.35);">
+          <i data-lucide="bell" class="w-5 h-5 text-white"></i>
+        </div>
+        <div class="text-left">
+          <div class="font-bold text-base">${title}</div>
+          <div class="text-xs" style="color:var(--pc-text-muted);">${subtitle}</div>
+        </div>
+      </div>
+      <div class="rounded-xl px-3 py-2 text-sm text-left" style="background:rgba(59,130,246,0.10); border:1px solid rgba(59,130,246,0.35);">
+        You have <span class="font-bold" style="color:#fcd34d;">${count}</span> unread notification${count > 1 ? "s" : ""}.
+      </div>
+      <div class="space-y-2">${latestItems}</div>
+    </div>
+  `;
+  document.getElementById("popupActions").innerHTML = `
+    <div class="flex gap-2 justify-end">
+      <button onclick="closePopup()" class="px-4 py-2 rounded-lg font-semibold" style="background:#e2e8f0;color:#0f172a;">Later</button>
+      <button onclick="openRoleNotificationTarget('${role}')" class="px-4 py-2 rounded-lg font-semibold" style="background:linear-gradient(180deg,#2563eb,#1d4ed8);color:#fff;">${cta}</button>
+    </div>
+  `;
+  document.getElementById("popup").classList.remove("hidden");
+  if(window.lucide && typeof window.lucide.createIcons === "function"){
+    window.lucide.createIcons();
+  }
+}
+
+async function maybeShowRoleNotifications(){
+  const user = getUser();
+  const targetRole = isAdminRole(user) ? "admin" : (isManagerRole(user) ? "manager" : "");
+  if(!targetRole) return;
+
+  const seenKey = getRoleNotificationSeenAtKey(user);
+  const seenAt = seenKey ? (localStorage.getItem(seenKey) || "") : "";
+
+  const { data, error } = await db
+    .from("requests")
+    .select("OrderNo,OrderComments,created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if(error) return;
+
+  const notifications = (data || [])
+    .flatMap(row =>
+      getOrderComments({ OrderComments: row?.OrderComments }).map(c => ({
+        ...c,
+        OrderNo: row?.OrderNo || ""
+      }))
+    )
+    .filter(c =>
+      c?.action === "ROLE_NOTIFICATION" &&
+      (c?.meta?.target_role || "").toString().trim().toLowerCase() === targetRole
+    )
+    .sort((a, b) => new Date(b?.at || 0).getTime() - new Date(a?.at || 0).getTime());
+
+  const unread = seenAt
+    ? notifications.filter(n => new Date(n?.at || 0).getTime() > new Date(seenAt).getTime())
+    : notifications;
+
+  if(unread.length){
+    showRoleNotificationPopup(targetRole, unread);
+    if(seenKey){
+      localStorage.setItem(seenKey, new Date().toISOString());
+    }
+  }
 }
 
 function getOrderCommentCount(orderObj){
@@ -5569,22 +5719,26 @@ async function processExcelData(rows){
       console.log("DB Row:", existing);
     }
 
-    if(isReceivedLockedStatus(existing.Status)){
-      console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
-      skipped++;
-      continue;
-    }
-
     const existingBillNo = (existing.BillNo || "").toString().trim();
     const existingDocket = (existing.Docket || "").toString().trim();
     const existingTransport = (existing.TransportName || "").toString().trim();
+    const existingDeliveryNo = (existing.DeliveryNo || "").toString().trim();
+    const existingTransportMode = (existing.TransportMode || "").toString().trim();
+    const existingBillingDt = normalizeBillingDateValue(existing.BillingDt);
+    const incomingTransportMode = (r["Transport Mode"] || "").toString().trim();
     const hasExistingBill = !!existingBillNo;
     const hasExistingDocket = !!existingDocket;
     const hasExistingTransport = !!existingTransport;
+    const hasExistingDeliveryNo = !!existingDeliveryNo;
+    const hasExistingTransportMode = !!existingTransportMode;
+    const hasExistingBillingDt = !!existingBillingDt;
     const hasMismatchOnExistingFilledFields =
       (hasExistingBill && normalizeCompareLocal(existingBillNo) !== normalizeCompareLocal(billNo)) ||
       (hasExistingDocket && normalizeCompareLocal(existingDocket) !== normalizeCompareLocal(docketNo)) ||
-      (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName));
+      (hasExistingTransport && normalizeCompareLocal(existingTransport) !== normalizeCompareLocal(transportName)) ||
+      (hasExistingDeliveryNo && normalizeCompareLocal(existingDeliveryNo) !== normalizeCompareLocal(deliveryNo)) ||
+      (hasExistingTransportMode && normalizeCompareLocal(existingTransportMode) !== normalizeCompareLocal(incomingTransportMode)) ||
+      (hasExistingBillingDt && (existingBillingDt || "") !== (billingDt || ""));
 
     const resolveRowFulfillmentStatus = (rowObj, billedTotal) => {
       const effectiveQty = Number(getEffectiveQty(rowObj) || 0);
@@ -5614,7 +5768,7 @@ async function processExcelData(rows){
         BillingDt: r["Billing Dt"] || "",
         BilledQty: billedQty,
         TransportName: transportName || "",
-        TransportMode: (r["Transport Mode"] || "").toString().trim(),
+        TransportMode: incomingTransportMode,
         Docket: docketNo || "",
         PackingDetail: (r["Packing Detail"] || "").toString().trim(),
         EWayBillNo: (r["E-Way Bill No"] || "").toString().trim(),
@@ -5648,6 +5802,12 @@ async function processExcelData(rows){
       }
     }
 
+    if(isReceivedLockedStatus(existing.Status)){
+      console.log("⏭️ SKIPPED: Existing row already in final RECEIVED status.");
+      skipped++;
+      continue;
+    }
+
     const idempotencyKey = [
       String(existing.id),
       orderNo,
@@ -5668,7 +5828,7 @@ async function processExcelData(rows){
       bill_no: billNo || null,
       docket: docketNo || null,
       transport_name: transportName || null,
-      transport_mode: (r["Transport Mode"] || "").toString().trim() || null,
+      transport_mode: incomingTransportMode || null,
       packing_detail: (r["Packing Detail"] || "").toString().trim() || null,
       eway_bill_no: (r["E-Way Bill No"] || "").toString().trim() || null,
       gst_invoice_no: (r["GST Invoice No."] || "").toString().trim() || null,
@@ -5717,7 +5877,7 @@ async function processExcelData(rows){
         pending_qty: pendingQty,
         dispatch_status: resolvedDispatchStatus,
         TransportName: transportName || "",
-        TransportMode: r["Transport Mode"] || "",
+        TransportMode: incomingTransportMode,
         Docket: docketNo || "",
         PackingDetail: r["Packing Detail"] || "",
         EWayBillNo: r["E-Way Bill No"] || "",
@@ -6409,7 +6569,7 @@ function renderManagerDashboard(orders){
   const byStatus = (k) => summaryFrom(dashboardOrders.filter(o => statusKey(o) === k));
   const customerOrders = dashboardOrders.filter(o => (o.OrderFor || "").toUpperCase() === "CUSTOMER");
   const customerIssuedOrders = customerOrders.filter(o => statusKey(o) === "ISSUED");
-  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) !== "ISSUED");
+  const customerNotIssuedOrders = customerOrders.filter(o => statusKey(o) === "RECEIVED");
   const orderTypeKey = (o) => {
     const t = (o.OrderType || "").toUpperCase();
     if(t === "SOP"){
@@ -6495,6 +6655,7 @@ function renderManagerDashboard(orders){
   } else if(activeFilter?.type === "branch"){
     selectedOrders = dashboardOrders.filter(o => (o.Branch || "-") === activeFilter.key);
   }
+  selectedOrders = [...selectedOrders].sort((a, b) => getISTSortTimestamp(b.created_at) - getISTSortTimestamp(a.created_at));
   window.managerDashSelectedOrders = selectedOrders;
   updateManagerPendingFavicon(byStatus("PENDING APPROVAL").count);
 
@@ -7558,6 +7719,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   </div>`;
 
   document.getElementById("main").innerHTML = html;
+  await maybeShowRoleNotifications();
+  startRoleDashboardAutoRefresh("manager");
 }
 
 
@@ -7672,6 +7835,16 @@ async function updateApproval(orderNo, status){
           : `Order approved by ${user.Name || "Unknown User"} and forwarded to manager.`)
       : `Order rejected by ${user.Name || "Unknown User"}.`
   );
+
+  if(status === "Approved" && isManager){
+    await pushRoleNotification(
+      orderNo,
+      "admin",
+      "ORDER_READY_FOR_PROCESSING",
+      `Order ${orderNo} approved by manager and ready for processing.`,
+      { order_status: "APPROVED", approval_status: "Approved" }
+    );
+  }
   showPopup("Updated successfully ✅");
 
   loadSuper(window.activeTab);
@@ -7909,6 +8082,23 @@ async function appendOrderActionLog(orderNo, action, text, meta = {}){
   }catch(err){
     console.warn("appendOrderActionLog failed", err);
   }
+}
+
+async function pushRoleNotification(orderNo, targetRole, eventKey, message, meta = {}){
+  const safeRole = (targetRole || "").toString().trim().toLowerCase();
+  if(!orderNo || !safeRole || !eventKey || !message) return;
+
+  await appendOrderActionLog(
+    orderNo,
+    "ROLE_NOTIFICATION",
+    message,
+    {
+      notification: true,
+      target_role: safeRole,
+      event_key: eventKey,
+      ...meta
+    }
+  );
 }
 
 async function addOrderComment(orderNo){
