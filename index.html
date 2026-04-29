@@ -1509,7 +1509,7 @@ let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const USER_AUTH_SELECT = "id,Name,Branch,Role,Password";
 const USER_ADMIN_SELECT = "id,Name,Branch,Role,Password";
-const REQUEST_ORDER_DETAIL_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,MachineType,WarrantyStatus,PartNo,PartName,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments,ProcessedDate,BillNo,Docket,TransportName,DeliveryNo,OrderImages,Remarks,CallId,EmployeeName";
+const REQUEST_ORDER_DETAIL_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,WarrantyStatus,PartNo,PartName,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments,ProcessedDate,BillNo,Docket,TransportName,DeliveryNo,Remarks,CallID,EmployeeName";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -4468,12 +4468,18 @@ const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
 
-  const { data } = await db
+  const { data, error } = await db
     .from("requests")
     .select(REQUEST_ORDER_DETAIL_SELECT)
     .eq("OrderNo", orderNo)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
+
+  if(error){
+    hideLoader();
+    console.error(error);
+    return showPopup(`Failed to load order ❗\n${error.message || "Unknown error"}`);
+  }
 
   hideLoader();
 
