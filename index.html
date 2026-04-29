@@ -1,10 +1,6 @@
     <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
   <title>Parts Connect Portal</title>
         <link rel="icon" type="image/png" href="F.ico">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -1511,6 +1507,9 @@ let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const USER_AUTH_SELECT = "id,Name,Branch,Role,Password";
+const USER_ADMIN_SELECT = "id,Name,Branch,Role,Password";
+const REQUEST_ORDER_DETAIL_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,WarrantyStatus,PartNo,PartName,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments,ProcessedDate,BillNo,Docket,TransportName,DeliveryNo,Remarks,CallID,EmployeeName";
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -1948,7 +1947,7 @@ document.addEventListener("keydown", function(e){
 }
     
     
-const { data } = await db.from("users").select("*");
+const { data } = await db.from("users").select(USER_AUTH_SELECT);
 const unique = [...new Set((data || []).map(d => getUserBranch(d)).filter(Boolean))];
 
 const el = document.getElementById("branch");
@@ -1967,7 +1966,7 @@ showLoader();
 
 const { data: allUsers } = await db
 .from("users")
-.select("*");
+.select(USER_AUTH_SELECT);
 
 const normalizedUsers = (allUsers || []).map(normalizeUserPayload);
 const branchNorm = (branch || "").toString().trim().toUpperCase();
@@ -4469,12 +4468,18 @@ const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
 
-  const { data } = await db
+  const { data, error } = await db
     .from("requests")
-    .select("*")
+    .select(REQUEST_ORDER_DETAIL_SELECT)
     .eq("OrderNo", orderNo)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
+
+  if(error){
+    hideLoader();
+    console.error(error);
+    return showPopup(`Failed to load order ❗\n${error.message || "Unknown error"}`);
+  }
 
   hideLoader();
 
@@ -7066,7 +7071,7 @@ async function loadDeveloperUsers(){
   updateMenuHighlight();
   showLoader();
   try{
-    const { data, error } = await db.from("users").select("*").order("Name", { ascending: true });
+    const { data, error } = await db.from("users").select(USER_ADMIN_SELECT).order("Name", { ascending: true });
     if(error) throw error;
     const roleOptions = [...new Set((data || []).map(u => (getUserField(u, ["role"]) || "").toString().trim()).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b))
@@ -7136,7 +7141,7 @@ async function createDeveloperUser(){
 
 async function editDeveloperUser(id){
   if(!id) return;
-  const { data, error } = await db.from("users").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("users").select(USER_ADMIN_SELECT).eq("id", id).maybeSingle();
   if(error || !data) return showPopup("User not found");
   const Name = prompt("Enter Name", data.Name || "");
   if(Name === null) return;
@@ -7173,7 +7178,7 @@ async function loadDeveloperRequestsEditor(){
   try{
     const { data, error } = await db
       .from("requests")
-      .select("*")
+      .select(REQUEST_LIST_SELECT)
       .order("created_at", { ascending: false })
       .limit(200);
     if(error) throw error;
@@ -7577,7 +7582,7 @@ async function openSuperOrder(orderNo){
 
   const { data } = await db
     .from("requests")
-    .select("*")
+    .select(REQUEST_ORDER_DETAIL_SELECT)
     .eq("OrderNo", orderNo);
 
   hideLoader();
@@ -8167,7 +8172,7 @@ async function printOrderDetails(orderNo){
   showLoader();
   const { data, error } = await db
     .from("requests")
-    .select("*")
+    .select(REQUEST_ORDER_DETAIL_SELECT)
     .eq("OrderNo", orderNo)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
@@ -8473,7 +8478,7 @@ async function downloadOrderExcel(orderNo){
 
   const { data } = await db
     .from("requests")
-    .select("*")
+    .select(REQUEST_ORDER_DETAIL_SELECT)
     .eq("OrderNo", orderNo);
 
   hideLoader();
