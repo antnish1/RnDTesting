@@ -1783,6 +1783,10 @@ function isDeveloperRole(user){
   return getUserRole(user) === "developer";
 }
 
+function isNarsinghpurBranchUser(user){
+  return getUserBranch(user).toUpperCase() === "NARSINGHPUR";
+}
+
 async function syncUserRoleFromDb(user){
   if(!user) return null;
 
@@ -2123,6 +2127,8 @@ if(isDeveloper){
   window.activeTab = isManager ? "Dashboard" : "PendingApproval";
 }else if(isViewer){
   window.activeTab = "track";
+}else if(isNarsinghpurBranchUser(user)){
+  window.activeTab = "quotation";
 }else{
   window.activeTab = window.activeTab || "create";
 }
@@ -2165,6 +2171,7 @@ document.getElementById("app").innerHTML = `
 
   <div class="nav-scroll-row md:flex-1 md:justify-end">
 
+${isNarsinghpurBranchUser(user) ? `` : `
 <div class="relative w-full min-w-0 md:w-auto md:min-w-[280px] header-search-shell">
 
   <i data-lucide="search" 
@@ -2179,6 +2186,7 @@ document.getElementById("app").innerHTML = `
   />
 
 </div>
+`}
 
 ${isDeveloper ? `
     <button onclick="loadDeveloperDashboard()" 
@@ -2221,6 +2229,18 @@ ${isDeveloper ? `
       Track
     </button>
 ` : !isAdmin && !isSuper && !isViewer ? `
+    ${isNarsinghpurBranchUser(user) ? `
+    <button onclick="loadRequestQuotation()" 
+    class="top-btn ${window.activeTab==='quotation' ? 'active-top-btn' : ''}"
+    data-tab="quotation">
+      Request Quotation
+    </button>
+    <button onclick="loadQuotationRequests()" 
+    class="top-btn ${window.activeTab==='trackRequests' ? 'active-top-btn' : ''}"
+    data-tab="trackRequests">
+      Track Requests
+    </button>
+    ` : `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
       data-tab="create">
@@ -2238,6 +2258,7 @@ ${isDeveloper ? `
   Track Orders
 </span>
     </button>
+    `}
 ` : isViewer ? `` : isSuper ? `
     ${isManager ? `` : `
     <button onclick="loadSuper('PendingApproval')" 
@@ -2385,12 +2406,210 @@ else{
   if(isViewer){
     loadTrack("track");
   }
+  else if(isNarsinghpurBranchUser(user)){
+    if(window.activeTab === "trackRequests") loadQuotationRequests();
+    else loadRequestQuotation();
+  }
   else if(window.activeTab === "track"){
     loadTrack("track");
   }else{
     loadCreate("create");
   }
 }
+}
+
+function loadRequestQuotation(){
+  stopDocketCameraScanner();
+  window.activeTab = "quotation";
+  updateMenuHighlight();
+  const main = document.getElementById("main");
+  main.innerHTML = `
+  <div class="new-order-shell">
+    <div class="new-order-card pc-section w-full">
+        <div class="new-order-tag">Request Quotation</div>
+        <div class="new-order-fields" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+          <div><label for="rqMachineNo">Machine No.</label><input id="rqMachineNo" placeholder="Enter Machine No" class="pc-field"/></div>
+          <div><label for="rqCustomerName">Customer Name</label><input id="rqCustomerName" class="pc-field" style="opacity:0.85;" placeholder="Auto-fetched Customer Name" readonly/></div>
+          <div><label for="rqSalesPerson">Sales Person</label><input id="rqSalesPerson" class="pc-field" placeholder="Enter Sales Person"/></div>
+          <div><label for="rqPaymentMode">Payment Mode</label><select id="rqPaymentMode" class="pc-field"><option value="">Select Payment Mode</option><option>Cash</option><option>Online</option></select></div>
+        </div>
+      </div>
+    <div class="parts-shell">
+      <div class="new-order-tag mb-3">Parts Details</div>
+      <div class="parts-table-wrap">
+        <table class="w-full text-sm text-center rounded-lg overflow-hidden table-fixed min-w-[980px]">
+          <thead class="backdrop-blur-sm text-xs uppercase tracking-wider border-b"><tr><th class="py-3 w-[16%]">Part no.</th><th class="py-3 w-[26%]">Description</th><th class="py-3 w-[9%]">Qty</th><th class="py-3 w-[10%]">MRP</th><th class="py-3 w-[10%]">Discount %</th><th class="py-3 w-[12%]">Discount Amount</th><th class="py-3 w-[12%]">Billing Value</th><th class="py-3 w-[5%]"></th></tr></thead>
+          <tbody id="rqTbody"></tbody>
+        </table>
+      </div>
+      <div class="summary-strip">
+        <button onclick="addQuotationRow()" class="order-cta cta-secondary px-5 py-2.5">Add Item</button>
+        <div class="text-lg font-semibold tracking-wide" style="color:#f8fafc;">Total Billing Value: ₹ <span id="rqTotal" style="font-size:22px; color:#facc15;">0</span></div>
+        <button onclick="submitQuotation()" class="order-cta cta-primary px-6 py-2.5">Submit</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("rqSalesPerson").value = getUserName(getUser()) || "";
+  addQuotationRow();
+  document.getElementById("rqMachineNo").addEventListener("blur", async function(){
+    const machineNo = this.value.trim();
+    if(!machineNo) return;
+    const { data } = await db.from("machine_master").select("CustomerName").eq("MachineNo", machineNo);
+    if(data && data.length > 0) document.getElementById("rqCustomerName").value = data[0].CustomerName;
+    else{
+      document.getElementById("rqCustomerName").value = "";
+      showManualCustomerPopup(machineNo);
+    }
+  });
+}
+
+function addQuotationRow(){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td class="p-1"><input class="rq-part pc-field w-full"/></td><td class="rq-desc py-1"></td><td class="p-1"><input type="number" min="0" class="rq-qty pc-field w-full"/></td><td class="p-1"><input type="number" min="0" class="rq-mrp pc-field w-full" readonly style="opacity:0.85;"/></td><td class="p-1"><input type="number" min="0" max="100" class="rq-disc-pct pc-field w-full"/></td><td class="rq-disc-amt py-1"></td><td class="rq-bill py-1 font-semibold" style="color:#f8fafc;"></td><td><button class="delete-row-btn text-red-400 hover:text-red-300 font-bold" onclick="this.closest('tr').remove(); calcQuotationTotal()">✕</button></td>`;
+  document.getElementById("rqTbody").appendChild(tr);
+  const partInput = tr.querySelector(".rq-part");
+  partInput.addEventListener("blur", async function(){
+    const partNo = this.value.trim().toUpperCase();
+    this.value = partNo;
+    if(!partNo){ tr.querySelector(".rq-desc").innerText = ""; return; }
+    const { data } = await db.from("part_master").select("*").eq("PartNo", partNo).limit(1);
+    const partRow = data?.[0] || null;
+    tr.querySelector(".rq-desc").innerText = getUserField(partRow, ["Description", "PartDescription", "desc"]) || "";
+    const mrpVal = parseFloat(getUserField(partRow, ["MRP", "Mrp", "Rate", "price", "Price"]) || 0) || 0;
+    tr.querySelector(".rq-mrp").value = mrpVal ? mrpVal.toFixed(2) : "";
+    calcQuotationTotal();
+  });
+  tr.querySelectorAll(".rq-qty,.rq-mrp,.rq-disc-pct").forEach(el => el.addEventListener("input", () => calcQuotationTotal()));
+}
+
+function calcQuotationTotal(){
+  let total = 0;
+  document.querySelectorAll("#rqTbody tr").forEach(tr => {
+    const qty = parseFloat(tr.querySelector(".rq-qty")?.value || 0) || 0;
+    const mrp = parseFloat(tr.querySelector(".rq-mrp")?.value || 0) || 0;
+    const discPct = parseFloat(tr.querySelector(".rq-disc-pct")?.value || 0) || 0;
+    const grossValue = qty * mrp;
+    const discountAmount = grossValue * (discPct / 100);
+    const billing = grossValue - discountAmount;
+    tr.querySelector(".rq-disc-amt").innerText = `(-) ${discountAmount.toFixed(2)}`;
+    tr.querySelector(".rq-bill").innerText = billing.toFixed(2);
+    total += billing;
+  });
+  const totalEl = document.getElementById("rqTotal");
+  if(totalEl) totalEl.innerText = total.toFixed(2);
+}
+
+async function submitQuotation(){
+  const machineNo = (document.getElementById("rqMachineNo")?.value || "").trim();
+  const customerName = (document.getElementById("rqCustomerName")?.value || "").trim();
+  const salesPerson = (document.getElementById("rqSalesPerson")?.value || "").trim();
+  const paymentMode = (document.getElementById("rqPaymentMode")?.value || "").trim();
+  const branch = getUserBranch(getUser());
+
+  if(!machineNo) return showPopup("Machine No. is required.");
+  if(!customerName) return showPopup("Customer Name is required.");
+  if(!salesPerson) return showPopup("Sales Person is required.");
+  if(!paymentMode) return showPopup("Payment Mode is required.");
+
+  const rows = Array.from(document.querySelectorAll("#rqTbody tr")).map(tr => {
+    const partNo = (tr.querySelector(".rq-part")?.value || "").trim().toUpperCase();
+    const description = (tr.querySelector(".rq-desc")?.innerText || "").trim();
+    const qty = parseFloat(tr.querySelector(".rq-qty")?.value || 0) || 0;
+    const mrp = parseFloat(tr.querySelector(".rq-mrp")?.value || 0) || 0;
+    const discountPercent = parseFloat(tr.querySelector(".rq-disc-pct")?.value || 0) || 0;
+    const discountAmount = parseFloat((tr.querySelector(".rq-disc-amt")?.innerText || "0").replace(/[^0-9.-]/g, "")) || 0;
+    const billingValue = parseFloat(tr.querySelector(".rq-bill")?.innerText || 0) || 0;
+    return { partNo, description, qty, mrp, discountPercent, discountAmount, billingValue };
+  }).filter(r => r.partNo && r.qty > 0);
+
+  if(!rows.length) return showPopup("Add at least one valid part with Qty > 0.");
+  const requestQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+  const requestValue = rows.reduce((s, r) => s + (Number(r.billingValue) || 0), 0);
+  const now = new Date();
+  const tempRequestNo = `TMPQ-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}`;
+
+  const payload = rows.map(r => ({
+    machine_no: machineNo,
+    customer_name: customerName,
+    sales_person: salesPerson,
+    payment_mode: paymentMode,
+    part_no: r.partNo,
+    description: r.description,
+    qty: r.qty,
+    mrp: r.mrp,
+    discount_percent: r.discountPercent,
+    discount_amount: r.discountAmount,
+    billing_value: r.billingValue,
+    branch: branch,
+    request_number: tempRequestNo,
+    request_type: "Quotation",
+    status: "Pending",
+    request_qty: requestQty,
+    request_value: requestValue
+  }));
+
+  showLoader();
+  const { error } = await db.from("quotation").insert(payload);
+  hideLoader();
+  if(error){
+    return showPopup(`Unable to submit quotation: ${error.message || "Unknown error"}`, "error");
+  }
+  showPopup("Quotation submitted successfully ✅", "success");
+  loadRequestQuotation();
+}
+
+async function loadQuotationRequests(){
+  stopDocketCameraScanner();
+  window.activeTab = "trackRequests";
+  updateMenuHighlight();
+  const main = document.getElementById("main");
+  main.innerHTML = `<section class="track-table-shell"><div class="track-table-header"><h3 class="text-lg font-semibold">Track Requests</h3></div><div class="track-table-wrap"><table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden"><thead><tr><th>Date</th><th>Type</th><th>Customer Name</th><th>Sales Emp.</th><th>Request Qty</th><th>Request Value</th><th>Request Number</th><th>Status</th></tr></thead><tbody id="quotationTrackBody"><tr><td colspan="8" class="py-4">Loading...</td></tr></tbody></table></div></section>`;
+
+  const { data, error } = await db
+    .from("quotation")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const tbody = document.getElementById("quotationTrackBody");
+  if(!tbody) return;
+  if(error){
+    tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-red-400">${escapeHtml(error.message || "Unable to load requests")}</td></tr>`;
+    return;
+  }
+
+  const grouped = new Map();
+  (data || []).forEach(r => {
+    const key = (r.request_number || "").toString().trim() || `ROW-${r.id || Math.random()}`;
+    if(!grouped.has(key)){
+      grouped.set(key, {
+        created_at: r.created_at,
+        request_type: r.request_type || "Quotation",
+        customer_name: r.customer_name || "-",
+        sales_person: r.sales_person || "-",
+        request_qty: Number(r.request_qty || 0),
+        request_value: Number(r.request_value || 0),
+        request_number: key,
+        status: r.status || "Pending"
+      });
+    }
+  });
+
+  const rows = Array.from(grouped.values());
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="8" class="py-4">No requests found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${escapeHtml((r.created_at || "").toString().slice(0,10) || "-")}</td>
+    <td>${escapeHtml(r.request_type)}</td>
+    <td>${escapeHtml(r.customer_name)}</td>
+    <td>${escapeHtml(r.sales_person)}</td>
+    <td>${escapeHtml(String(r.request_qty || 0))}</td>
+    <td>${escapeHtml((Number(r.request_value || 0)).toFixed(2))}</td>
+    <td>${escapeHtml(r.request_number)}</td>
+    <td>${escapeHtml(r.status || "Pending")}</td>
+  </tr>`).join("");
 }
 
 let docketScannerStream = null;
@@ -5312,8 +5531,11 @@ if(error){
   return;
 }
 
-// update UI
-document.getElementById("customerName").value = customer;
+// update UI (supports both New Order + Request Quotation screens)
+const customerField = document.getElementById("customerName") || document.getElementById("rqCustomerName");
+if(customerField){
+  customerField.value = customer;
+}
 
 closePopup();
 showPopup("Saved ✅");
