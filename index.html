@@ -2425,7 +2425,7 @@ function loadRequestQuotation(){
         <div class="new-order-fields">
           <div><label for="rqMachineNo">Machine No.</label><input id="rqMachineNo" placeholder="Enter Machine No" class="pc-field"/></div>
           <div><label for="rqCustomerName">Customer Name</label><input id="rqCustomerName" class="pc-field" style="opacity:0.85;" placeholder="Auto-fetched Customer Name" readonly/></div>
-          <div><label for="rqSalesPerson">Sales Person</label><input id="rqSalesPerson" class="pc-field" style="opacity:0.85;" readonly /></div>
+          <div><label for="rqSalesPerson">Sales Person</label><input id="rqSalesPerson" class="pc-field" placeholder="Enter Sales Person"/></div>
           <div><label for="rqPaymentMode">Payment Mode</label><select id="rqPaymentMode" class="pc-field"><option value="">Select Payment Mode</option><option>Cash</option><option>Online</option></select></div>
         </div>
       </div>
@@ -2441,6 +2441,7 @@ function loadRequestQuotation(){
       <div class="summary-strip">
         <button onclick="addQuotationRow()" class="order-cta cta-secondary px-5 py-2.5">Add Item</button>
         <div class="text-lg font-semibold tracking-wide" style="color:#f8fafc;">Total Billing Value: ₹ <span id="rqTotal" style="font-size:22px; color:#facc15;">0</span></div>
+        <button onclick="submitQuotation()" class="order-cta cta-primary px-6 py-2.5">Submit</button>
       </div>
     </div>
   </div>`;
@@ -2467,8 +2468,12 @@ function addQuotationRow(){
     const partNo = this.value.trim().toUpperCase();
     this.value = partNo;
     if(!partNo){ tr.querySelector(".rq-desc").innerText = ""; return; }
-    const { data } = await db.from("parts_master").select("Description").eq("PartNo", partNo).limit(1);
-    tr.querySelector(".rq-desc").innerText = data?.[0]?.Description || "";
+    const { data } = await db.from("part_master").select("*").eq("PartNo", partNo).limit(1);
+    const partRow = data?.[0] || null;
+    tr.querySelector(".rq-desc").innerText = getUserField(partRow, ["Description", "PartDescription", "desc"]) || "";
+    const mrpVal = parseFloat(getUserField(partRow, ["MRP", "Mrp", "Rate", "price", "Price"]) || 0) || 0;
+    tr.querySelector(".rq-mrp").value = mrpVal ? mrpVal.toFixed(2) : "";
+    calcQuotationTotal();
   });
   tr.querySelectorAll(".rq-qty,.rq-mrp,.rq-disc-pct").forEach(el => el.addEventListener("input", () => calcQuotationTotal()));
 }
@@ -2487,6 +2492,56 @@ function calcQuotationTotal(){
   });
   const totalEl = document.getElementById("rqTotal");
   if(totalEl) totalEl.innerText = total.toFixed(2);
+}
+
+async function submitQuotation(){
+  const machineNo = (document.getElementById("rqMachineNo")?.value || "").trim();
+  const customerName = (document.getElementById("rqCustomerName")?.value || "").trim();
+  const salesPerson = (document.getElementById("rqSalesPerson")?.value || "").trim();
+  const paymentMode = (document.getElementById("rqPaymentMode")?.value || "").trim();
+  const branch = getUserBranch(getUser());
+
+  if(!machineNo) return showPopup("Machine No. is required.");
+  if(!customerName) return showPopup("Customer Name is required.");
+  if(!salesPerson) return showPopup("Sales Person is required.");
+  if(!paymentMode) return showPopup("Payment Mode is required.");
+
+  const rows = Array.from(document.querySelectorAll("#rqTbody tr")).map(tr => {
+    const partNo = (tr.querySelector(".rq-part")?.value || "").trim().toUpperCase();
+    const description = (tr.querySelector(".rq-desc")?.innerText || "").trim();
+    const qty = parseFloat(tr.querySelector(".rq-qty")?.value || 0) || 0;
+    const mrp = parseFloat(tr.querySelector(".rq-mrp")?.value || 0) || 0;
+    const discountPercent = parseFloat(tr.querySelector(".rq-disc-pct")?.value || 0) || 0;
+    const discountAmount = parseFloat(tr.querySelector(".rq-disc-amt")?.innerText || 0) || 0;
+    const billingValue = parseFloat(tr.querySelector(".rq-bill")?.innerText || 0) || 0;
+    return { partNo, description, qty, mrp, discountPercent, discountAmount, billingValue };
+  }).filter(r => r.partNo && r.qty > 0);
+
+  if(!rows.length) return showPopup("Add at least one valid part with Qty > 0.");
+
+  const payload = rows.map(r => ({
+    MachineNo: machineNo,
+    CustomerName: customerName,
+    SalesPerson: salesPerson,
+    PaymentMode: paymentMode,
+    PartNo: r.partNo,
+    Description: r.description,
+    Qty: r.qty,
+    MRP: r.mrp,
+    DiscountPercent: r.discountPercent,
+    DiscountAmount: r.discountAmount,
+    BillingValue: r.billingValue,
+    Branch: branch
+  }));
+
+  showLoader();
+  const { error } = await db.from("quotation").insert(payload);
+  hideLoader();
+  if(error){
+    return showPopup(`Unable to submit quotation: ${error.message || "Unknown error"}`, "error");
+  }
+  showPopup("Quotation submitted successfully ✅", "success");
+  loadRequestQuotation();
 }
 
 let docketScannerStream = null;
