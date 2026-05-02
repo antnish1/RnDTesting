@@ -2419,22 +2419,20 @@ function loadRequestQuotation(){
   const main = document.getElementById("main");
   main.innerHTML = `
   <div class="new-order-shell">
-    <div class="new-order-grid">
-      <div class="new-order-card pc-section">
+    <div class="new-order-card pc-section w-full">
         <div class="new-order-tag">Request Quotation</div>
-        <div class="new-order-fields">
+        <div class="new-order-fields" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
           <div><label for="rqMachineNo">Machine No.</label><input id="rqMachineNo" placeholder="Enter Machine No" class="pc-field"/></div>
           <div><label for="rqCustomerName">Customer Name</label><input id="rqCustomerName" class="pc-field" style="opacity:0.85;" placeholder="Auto-fetched Customer Name" readonly/></div>
           <div><label for="rqSalesPerson">Sales Person</label><input id="rqSalesPerson" class="pc-field" placeholder="Enter Sales Person"/></div>
           <div><label for="rqPaymentMode">Payment Mode</label><select id="rqPaymentMode" class="pc-field"><option value="">Select Payment Mode</option><option>Cash</option><option>Online</option></select></div>
         </div>
       </div>
-    </div>
     <div class="parts-shell">
       <div class="new-order-tag mb-3">Parts Details</div>
       <div class="parts-table-wrap">
         <table class="w-full text-sm text-center rounded-lg overflow-hidden table-fixed min-w-[980px]">
-          <thead class="backdrop-blur-sm text-xs uppercase tracking-wider border-b"><tr><th class="py-3 w-[16%]">Part no.</th><th class="py-3 w-[26%]">Description</th><th class="py-3 w-[9%]">Qty</th><th class="py-3 w-[10%]">MRP</th><th class="py-3 w-[10%]">Discount %</th><th class="py-3 w-[12%]">Discount Amount</th><th class="py-3 w-[12%]">Billing Value (MRP x Qty)</th><th class="py-3 w-[5%]"></th></tr></thead>
+          <thead class="backdrop-blur-sm text-xs uppercase tracking-wider border-b"><tr><th class="py-3 w-[16%]">Part no.</th><th class="py-3 w-[26%]">Description</th><th class="py-3 w-[9%]">Qty</th><th class="py-3 w-[10%]">MRP</th><th class="py-3 w-[10%]">Discount %</th><th class="py-3 w-[12%]">Discount Amount</th><th class="py-3 w-[12%]">Billing Value</th><th class="py-3 w-[5%]"></th></tr></thead>
           <tbody id="rqTbody"></tbody>
         </table>
       </div>
@@ -2461,7 +2459,7 @@ function loadRequestQuotation(){
 
 function addQuotationRow(){
   const tr = document.createElement("tr");
-  tr.innerHTML = `<td class="p-1"><input class="rq-part pc-field w-full"/></td><td class="rq-desc py-1"></td><td class="p-1"><input type="number" min="0" class="rq-qty pc-field w-full"/></td><td class="p-1"><input type="number" min="0" class="rq-mrp pc-field w-full"/></td><td class="p-1"><input type="number" min="0" max="100" class="rq-disc-pct pc-field w-full"/></td><td class="rq-disc-amt py-1"></td><td class="rq-bill py-1 font-semibold" style="color:#f8fafc;"></td><td><button class="delete-row-btn text-red-400 hover:text-red-300 font-bold" onclick="this.closest('tr').remove(); calcQuotationTotal()">✕</button></td>`;
+  tr.innerHTML = `<td class="p-1"><input class="rq-part pc-field w-full"/></td><td class="rq-desc py-1"></td><td class="p-1"><input type="number" min="0" class="rq-qty pc-field w-full"/></td><td class="p-1"><input type="number" min="0" class="rq-mrp pc-field w-full" readonly style="opacity:0.85;"/></td><td class="p-1"><input type="number" min="0" max="100" class="rq-disc-pct pc-field w-full"/></td><td class="rq-disc-amt py-1"></td><td class="rq-bill py-1 font-semibold" style="color:#f8fafc;"></td><td><button class="delete-row-btn text-red-400 hover:text-red-300 font-bold" onclick="this.closest('tr').remove(); calcQuotationTotal()">✕</button></td>`;
   document.getElementById("rqTbody").appendChild(tr);
   const partInput = tr.querySelector(".rq-part");
   partInput.addEventListener("blur", async function(){
@@ -2484,9 +2482,10 @@ function calcQuotationTotal(){
     const qty = parseFloat(tr.querySelector(".rq-qty")?.value || 0) || 0;
     const mrp = parseFloat(tr.querySelector(".rq-mrp")?.value || 0) || 0;
     const discPct = parseFloat(tr.querySelector(".rq-disc-pct")?.value || 0) || 0;
-    const billing = qty * mrp;
-    const discountAmount = billing * (discPct / 100);
-    tr.querySelector(".rq-disc-amt").innerText = discountAmount.toFixed(2);
+    const grossValue = qty * mrp;
+    const discountAmount = grossValue * (discPct / 100);
+    const billing = grossValue - discountAmount;
+    tr.querySelector(".rq-disc-amt").innerText = `(-) ${discountAmount.toFixed(2)}`;
     tr.querySelector(".rq-bill").innerText = billing.toFixed(2);
     total += billing;
   });
@@ -2512,7 +2511,7 @@ async function submitQuotation(){
     const qty = parseFloat(tr.querySelector(".rq-qty")?.value || 0) || 0;
     const mrp = parseFloat(tr.querySelector(".rq-mrp")?.value || 0) || 0;
     const discountPercent = parseFloat(tr.querySelector(".rq-disc-pct")?.value || 0) || 0;
-    const discountAmount = parseFloat(tr.querySelector(".rq-disc-amt")?.innerText || 0) || 0;
+    const discountAmount = parseFloat((tr.querySelector(".rq-disc-amt")?.innerText || "0").replace(/[^0-9.-]/g, "")) || 0;
     const billingValue = parseFloat(tr.querySelector(".rq-bill")?.innerText || 0) || 0;
     return { partNo, description, qty, mrp, discountPercent, discountAmount, billingValue };
   }).filter(r => r.partNo && r.qty > 0);
