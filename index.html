@@ -2520,18 +2520,18 @@ async function submitQuotation(){
   if(!rows.length) return showPopup("Add at least one valid part with Qty > 0.");
 
   const payload = rows.map(r => ({
-    MachineNo: machineNo,
-    CustomerName: customerName,
-    SalesPerson: salesPerson,
-    PaymentMode: paymentMode,
-    PartNo: r.partNo,
-    Description: r.description,
-    Qty: r.qty,
-    MRP: r.mrp,
-    DiscountPercent: r.discountPercent,
-    DiscountAmount: r.discountAmount,
-    BillingValue: r.billingValue,
-    Branch: branch
+    machine_no: machineNo,
+    customer_name: customerName,
+    sales_person: salesPerson,
+    payment_mode: paymentMode,
+    part_no: r.partNo,
+    description: r.description,
+    qty: r.qty,
+    mrp: r.mrp,
+    discount_percent: r.discountPercent,
+    discount_amount: r.discountAmount,
+    billing_value: r.billingValue,
+    branch: branch
   }));
 
   showLoader();
