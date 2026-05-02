@@ -2235,6 +2235,11 @@ ${isDeveloper ? `
     data-tab="quotation">
       Request Quotation
     </button>
+    <button onclick="loadQuotationRequests()" 
+    class="top-btn ${window.activeTab==='trackRequests' ? 'active-top-btn' : ''}"
+    data-tab="trackRequests">
+      Track Requests
+    </button>
     ` : `
       <button onclick="loadCreate('create')" 
       class="top-btn ${window.activeTab==='create' ? 'active-top-btn' : ''}"
@@ -2402,7 +2407,8 @@ else{
     loadTrack("track");
   }
   else if(isNarsinghpurBranchUser(user)){
-    loadRequestQuotation();
+    if(window.activeTab === "trackRequests") loadQuotationRequests();
+    else loadRequestQuotation();
   }
   else if(window.activeTab === "track"){
     loadTrack("track");
@@ -2517,6 +2523,10 @@ async function submitQuotation(){
   }).filter(r => r.partNo && r.qty > 0);
 
   if(!rows.length) return showPopup("Add at least one valid part with Qty > 0.");
+  const requestQty = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+  const requestValue = rows.reduce((s, r) => s + (Number(r.billingValue) || 0), 0);
+  const now = new Date();
+  const tempRequestNo = `TMPQ-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}`;
 
   const payload = rows.map(r => ({
     machine_no: machineNo,
@@ -2530,7 +2540,12 @@ async function submitQuotation(){
     discount_percent: r.discountPercent,
     discount_amount: r.discountAmount,
     billing_value: r.billingValue,
-    branch: branch
+    branch: branch,
+    request_number: tempRequestNo,
+    request_type: "Quotation",
+    status: "Pending",
+    request_qty: requestQty,
+    request_value: requestValue
   }));
 
   showLoader();
@@ -2541,6 +2556,60 @@ async function submitQuotation(){
   }
   showPopup("Quotation submitted successfully ✅", "success");
   loadRequestQuotation();
+}
+
+async function loadQuotationRequests(){
+  stopDocketCameraScanner();
+  window.activeTab = "trackRequests";
+  updateMenuHighlight();
+  const main = document.getElementById("main");
+  main.innerHTML = `<section class="track-table-shell"><div class="track-table-header"><h3 class="text-lg font-semibold">Track Requests</h3></div><div class="track-table-wrap"><table class="track-table w-full text-sm text-center border rounded-lg overflow-hidden"><thead><tr><th>Date</th><th>Type</th><th>Customer Name</th><th>Sales Emp.</th><th>Request Qty</th><th>Request Value</th><th>Request Number</th><th>Status</th></tr></thead><tbody id="quotationTrackBody"><tr><td colspan="8" class="py-4">Loading...</td></tr></tbody></table></div></section>`;
+
+  const { data, error } = await db
+    .from("quotation")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const tbody = document.getElementById("quotationTrackBody");
+  if(!tbody) return;
+  if(error){
+    tbody.innerHTML = `<tr><td colspan="8" class="py-4 text-red-400">${escapeHtml(error.message || "Unable to load requests")}</td></tr>`;
+    return;
+  }
+
+  const grouped = new Map();
+  (data || []).forEach(r => {
+    const key = (r.request_number || "").toString().trim() || `ROW-${r.id || Math.random()}`;
+    if(!grouped.has(key)){
+      grouped.set(key, {
+        created_at: r.created_at,
+        request_type: r.request_type || "Quotation",
+        customer_name: r.customer_name || "-",
+        sales_person: r.sales_person || "-",
+        request_qty: Number(r.request_qty || 0),
+        request_value: Number(r.request_value || 0),
+        request_number: key,
+        status: r.status || "Pending"
+      });
+    }
+  });
+
+  const rows = Array.from(grouped.values());
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="8" class="py-4">No requests found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${escapeHtml((r.created_at || "").toString().slice(0,10) || "-")}</td>
+    <td>${escapeHtml(r.request_type)}</td>
+    <td>${escapeHtml(r.customer_name)}</td>
+    <td>${escapeHtml(r.sales_person)}</td>
+    <td>${escapeHtml(String(r.request_qty || 0))}</td>
+    <td>${escapeHtml((Number(r.request_value || 0)).toFixed(2))}</td>
+    <td>${escapeHtml(r.request_number)}</td>
+    <td>${escapeHtml(r.status || "Pending")}</td>
+  </tr>`).join("");
 }
 
 let docketScannerStream = null;
@@ -5462,8 +5531,11 @@ if(error){
   return;
 }
 
-// update UI
-document.getElementById("customerName").value = customer;
+// update UI (supports both New Order + Request Quotation screens)
+const customerField = document.getElementById("customerName") || document.getElementById("rqCustomerName");
+if(customerField){
+  customerField.value = customer;
+}
 
 closePopup();
 showPopup("Saved ✅");
