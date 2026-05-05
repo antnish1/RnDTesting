@@ -6221,6 +6221,14 @@ async function processInventoryExcelData(rows, reportDate){
     const finalPayload = [...dedupeMap.values()];
 
     setInventoryProgress(5, `Prepared ${finalPayload.length} rows for staging upload...`);
+
+    setInventoryProgress(8, "Clearing previous inventory staging data...");
+    const { error: clearError } = await db
+      .from("inventory_staging")
+      .delete()
+      .not("item_code", "is", null);
+    if(clearError) throw clearError;
+
     const uploadStats = await insertInventoryStagingInBatches(finalPayload, 500);
     failed += uploadStats.failed;
 
