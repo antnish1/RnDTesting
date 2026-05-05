@@ -4266,22 +4266,47 @@ renderHQ(status);
 
 
 function formatDate(val){
+  if(val === null || val === undefined) return "-";
+  const raw = String(val).trim();
+  if(!raw || /^null$/i.test(raw) || /^undefined$/i.test(raw)) return "-";
 
-  if(!val) return "-";
+  const parseExcelOrTextDateToISO = (input) => {
+    const cleaned = String(input || "").trim();
+    if(!cleaned) return null;
 
-  // ✅ Case 1: ISO date (ProcessedDate)
-  if(val.includes("T")){
-    const d = new Date(val);
-    return d.toLocaleDateString("en-GB"); // dd/mm/yyyy
+    if(/^\d+(\.\d+)?$/.test(cleaned)){
+      const serial = Math.floor(Number(cleaned));
+      if(!Number.isFinite(serial)) return null;
+      const base = new Date(Date.UTC(1899, 11, 30));
+      base.setUTCDate(base.getUTCDate() + serial);
+      if(Number.isNaN(base.getTime())) return null;
+      const yyyy = base.getUTCFullYear();
+      if(yyyy < 1900 || yyyy > 2100) return null;
+      const mm = String(base.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(base.getUTCDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    const normalized = cleaned.replace(/\//g, "-");
+    if(/^\d{2}-\d{2}-\d{4}$/.test(normalized)){
+      const [dd, mm, yyyy] = normalized.split("-");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    if(/^\d{4}-\d{2}-\d{2}/.test(normalized)){
+      return normalized.slice(0, 10);
+    }
+    return null;
+  };
+
+  const normalizedDate = parseExcelOrTextDateToISO(raw);
+  if(normalizedDate){
+    const d = new Date(`${normalizedDate}T00:00:00`);
+    if(!Number.isNaN(d.getTime())) return d.toLocaleDateString("en-GB");
   }
 
-  // ✅ Case 2: Excel number (OrderRegDt, BillingDt)
-  if(!isNaN(val)){
-    const excelDate = new Date((val - 25569) * 86400 * 1000);
-    return excelDate.toLocaleDateString("en-GB");
-  }
-
-  return val;
+  const fallback = new Date(raw);
+  if(!Number.isNaN(fallback.getTime())) return fallback.toLocaleDateString("en-GB");
+  return raw;
 }
 
 function formatDateTime(val){
@@ -5729,6 +5754,7 @@ async function processExcelData(rows){
     const normalizedPartNo = partNo.replace(/\s/g,"").toUpperCase();
     const billedQty = Number(r["Billed Qty"] || 0);
     const billingDt = normalizeBillingDateValue(r["Billing Dt"]);
+    const orderRegDt = normalizeBillingDateValue(r["Order Reg. Dt"]);
     const deliveryNo = (r["Delivery No"] || "").toString().trim();
     const billNo = (r["BillNo & Image"] || "").toString().trim();
     const docketNo = (r["Docket"] || "").toString().trim();
@@ -5839,10 +5865,10 @@ async function processExcelData(rows){
         ...existing,
         id: nextRequestId,
         Status: resolvedDispatchStatus,
-        OrderRegDt: r["Order Reg. Dt"] || "",
+        OrderRegDt: orderRegDt || "",
         DeliveryNo: deliveryNo || "",
         BillNo: billNo || "",
-        BillingDt: r["Billing Dt"] || "",
+        BillingDt: billingDt || "",
         BilledQty: billedQty,
         TransportName: transportName || "",
         TransportMode: incomingTransportMode,
@@ -5945,10 +5971,10 @@ async function processExcelData(rows){
       .from("requests")
       .update({
         Status: resolvedDispatchStatus,
-        OrderRegDt: r["Order Reg. Dt"] || "",
+        OrderRegDt: orderRegDt || "",
         DeliveryNo: deliveryNo || "",
         BillNo: billNo || "",
-        BillingDt: r["Billing Dt"] || "",
+        BillingDt: billingDt || "",
         BilledQty: billedQty,
         billed_qty_total: billedQtyTotal,
         pending_qty: pendingQty,
@@ -6221,6 +6247,14 @@ async function processInventoryExcelData(rows, reportDate){
     const finalPayload = [...dedupeMap.values()];
 
     setInventoryProgress(5, `Prepared ${finalPayload.length} rows for staging upload...`);
+
+    setInventoryProgress(8, "Clearing previous inventory staging data...");
+    const { error: clearError } = await db
+      .from("inventory_staging")
+      .delete()
+      .not("item_code", "is", null);
+    if(clearError) throw clearError;
+
     const uploadStats = await insertInventoryStagingInBatches(finalPayload, 500);
     failed += uploadStats.failed;
 
