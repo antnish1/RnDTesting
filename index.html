@@ -2341,6 +2341,10 @@ ${isDeveloper ? `
     </div>
   </div>
 
+  <div class="w-full flex justify-end mx-[-1rem] md:mx-0 -mt-2">
+    <div id="uploadMetaHost"></div>
+  </div>
+
   <div id="main" class="w-full"></div>
 
 </div>
@@ -4179,17 +4183,23 @@ async function renderUploadMetaBadge(){
     if(badge) badge.remove();
     return;
   }
+  const host = document.getElementById("uploadMetaHost");
+  if(!host){
+    if(badge) badge.remove();
+    return;
+  }
+
   if(!badge){
     badge = document.createElement("div");
     badge.id = "uploadMetaBadge";
-    badge.className = "fixed z-40 right-4 bottom-4 px-3 py-2 rounded-lg shadow-lg";
-    badge.style.background = "rgba(17,24,39,0.92)";
-    badge.style.border = "1px solid rgba(148,163,184,0.35)";
-    badge.style.backdropFilter = "blur(4px)";
+    badge.className = "px-3 py-2 rounded-lg";
+    badge.style.background = "rgba(17,24,39,0.72)";
+    badge.style.border = "1px solid rgba(148,163,184,0.28)";
+    badge.style.backdropFilter = "blur(2px)";
     badge.style.minWidth = "220px";
     badge.style.maxWidth = "260px";
-    document.body.appendChild(badge);
   }
+  host.appendChild(badge);
   const meta = await syncUploadReportMetaFromBackend();
   badge.innerHTML = buildUploadMetaBadgeHtml(meta);
 }
