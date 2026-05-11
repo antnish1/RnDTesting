@@ -2134,6 +2134,27 @@ function initResponsiveLayoutObserver(){
 
   
   
+
+function goHomeTab(){
+  const user = getUser();
+  if(!user){
+    loadLogin();
+    return;
+  }
+  if(isDeveloperRole(user)){
+    window.activeTab = "DevDashboard";
+  }else if(isAdminRole(user)){
+    window.activeTab = "Approved";
+  }else if(isSuperLikeRole(user)){
+    window.activeTab = isManagerRole(user) ? "Dashboard" : "PendingApproval";
+  }else if(isViewerRole(user)){
+    window.activeTab = "track";
+  }else{
+    window.activeTab = "create";
+  }
+  loadBranch();
+}
+
 // ---------- BRANCH ----------
 async function loadBranch(){
 
@@ -2180,7 +2201,7 @@ document.getElementById("app").innerHTML = `
   <!-- LEFT: LOGO -->
 <div class="flex items-center gap-4">
 
-  <div class="header-logo-shell">
+  <div class="header-logo-shell" onclick="goHomeTab()" role="button" tabindex="0" title="Go to Home" onkeydown="if(event.key==='Enter' || event.key===' '){ event.preventDefault(); goHomeTab(); }">
     <img
       src="HDU4w-removebg-preview.png"
       class="header-logo"
@@ -2189,10 +2210,9 @@ document.getElementById("app").innerHTML = `
 
   <div class="h-6 w-px bg-gray-400 opacity-50"></div>
 
-  <span class="text-sm font-semibold tracking-widest uppercase"
-      style="color: var(--pc-text);">
-  ${getUserBranch(user)}
-</span>
+  <button type="button" onclick="goHomeTab()" class="text-sm font-semibold tracking-widest uppercase" style="color: var(--pc-text); background:transparent; border:none; padding:0;">
+  ${getUserBranch(user)} / ${(user?.Name || "User")}
+</button>
 
 </div>
 
@@ -2466,6 +2486,7 @@ function loadDocketScanner(){
   <div class="w-full max-w-5xl mx-auto space-y-4">
     <section class="pc-section p-3 md:p-5 rounded-2xl" style="background:linear-gradient(160deg, rgba(15,23,42,.95), rgba(17,24,39,.92));">
       <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+        <button class="top-btn" onclick="goHomeTab()">← Back</button>
         <div>
           <div class="text-[11px] tracking-wider uppercase mb-1" style="color:var(--pc-secondary);">Consignment Docket Scanner</div>
           <h3 class="text-base md:text-xl font-semibold">Mobile Scan Console</h3>
