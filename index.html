@@ -2324,8 +2324,8 @@ ${isDeveloper ? `
 
   </div>
 
-  <div class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0">
-    <div class="offer-marquee items-center gap-3">
+  <div class="offer-strip px-2 py-2 w-full mx-[-1rem] md:mx-0 flex items-center gap-3">
+    <div class="offer-marquee items-center gap-3 flex-1 min-w-0">
       <span class="offer-pill">⚠ Mandatory</span>
       <span class="offer-note">Minimum 5KG grease bucket must be carried by SE during every visit.</span>
       <span class="offer-pill">✅ UW Service</span>
@@ -2339,6 +2339,7 @@ ${isDeveloper ? `
       <span class="offer-pill">🔥 Pitch Every Time</span>
       <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
     </div>
+    <div id="uploadMetaHost" class="shrink-0"></div>
   </div>
 
   <div class="w-full flex justify-end mx-[-1rem] md:mx-0 -mt-2">
@@ -4169,10 +4170,11 @@ function buildUploadMetaBadgeHtml(meta = getUploadReportMeta()){
   const inventoryTs = formatUploadHeaderTimestamp(meta.inventoryReport);
   const statusTs = formatUploadHeaderTimestamp(meta.statusReport);
   return `
-    <div class="text-[10px] uppercase tracking-[0.08em] font-semibold mb-1" style="color:var(--pc-text-muted);">Latest Uploads</div>
-    <div class="space-y-1 text-xs leading-tight">
-      <div style="color:var(--pc-text);"><span style="color:var(--pc-text-muted);">Inventory:</span> ${inventoryTs}</div>
-      <div style="color:var(--pc-text);"><span style="color:var(--pc-text-muted);">Order Status:</span> ${statusTs}</div>
+    <div class="text-[11px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis" style="color:var(--pc-text);">
+      <span class="uppercase tracking-[0.08em] font-semibold mr-2" style="color:var(--pc-text-muted);">Latest Uploads</span>
+      <span style="color:var(--pc-text-muted);">Inv:</span> ${inventoryTs}
+      <span class="mx-2" style="color:var(--pc-text-muted);">|</span>
+      <span style="color:var(--pc-text-muted);">Status:</span> ${statusTs}
     </div>
   `;
 }
@@ -4192,12 +4194,11 @@ async function renderUploadMetaBadge(){
   if(!badge){
     badge = document.createElement("div");
     badge.id = "uploadMetaBadge";
-    badge.className = "px-3 py-2 rounded-lg";
+    badge.className = "px-3 py-1.5 rounded-lg";
     badge.style.background = "rgba(17,24,39,0.72)";
     badge.style.border = "1px solid rgba(148,163,184,0.28)";
     badge.style.backdropFilter = "blur(2px)";
-    badge.style.minWidth = "220px";
-    badge.style.maxWidth = "260px";
+    badge.style.maxWidth = "520px";
   }
   host.appendChild(badge);
   const meta = await syncUploadReportMetaFromBackend();
