@@ -2330,7 +2330,7 @@ ${isDeveloper ? `
   `}
 
 
-    ${isAdmin ? `
+    ${canAccessDocketScanner(user) ? `
       <button onclick="loadDocketScanner()"
       class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
       data-tab="scanner">
@@ -2443,10 +2443,15 @@ function normalizeDocketNo(val){
   return (val || "").toString().trim().replace(/\s+/g, "").toUpperCase();
 }
 
+function canAccessDocketScanner(user = getUser()){
+  if(!user) return false;
+  return Boolean(getUserBranch(user));
+}
+
 function loadDocketScanner(){
   const user = getUser();
-  if(!isAdminRole(user) && !isDeveloperRole(user)){
-    showPopup("Docket Scan is available only for admin/developer login.");
+  if(!canAccessDocketScanner(user)){
+    showPopup("Docket Scan is currently unavailable for your login.");
     loadTrack("track", true);
     return;
   }
