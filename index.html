@@ -2353,7 +2353,6 @@ ${isDeveloper ? `
   <div class="w-full mx-[-1rem] md:mx-0 mt-2 px-1 flex justify-end">
     <div id="uploadMetaHost" class="w-full flex justify-end"></div>
   </div>
-
   <div id="main" class="w-full"></div>
 
 </div>
@@ -4191,12 +4190,28 @@ async function renderUploadMetaBadge(){
   let badge = document.getElementById("uploadMetaBadge");
   if(!getUser()){
     if(badge) badge.remove();
+    const oldRow = document.getElementById("uploadMetaRow");
+    if(oldRow) oldRow.remove();
     return;
   }
-  const host = document.getElementById("uploadMetaHost");
+  let host = document.getElementById("uploadMetaHost");
   if(!host){
-    if(badge) badge.remove();
-    return;
+    const ticker = document.querySelector(".offer-strip");
+    if(!ticker){
+      if(badge) badge.remove();
+      return;
+    }
+    let row = document.getElementById("uploadMetaRow");
+    if(!row){
+      row = document.createElement("div");
+      row.id = "uploadMetaRow";
+      row.className = "w-full mx-[-1rem] md:mx-0 mt-2 px-1 flex justify-end";
+      ticker.insertAdjacentElement("afterend", row);
+    }
+    host = document.createElement("div");
+    host.id = "uploadMetaHost";
+    host.className = "w-full flex justify-end";
+    row.replaceChildren(host);
   }
 
   if(!badge){
