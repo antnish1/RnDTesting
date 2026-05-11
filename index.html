@@ -1934,6 +1934,7 @@ document.getElementById("app").innerHTML = `
 `;
 
 renderIcons();
+renderUploadMetaBadge();
 
 
 // ✅ ENTER KEY LOGIN (SAFE - NO LOGIC CHANGE)
@@ -2339,13 +2340,13 @@ ${isDeveloper ? `
       <span class="offer-note">BUY 2 X 18Kg GREASE BUCKETS & GET 6KG GREASE GUN FREE — PITCH THIS IN EVERY CUSTOMER INTERACTION.</span>
     </div>
   </div>
-
   <div id="main" class="w-full"></div>
 
 </div>
 `;
 
 renderIcons();
+renderUploadMetaBadge();
 initResponsiveLayoutObserver();
 applyMobileTableLayoutFixes();
 
@@ -4097,10 +4098,52 @@ function getUploadReportMeta(){
   }
 }
 
-function setUploadReportMeta(type, whenISO = new Date().toISOString()){
+async function fetchUploadReportMetaFromBackend(){
+  const { data, error } = await db
+    .from("report_upload_meta")
+    .select("*")
+    .limit(1)
+    .maybeSingle();
+  if(error) throw error;
+  if(!data) return {};
+  return {
+    inventoryReport: data.inventory_report_at || data.inventoryReport || null,
+    statusReport: data.status_report_at || data.statusReport || null
+  };
+}
+
+async function syncUploadReportMetaFromBackend(){
+  try{
+    const remote = await fetchUploadReportMetaFromBackend();
+    if(!remote || (!remote.inventoryReport && !remote.statusReport)) return getUploadReportMeta();
+    const merged = { ...getUploadReportMeta(), ...remote };
+    localStorage.setItem("uploadReportMeta", JSON.stringify(merged));
+    return merged;
+  }catch(err){
+    console.warn("Unable to sync upload metadata from backend:", err?.message || err);
+    return getUploadReportMeta();
+  }
+}
+
+async function setUploadReportMeta(type, whenISO = new Date().toISOString()){
   const prev = getUploadReportMeta();
   const next = { ...prev, [type]: whenISO };
   localStorage.setItem("uploadReportMeta", JSON.stringify(next));
+  try{
+    const backendPayload = {
+      id: 1,
+      inventory_report_at: next.inventoryReport || null,
+      status_report_at: next.statusReport || null,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await db
+      .from("report_upload_meta")
+      .upsert([backendPayload], { onConflict: "id" });
+    if(error) throw error;
+  }catch(err){
+    console.warn("Unable to persist upload metadata to backend:", err?.message || err);
+  }
+  await renderUploadMetaBadge();
 }
 
 function formatUploadHeaderTimestamp(value){
@@ -4115,6 +4158,61 @@ function formatUploadHeaderTimestamp(value){
     minute: "2-digit",
     hour12: true
   });
+}
+
+function buildUploadMetaBadgeHtml(meta = getUploadReportMeta()){
+  const inventoryTs = formatUploadHeaderTimestamp(meta.inventoryReport);
+  const statusTs = formatUploadHeaderTimestamp(meta.statusReport);
+  return `
+    <div class="text-[11px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis" style="color:var(--pc-text);">
+      <span class="uppercase tracking-[0.08em] font-semibold mr-2" style="color:var(--pc-text-muted);">Latest Uploads</span>
+      <span style="color:var(--pc-text-muted);">Inv:</span> ${inventoryTs}
+      <span class="mx-2" style="color:var(--pc-text-muted);">|</span>
+      <span style="color:var(--pc-text-muted);">Status:</span> ${statusTs}
+    </div>
+  `;
+}
+
+async function renderUploadMetaBadge(){
+  let badge = document.getElementById("uploadMetaBadge");
+  if(!getUser()){
+    if(badge) badge.remove();
+    const oldRow = document.getElementById("uploadMetaRow");
+    if(oldRow) oldRow.remove();
+    return;
+  }
+  let host = document.getElementById("uploadMetaHost");
+  if(!host){
+    const ticker = document.querySelector(".offer-strip");
+    if(!ticker){
+      if(badge) badge.remove();
+      return;
+    }
+    let row = document.getElementById("uploadMetaRow");
+    if(!row){
+      row = document.createElement("div");
+      row.id = "uploadMetaRow";
+      row.className = "w-full mx-[-1rem] md:mx-0 mt-2 px-1 flex justify-end";
+      ticker.insertAdjacentElement("afterend", row);
+    }
+    host = document.createElement("div");
+    host.id = "uploadMetaHost";
+    host.className = "w-full flex justify-end";
+    row.replaceChildren(host);
+  }
+
+  if(!badge){
+    badge = document.createElement("div");
+    badge.id = "uploadMetaBadge";
+    badge.className = "px-3 py-1.5 rounded-lg";
+    badge.style.background = "rgba(17,24,39,0.72)";
+    badge.style.border = "1px solid rgba(148,163,184,0.28)";
+    badge.style.backdropFilter = "blur(2px)";
+    badge.style.maxWidth = "520px";
+  }
+  host.appendChild(badge);
+  const meta = await syncUploadReportMetaFromBackend();
+  badge.innerHTML = buildUploadMetaBadgeHtml(meta);
 }
 
 function getEffectiveQty(row){
@@ -5754,7 +5852,7 @@ async function processExcelData(rows){
 
   hideLoader();
 
-  setUploadReportMeta("statusReport");
+  await setUploadReportMeta("statusReport");
   showPopup(`Upload Complete ✅\nUpdated: ${updated}\nInserted: ${inserted}\nSkipped: ${skipped}`);
 
   loadAdmin(window.activeTab);
@@ -5831,6 +5929,14 @@ async function insertInventoryStagingInBatches(rows, batchSize = 500){
   }
 
   return { uploaded, failed, errorSamples };
+}
+
+async function clearInventoryStagingTable(){
+  const { error } = await db
+    .from("inventory_staging")
+    .delete()
+    .not("report_date", "is", null);
+  if(error) throw error;
 }
 
 async function applyInventoryThreeTableFlow(stagingRows, reportDate){
@@ -5993,13 +6099,16 @@ async function processInventoryExcelData(rows, reportDate){
     }
     const finalPayload = [...dedupeMap.values()];
 
-    setInventoryProgress(5, `Prepared ${finalPayload.length} rows for staging upload...`);
+    setInventoryProgress(5, "Clearing previous inventory staging data...");
+    await clearInventoryStagingTable();
+
+    setInventoryProgress(8, `Prepared ${finalPayload.length} rows for staging upload...`);
     const uploadStats = await insertInventoryStagingInBatches(finalPayload, 500);
     failed += uploadStats.failed;
 
     setInventoryProgress(100, "Inventory upload completed.");
 
-    setUploadReportMeta("inventoryReport");
+    await setUploadReportMeta("inventoryReport");
     showPopup(
       `Inventory Upload Complete ✅\nUploaded: ${uploadStats.uploaded}\nFailed: ${failed}${uploadStats.errorSamples.length ? `\nErrors:\n- ${uploadStats.errorSamples.join("\n- ")}` : ""}`
     );
