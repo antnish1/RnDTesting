@@ -1934,6 +1934,7 @@ document.getElementById("app").innerHTML = `
 `;
 
 renderIcons();
+renderUploadMetaBadge();
 
 
 // ✅ ENTER KEY LOGIN (SAFE - NO LOGIC CHANGE)
@@ -2346,6 +2347,7 @@ ${isDeveloper ? `
 `;
 
 renderIcons();
+renderUploadMetaBadge();
 initResponsiveLayoutObserver();
 applyMobileTableLayoutFixes();
 
@@ -4101,6 +4103,7 @@ function setUploadReportMeta(type, whenISO = new Date().toISOString()){
   const prev = getUploadReportMeta();
   const next = { ...prev, [type]: whenISO };
   localStorage.setItem("uploadReportMeta", JSON.stringify(next));
+  renderUploadMetaBadge();
 }
 
 function formatUploadHeaderTimestamp(value){
@@ -4115,6 +4118,39 @@ function formatUploadHeaderTimestamp(value){
     minute: "2-digit",
     hour12: true
   });
+}
+
+function buildUploadMetaBadgeHtml(){
+  const meta = getUploadReportMeta();
+  const inventoryTs = formatUploadHeaderTimestamp(meta.inventoryReport);
+  const statusTs = formatUploadHeaderTimestamp(meta.statusReport);
+  return `
+    <div class="text-[10px] uppercase tracking-[0.08em] font-semibold mb-1" style="color:var(--pc-text-muted);">Latest Uploads</div>
+    <div class="space-y-1 text-xs leading-tight">
+      <div style="color:var(--pc-text);"><span style="color:var(--pc-text-muted);">Inventory:</span> ${inventoryTs}</div>
+      <div style="color:var(--pc-text);"><span style="color:var(--pc-text-muted);">Order Status:</span> ${statusTs}</div>
+    </div>
+  `;
+}
+
+function renderUploadMetaBadge(){
+  let badge = document.getElementById("uploadMetaBadge");
+  if(!getUser()){
+    if(badge) badge.remove();
+    return;
+  }
+  if(!badge){
+    badge = document.createElement("div");
+    badge.id = "uploadMetaBadge";
+    badge.className = "fixed z-40 right-4 bottom-4 px-3 py-2 rounded-lg shadow-lg";
+    badge.style.background = "rgba(17,24,39,0.92)";
+    badge.style.border = "1px solid rgba(148,163,184,0.35)";
+    badge.style.backdropFilter = "blur(4px)";
+    badge.style.minWidth = "220px";
+    badge.style.maxWidth = "260px";
+    document.body.appendChild(badge);
+  }
+  badge.innerHTML = buildUploadMetaBadgeHtml();
 }
 
 function getEffectiveQty(row){
@@ -5833,6 +5869,14 @@ async function insertInventoryStagingInBatches(rows, batchSize = 500){
   return { uploaded, failed, errorSamples };
 }
 
+async function clearInventoryStagingTable(){
+  const { error } = await db
+    .from("inventory_staging")
+    .delete()
+    .not("report_date", "is", null);
+  if(error) throw error;
+}
+
 async function applyInventoryThreeTableFlow(stagingRows, reportDate){
   const uniq = new Map();
   stagingRows.forEach(r => {
@@ -5993,7 +6037,10 @@ async function processInventoryExcelData(rows, reportDate){
     }
     const finalPayload = [...dedupeMap.values()];
 
-    setInventoryProgress(5, `Prepared ${finalPayload.length} rows for staging upload...`);
+    setInventoryProgress(5, "Clearing previous inventory staging data...");
+    await clearInventoryStagingTable();
+
+    setInventoryProgress(8, `Prepared ${finalPayload.length} rows for staging upload...`);
     const uploadStats = await insertInventoryStagingInBatches(finalPayload, 500);
     failed += uploadStats.failed;
 
