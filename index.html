@@ -5906,25 +5906,33 @@ async function processExcelData(rows){
     const pendingQty = Math.max(0, effectiveQty - billedQtyTotal);
     resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQtyTotal);
 
+    const incomingOrderRegDt = (r["Order Reg. Dt"] || "").toString().trim();
+    const incomingBillingDtRaw = (r["Billing Dt"] || "").toString().trim();
+    const incomingPackingDetail = (r["Packing Detail"] || "").toString().trim();
+    const incomingEWayBillNo = (r["E-Way Bill No"] || "").toString().trim();
+    const incomingGstInvoiceNo = (r["GST Invoice No."] || "").toString().trim();
+
+    const updatePayload = {
+      Status: resolvedDispatchStatus,
+      OrderRegDt: incomingOrderRegDt || (existing.OrderRegDt || ""),
+      DeliveryNo: deliveryNo || (existing.DeliveryNo || ""),
+      BillNo: billNo || (existing.BillNo || ""),
+      BillingDt: incomingBillingDtRaw || (existing.BillingDt || ""),
+      BilledQty: billedQty,
+      billed_qty_total: billedQtyTotal,
+      pending_qty: pendingQty,
+      dispatch_status: resolvedDispatchStatus,
+      TransportName: transportName || (existing.TransportName || ""),
+      TransportMode: incomingTransportMode || (existing.TransportMode || ""),
+      Docket: docketNo || (existing.Docket || ""),
+      PackingDetail: incomingPackingDetail || (existing.PackingDetail || ""),
+      EWayBillNo: incomingEWayBillNo || (existing.EWayBillNo || ""),
+      GSTInvoiceNo: incomingGstInvoiceNo || (existing.GSTInvoiceNo || "")
+    };
+
     const { error } = await db
       .from("requests")
-      .update({
-        Status: resolvedDispatchStatus,
-        OrderRegDt: r["Order Reg. Dt"] || "",
-        DeliveryNo: deliveryNo || "",
-        BillNo: billNo || "",
-        BillingDt: r["Billing Dt"] || "",
-        BilledQty: billedQty,
-        billed_qty_total: billedQtyTotal,
-        pending_qty: pendingQty,
-        dispatch_status: resolvedDispatchStatus,
-        TransportName: transportName || "",
-        TransportMode: incomingTransportMode,
-        Docket: docketNo || "",
-        PackingDetail: r["Packing Detail"] || "",
-        EWayBillNo: r["E-Way Bill No"] || "",
-        GSTInvoiceNo: r["GST Invoice No."] || ""
-      })
+      .update(updatePayload)
       .eq("id", existing.id);
 
     if(!error){
