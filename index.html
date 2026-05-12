@@ -5710,7 +5710,7 @@ async function processExcelData(rows){
         rowFingerprint.deliveryNo === fingerprint.deliveryNo;
     };
 
-    // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE) using OrderNo + PartNo
+    // 🔍 CHECK IF MATCH EXISTS FIRST (SAFE UPDATE) using OrderNo + PartNo + DeliveryNo (when available)
     let existing = null;
     let orderPartCandidates = [];
     if(orderNo){
@@ -5721,7 +5721,13 @@ async function processExcelData(rows){
         .eq("PartNo", normalizedPartNo)
         .order("created_at", { ascending: false });
       orderPartCandidates = matchesByOrder || [];
-      if(hasIncomingDispatchFingerprint){
+      const normalizedIncomingDelivery = normalizeCompareLocal(deliveryNo);
+      if(normalizedIncomingDelivery){
+        existing = orderPartCandidates.find(row =>
+          normalizeCompareLocal(row?.DeliveryNo || "") === normalizedIncomingDelivery
+        ) || null;
+      }
+      if(!existing && hasIncomingDispatchFingerprint){
         existing = orderPartCandidates.find(row => hasSameDispatchFingerprint(row, incomingDispatchFingerprint)) || null;
       }
       if(!existing && orderPartCandidates.length){
@@ -5772,6 +5778,7 @@ async function processExcelData(rows){
       (hasExistingDeliveryNo && normalizeCompareLocal(existingDeliveryNo) !== normalizeCompareLocal(deliveryNo)) ||
       (hasExistingTransportMode && normalizeCompareLocal(existingTransportMode) !== normalizeCompareLocal(incomingTransportMode)) ||
       (hasExistingBillingDt && (existingBillingDt || "") !== (billingDt || ""));
+    const incomingHasManualBlankDispatchFields = !billNo && !docketNo && !transportName && !incomingTransportMode && !billingDt;
 
     const resolveRowFulfillmentStatus = (rowObj, billedTotal) => {
       const effectiveQty = Number(getEffectiveQty(rowObj) || 0);
@@ -5783,7 +5790,7 @@ async function processExcelData(rows){
     };
     var resolvedDispatchStatus = resolveRowFulfillmentStatus(existing, billedQty);
 
-    if(hasMismatchOnExistingFilledFields){
+    if(hasMismatchOnExistingFilledFields && !incomingHasManualBlankDispatchFields){
       const matchingVariant = hasIncomingDispatchFingerprint
         ? orderPartCandidates.find(row => hasSameDispatchFingerprint(row, incomingDispatchFingerprint))
         : null;
