@@ -1531,6 +1531,228 @@ table thead th.sort-desc::after {
 }
 #uploadMetaBadge .upload-meta-hide:hover{color:#fff;background:rgba(148,163,184,0.2)}
 
+/* =========================
+   Operations UI polish layer
+   ========================= */
+:root{
+  --pc-bg: #f4f7f4;
+  --pc-surface: #ffffff;
+  --pc-surface-2: #edf4ef;
+  --pc-border: #cfd9d2;
+  --pc-text: #15201a;
+  --pc-text-muted: #5f7067;
+  --pc-primary: #0f766e;
+  --pc-secondary: #b7791f;
+  --pc-accent: #2563eb;
+}
+
+body{
+  background:
+    linear-gradient(180deg, rgba(15,118,110,0.08), transparent 280px),
+    linear-gradient(135deg, #f7faf7 0%, #eef5f0 48%, #f6f0e6 100%) !important;
+  color: var(--pc-text) !important;
+}
+
+#app > div{
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+header > div,
+.offer-strip,
+.pc-section,
+.track-hero,
+.track-table-shell,
+.admin-strip,
+.mgr-panel,
+.parts-shell,
+.new-order-card,
+.detail-toolbar,
+.detail-meta-item{
+  background: rgba(255,255,255,0.92) !important;
+  color: var(--pc-text) !important;
+  border: 1px solid rgba(77,98,85,0.16) !important;
+  box-shadow: 0 12px 30px rgba(36,52,41,0.10) !important;
+}
+
+header > div{
+  border-radius: 16px !important;
+  backdrop-filter: blur(14px);
+}
+
+.header-logo-shell,
+.login-logo-wrap{
+  background: #ffffff !important;
+  border-color: rgba(15,118,110,0.16) !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,0.10) !important;
+}
+
+.top-btn,
+.menu-btn,
+.table-toggle-btn,
+.track-page-btn,
+.detail-action-btn,
+.popup-btn{
+  background: #ffffff !important;
+  color: #1f3329 !important;
+  border: 1px solid rgba(15,118,110,0.22) !important;
+  box-shadow: 0 4px 12px rgba(36,52,41,0.08) !important;
+}
+
+.top-btn:hover,
+.menu-btn:hover,
+.table-toggle-btn:hover,
+.track-page-btn:hover:not(:disabled),
+.detail-action-btn:hover{
+  background: #e7f4ef !important;
+  color: #0f766e !important;
+  border-color: rgba(15,118,110,0.42) !important;
+}
+
+.active-top-btn,
+.active-tab,
+.track-status-card-active{
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+}
+
+.logout-btn{
+  background: #fff1f2 !important;
+  color: #9f1239 !important;
+  border-color: rgba(225,29,72,0.26) !important;
+}
+
+.pc-field,
+.login-input,
+.search-bar,
+#universalSearch,
+select,
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="password"],
+textarea{
+  background: #ffffff !important;
+  color: #16221b !important;
+  border: 1px solid rgba(77,98,85,0.24) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.85), inset 0 1px 2px rgba(36,52,41,0.04) !important;
+}
+
+.pc-field::placeholder,
+.login-input::placeholder,
+.search-bar::placeholder,
+#universalSearch::placeholder{
+  color: #7a8b82 !important;
+}
+
+.track-status-card,
+.track-stat,
+.detail-meta-item,
+.mgr-kpi-card{
+  background: linear-gradient(180deg, #ffffff, #f6faf7) !important;
+  color: var(--pc-text) !important;
+  border-color: rgba(15,118,110,0.16) !important;
+}
+
+.track-status-card div,
+.track-table-header div,
+.detail-value,
+.mgr-kpi-count,
+.mgr-kpi-value,
+.new-order-tag,
+.track-filter-grid label,
+.mgr-filter-label,
+.detail-label{
+  color: inherit !important;
+}
+
+thead th{
+  background: #e7f0ea !important;
+  color: #26362d !important;
+  border-color: rgba(77,98,85,0.20) !important;
+}
+
+tbody td{
+  color: #26362d !important;
+  border-color: rgba(77,98,85,0.14) !important;
+}
+
+.track-table tbody tr,
+.track-table tbody tr:nth-child(even){
+  background: #ffffff !important;
+}
+
+.track-table tbody tr:hover,
+tbody tr:hover{
+  background: #edf7f2 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.offer-strip{
+  overflow: hidden;
+  border-radius: 12px !important;
+}
+
+.offer-pill{
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+}
+
+.offer-note{
+  background: #fff7ed !important;
+  color: #7c2d12 !important;
+  border-color: rgba(180,83,9,0.24) !important;
+}
+
+.login-shell{
+  background:
+    linear-gradient(135deg, rgba(15,118,110,0.12), transparent 42%),
+    linear-gradient(180deg, #f8fbf8 0%, #eef5f0 100%) !important;
+}
+
+.login-grid{
+  background: #ffffff !important;
+  border-color: rgba(77,98,85,0.18) !important;
+  box-shadow: 0 28px 70px rgba(36,52,41,0.16) !important;
+}
+
+.login-aside{
+  background:
+    linear-gradient(160deg, rgba(15,118,110,0.96), rgba(21,32,26,0.96)) !important;
+}
+
+.login-card{
+  background: #ffffff !important;
+}
+
+.login-title{
+  color: #15201a !important;
+}
+
+.login-aside .login-title,
+.login-aside .login-subtitle{
+  color: #ffffff !important;
+}
+
+.login-subtitle{
+  color: #64756b !important;
+}
+
+.login-label{
+  color: #0f766e !important;
+}
+
+.login-cta,
+.cta-primary,
+.popup-btn-primary{
+  background: linear-gradient(180deg, #f6c453, #d99623) !important;
+  color: #231a05 !important;
+  box-shadow: 0 12px 24px rgba(183,121,31,0.22) !important;
+}
+
 </style>
 
 
@@ -1544,6 +1766,10 @@ let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
+const REQUEST_VIEW_LIMIT = 600;
+const REQUEST_CACHE_TTL_MS = 45 * 1000;
+const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
 let cancelUploadFlag = false;
 let currentRow = null;
@@ -1557,19 +1783,13 @@ let currentRow = null;
   "https://ubkwtjyvbdvepzbxoikq.supabase.co",
   "sb_publishable_L-SrVLzVHoSt9OKGAu1eTQ_UslGY7m3"
 );
+const requestViewCache = new Map();
+let pendingCountCache = { at: 0, count: 0 };
+let pendingCountChannel = null;
 
 
 
 // ✅ REALTIME LISTENER FOR PENDING COUNT (NO LOGIC CHANGE)
-db.channel('requests-changes')
-  .on(
-    'postgres_changes',
-    { event: '*', schema: 'public', table: 'requests' },
-    payload => {
-      loadPendingCount();
-    }
-  )
-  .subscribe();
 
 
 
@@ -1817,6 +2037,53 @@ function isDeveloperRole(user){
   return getUserRole(user) === "developer";
 }
 
+function getRequestCacheKey(scope, filters = {}){
+  return `${scope}:${JSON.stringify(filters)}`;
+}
+
+async function fetchRequestRowsForView(scope, buildQuery, filters = {}, ttl = REQUEST_CACHE_TTL_MS){
+  const key = getRequestCacheKey(scope, filters);
+  const cached = requestViewCache.get(key);
+  if(cached && Date.now() - cached.at < ttl){
+    return cached.rows;
+  }
+
+  const { data, error } = await buildQuery()
+    .order("created_at", { ascending: false })
+    .range(0, REQUEST_VIEW_LIMIT - 1);
+
+  if(error) throw error;
+  const rows = data || [];
+  requestViewCache.set(key, { at: Date.now(), rows });
+  return rows;
+}
+
+function clearRequestViewCache(){
+  requestViewCache.clear();
+  pendingCountCache = { at: 0, count: 0 };
+}
+
+function stopPendingCountRealtime(){
+  if(pendingCountChannel){
+    db.removeChannel(pendingCountChannel);
+    pendingCountChannel = null;
+  }
+}
+
+function startPendingCountRealtime(){
+  if(pendingCountChannel) return;
+  pendingCountChannel = db.channel("admin-pending-count")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "requests" },
+      () => {
+        pendingCountCache = { at: 0, count: 0 };
+        loadPendingCount();
+      }
+    )
+    .subscribe();
+}
+
 async function syncUserRoleFromDb(user){
   if(!user) return null;
 
@@ -1982,7 +2249,7 @@ document.addEventListener("keydown", function(e){
 }
     
     
-const { data } = await db.from("users").select("*");
+const { data } = await db.from("users").select("Branch").order("Branch", { ascending: true });
 const unique = [...new Set((data || []).map(d => getUserBranch(d)).filter(Boolean))];
 
 const el = document.getElementById("branch");
@@ -1999,9 +2266,15 @@ if(!branch || !password) return showPopup("Fill all fields");
 
 showLoader();
 
-const { data: allUsers } = await db
+const { data: allUsers, error } = await db
 .from("users")
-.select("*");
+.select(USER_LOGIN_SELECT)
+.eq("Branch", branch);
+
+if(error){
+  hideLoader();
+  return showPopup("Invalid credentials");
+}
 
 const normalizedUsers = (allUsers || []).map(normalizeUserPayload);
 const branchNorm = (branch || "").toString().trim().toUpperCase();
@@ -2408,6 +2681,9 @@ if(!isAdmin && window.pendingCountIntervalId){
   clearInterval(window.pendingCountIntervalId);
   window.pendingCountIntervalId = null;
 }
+if(!isAdmin){
+  stopPendingCountRealtime();
+}
 
     
 // ✅ Load correct screen
@@ -2417,6 +2693,7 @@ if(window.activeTab === "scanner"){
 else if(isAdmin){
   loadAdmin(window.activeTab || "Approved");
   startPendingCountAutoRefresh();
+  startPendingCountRealtime();
 }
 else if(isDeveloper){
   if(window.activeTab === "DevUsers"){
@@ -3482,6 +3759,7 @@ if(submitError){
   return showPopup(`Submit failed ❌\n${submitError.message || "Unknown error"}${statusSuffix}`, "error");
 }
 
+clearRequestViewCache();
 await appendOrderActionLog(orderNo, "ORDER_CREATED", `Order placed by ${getUser()?.Name || "Unknown User"}.`);
 const totalItems = inserts.reduce((sum, item) => sum + Number(item?.Qty || 0), 0);
 const totalValue = inserts.reduce((sum, item) => sum + Number(item?.Value || 0), 0);
@@ -3549,32 +3827,32 @@ const isDeveloper = isDeveloperRole(user);
 
 showLoader();
 
-const pageSize = 1000;
-let offset = 0;
-const allRows = [];
-
-while(true){
-  let query = db
-    .from("requests")
-    .select(REQUEST_LIST_SELECT)
-    .order("created_at", { ascending:false })
-    .range(offset, offset + pageSize - 1);
+let allRows = [];
+try{
+  allRows = await fetchRequestRowsForView("track", () => {
+    let query = db.from("requests").select(REQUEST_LIST_SELECT);
 
   // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
   if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
     query = query.eq("Branch", getUserBranch(user));
   }
 
-  const { data, error } = await query;
-  if(error){
-    console.error("loadTrack pagination error:", error.message || error);
-    break;
-  }
-  if(!data || data.length === 0) break;
-
-  allRows.push(...data);
-  if(data.length < pageSize) break;
-  offset += pageSize;
+    if(TRACK_FROM_DATE){
+      query = query.gte("created_at", `${TRACK_FROM_DATE}T00:00:00`);
+    }
+    if(TRACK_TO_DATE){
+      query = query.lte("created_at", `${TRACK_TO_DATE}T23:59:59`);
+    }
+    return query;
+  }, {
+    branch: (!isAdmin && !isSuper && !isViewer && !isDeveloper) ? getUserBranch(user) : "ALL",
+    role: getUserRole(user),
+    from: TRACK_FROM_DATE,
+    to: TRACK_TO_DATE
+  });
+}catch(error){
+  console.error("loadTrack request error:", error.message || error);
+  allRows = [];
 }
 
 GLOBAL_DATA = allRows;
@@ -3807,10 +4085,24 @@ document.getElementById("row-"+i).classList.toggle("hidden");
 
 
 async function loadPendingCount(){
+  if(Date.now() - pendingCountCache.at < PENDING_COUNT_CACHE_TTL_MS){
+    const el = document.getElementById("pendingCount");
+    if(el){
+      if(pendingCountCache.count > 0){
+        el.innerText = pendingCountCache.count;
+        el.classList.remove("hidden");
+      } else {
+        el.classList.add("hidden");
+      }
+    }
+    return;
+  }
 
   const { data, error } = await db
     .from("requests")
-    .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate");
+    .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate")
+    .in("ApprovalStatus", ["Approved", "APPROVED"])
+    .limit(1000);
 
   if(error) return;
 
@@ -3826,6 +4118,7 @@ async function loadPendingCount(){
     .filter(([, items]) => getOrderStatusLabel(items) === "APPROVED")
     .map(([orderNo]) => orderNo);
   const count = uniqueOrders.length;
+  pendingCountCache = { at: Date.now(), count };
 
   const el = document.getElementById("pendingCount");
 
@@ -3862,17 +4155,21 @@ window.activeTab = activeTab;
 updateMenuHighlight();
 showLoader();
 
-const { data } = await db
-    
-.from("requests")
-.select(REQUEST_LIST_SELECT)
-.order("created_at",{ascending:false});
+let data = [];
+try{
+  data = await fetchRequestRowsForView("admin", () => db
+    .from("requests")
+    .select(REQUEST_LIST_SELECT), { activeTab });
+}catch(error){
+  console.error("loadAdmin request error:", error.message || error);
+  data = [];
+}
 GLOBAL_DATA = data;
 hideLoader();
 
 // GROUP BY ORDER
 const grouped = {};
-data.forEach(r=>{
+(data || []).forEach(r=>{
 if(!grouped[r.OrderNo]){
 grouped[r.OrderNo] = { ...r, items:[] };
 }
@@ -7116,7 +7413,8 @@ async function fetchDeveloperCommentFeed(){
   const { data, error } = await db
     .from("requests")
     .select("id,OrderNo,Branch,OrderType,Status,created_at,OrderComments")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(0, REQUEST_VIEW_LIMIT - 1);
   if(error) throw error;
   return (data || [])
     .flatMap(getOrderCommentsWithMeta)
@@ -7132,7 +7430,10 @@ async function loadDeveloperDashboard(){
   try{
     const [{ data: users }, { data: requests }] = await Promise.all([
       db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
-      db.from("requests").select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty").order("created_at", { ascending: false })
+      db.from("requests")
+        .select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty")
+        .order("created_at", { ascending: false })
+        .range(0, REQUEST_VIEW_LIMIT - 1)
     ]);
     const byOrder = {};
     (requests || []).forEach(r => {
@@ -7210,7 +7511,7 @@ async function loadDeveloperDashboard(){
             <div>
               <div class="text-[11px] uppercase tracking-[0.16em] font-bold" style="color:#818cf8; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">DEVELOPER WORKSPACE</div>
               <div class="text-sm md:text-base font-semibold mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
-                users:${(users || []).length} | orders:${orderList.length} | unread_comments:${unreadComments.length}
+                users:${(users || []).length} | orders:${orderList.length} | unread_comments:${unreadComments.length} | row_window:${REQUEST_VIEW_LIMIT}
               </div>
             </div>
             <div class="flex gap-2 flex-wrap">
@@ -7367,7 +7668,7 @@ async function loadDeveloperRequestsEditor(){
   try{
     const { data, error } = await db
       .from("requests")
-      .select("*")
+      .select("id,OrderNo,Branch,PartNo,Status,ApprovalStatus,created_at")
       .order("created_at", { ascending: false })
       .limit(200);
     if(error) throw error;
@@ -7507,31 +7808,23 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
   const user = getUser();
   const isManager = isManagerRole(user) || isDeveloperRole(user);
 
-  const pageSize = 1000;
-  let offset = 0;
   let allRows = [];
 
-  while(true){
-    let query = db
-      .from("requests")
-      .select(REQUEST_LIST_SELECT)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + pageSize - 1);
-
-    if(!isManager){
-      query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
-    }
-
-    const { data, error } = await query;
-    if(error){
-      console.error("loadSuper pagination error:", error.message || error);
-      break;
-    }
-    if(!data || data.length === 0) break;
-
-    allRows.push(...data);
-    if(data.length < pageSize) break;
-    offset += pageSize;
+  try{
+    allRows = await fetchRequestRowsForView("super", () => {
+      let query = db.from("requests").select(REQUEST_LIST_SELECT);
+      if(!isManager){
+        query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
+      }
+      return query;
+    }, {
+      activeTab,
+      user: user?.Name || "",
+      manager: isManager
+    });
+  }catch(error){
+    console.error("loadSuper request error:", error.message || error);
+    allRows = [];
   }
 
   const STATUS_SYNC_INTERVAL_MS = 30 * 60 * 1000;
