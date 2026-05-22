@@ -1,6 +1,7 @@
     <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -1531,6 +1532,33 @@ table thead th.sort-desc::after {
 }
 #uploadMetaBadge .upload-meta-hide:hover{color:#fff;background:rgba(148,163,184,0.2)}
 
+#uploadMetaBadge .upload-meta-toggle{
+  background: #ffffff !important;
+  color: #10251d !important;
+  border: 1px solid rgba(15,118,110,0.35) !important;
+  box-shadow: 0 12px 24px rgba(36,52,41,0.18) !important;
+}
+
+#uploadMetaBadge .upload-meta-caret{
+  color: #0f766e !important;
+}
+
+#uploadMetaBadge .upload-meta-panel{
+  background: #ffffff !important;
+  color: #10251d !important;
+  border: 1px solid rgba(15,118,110,0.24) !important;
+  box-shadow: 0 16px 30px rgba(36,52,41,0.16) !important;
+}
+
+#uploadMetaBadge .upload-meta-panel div,
+#uploadMetaBadge .upload-meta-panel span{
+  color: #10251d !important;
+}
+
+#uploadMetaBadge .upload-meta-hide{
+  color: #475569 !important;
+}
+
 /* =========================
    Operations UI polish layer
    ========================= */
@@ -1753,6 +1781,343 @@ tbody tr:hover{
   box-shadow: 0 12px 24px rgba(183,121,31,0.22) !important;
 }
 
+/* High-contrast corrections for inline legacy colors on the light theme. */
+.track-hero [style*="color:#fef3c7"],
+.track-hero [style*="color: #fef3c7"],
+.track-hero [style*="color:#fcd34d"],
+.track-hero [style*="color: #fcd34d"],
+.track-hero [style*="color:#fde68a"],
+.track-hero [style*="color: #fde68a"],
+.track-table-shell [style*="color:#fef3c7"],
+.track-table-shell [style*="color: #fef3c7"],
+.track-table-shell [style*="color:#facc15"],
+.track-table-shell [style*="color: #facc15"],
+.track-table-shell [style*="color:#fcd34d"],
+.track-table-shell [style*="color: #fcd34d"],
+.track-table-shell [style*="color:#fde68a"],
+.track-table-shell [style*="color: #fde68a"],
+.admin-shell [style*="color:#fef3c7"],
+.admin-shell [style*="color: #fef3c7"],
+.admin-shell [style*="color:#facc15"],
+.admin-shell [style*="color: #facc15"],
+.mgr-shell [style*="color:#fef3c7"],
+.mgr-shell [style*="color: #fef3c7"],
+.mgr-shell [style*="color:#fcd34d"],
+.mgr-shell [style*="color: #fcd34d"],
+.pc-section [style*="color:#e2e8f0"],
+.pc-section [style*="color: #e2e8f0"],
+.pc-section [style*="color:#f8fafc"],
+.pc-section [style*="color: #f8fafc"]{
+  color: #10251d !important;
+}
+
+.track-table-header,
+.track-footer,
+.track-filter-shell{
+  background: #f7fbf8 !important;
+  color: #10251d !important;
+  border-color: rgba(15,118,110,0.18) !important;
+}
+
+.track-filter-grid label,
+.mgr-filter-label,
+.detail-label,
+.new-order-tag{
+  color: #075e55 !important;
+}
+
+.track-status-card-active,
+.track-status-card-active *{
+  color: #ffffff !important;
+}
+
+.track-page-btn:disabled{
+  color: #64756b !important;
+  background: #eef3ef !important;
+}
+
+.track-table-shell .track-page-btn,
+.track-filter-shell .track-page-btn,
+.admin-shell .track-page-btn,
+.mgr-shell .track-page-btn{
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+  font-weight: 800 !important;
+}
+
+.track-table-shell .track-page-btn:hover:not(:disabled),
+.track-filter-shell .track-page-btn:hover:not(:disabled),
+.admin-shell .track-page-btn:hover:not(:disabled),
+.mgr-shell .track-page-btn:hover:not(:disabled){
+  background: #0b5f59 !important;
+  color: #ffffff !important;
+}
+
+.track-table-shell .track-page-btn:disabled,
+.admin-shell .track-page-btn:disabled,
+.mgr-shell .track-page-btn:disabled{
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.top-btn{
+  color: #10251d !important;
+  font-weight: 800 !important;
+}
+
+.order-action-btn{
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+  font-weight: 800 !important;
+}
+
+.oa-primary{ color:#1d4ed8 !important; }
+.oa-success{ color:#166534 !important; }
+.oa-danger{ color:#991b1b !important; }
+.oa-muted{ color:#334155 !important; }
+.oa-neutral{ color:#0f172a !important; }
+.oa-teal{ color:#0f766e !important; }
+
+/* Detail page readability fixes. */
+#orderCommentsList > div:not(.system-action-row){
+  background: #fff7ed !important;
+  border: 1px solid #fed7aa !important;
+  color: #111827 !important;
+}
+
+#orderCommentsList > div:not(.system-action-row):nth-child(even){
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+
+#orderCommentsList span,
+#orderCommentsList a{
+  color: #111827 !important;
+}
+
+#orderCommentsList a{
+  color: #1d4ed8 !important;
+  font-weight: 800 !important;
+}
+
+#orderCommentsList .ml-auto{
+  color: #475569 !important;
+}
+
+.parts-shell .text-right.mt-4.font-bold,
+.parts-shell .text-right.mt-4.font-bold span{
+  color: #78350f !important;
+}
+
+.parts-shell .text-right.mt-4.font-bold span{
+  background: #fffbeb !important;
+  border: 1px solid #f59e0b !important;
+  box-shadow: 0 8px 18px rgba(146,64,14,0.14) !important;
+}
+
+header button[onclick="goHomeTab()"],
+header .tracking-widest.uppercase{
+  color: #f8fafc !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* Mobile-first docket scanner */
+.docket-shell{
+  width: min(100%, 560px);
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.docket-panel,
+.docket-shell > .pc-section{
+  background: #ffffff !important;
+  border: 1px solid rgba(15,118,110,0.18) !important;
+  border-radius: 18px !important;
+  padding: 14px !important;
+  box-shadow: 0 18px 38px rgba(36,52,41,0.12) !important;
+}
+
+.docket-head{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.docket-head .top-btn,
+.docket-back{
+  min-height: 38px;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+  color: #10251d !important;
+  border: 1px solid rgba(15,118,110,0.22) !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+}
+
+.docket-head .top-btn::after,
+.docket-back::after{
+  content: "Back";
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.docket-head > div > div,
+.docket-head > div > p{
+  display: none !important;
+}
+
+.docket-head h3{
+  margin: 0 !important;
+  font-size: 0 !important;
+}
+
+.docket-head h3::after{
+  content: "Docket Scan";
+  font-size: 18px;
+  line-height: 1.1;
+  color: #10251d;
+  font-weight: 900;
+}
+
+#docketScannerState{
+  background: #eef3ef !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px !important;
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.docket-shell .space-y-3{
+  display: grid;
+  gap: 10px;
+}
+
+#docketScanInput{
+  min-height: 52px !important;
+  border-radius: 14px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  border: 2px solid rgba(15,118,110,0.30) !important;
+  background: #ffffff !important;
+  color: #10251d !important;
+}
+
+.docket-shell .grid.grid-cols-1{
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+}
+
+.docket-shell .grid.grid-cols-1 button:first-child{
+  grid-column: 1 / -1;
+  background: #0f766e !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+}
+
+.docket-shell .grid.grid-cols-1 button{
+  min-height: 46px;
+  justify-content: center;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+#docketScannerView{
+  border-radius: 16px !important;
+  border: 1px solid rgba(15,118,110,0.22) !important;
+  background: #0f172a !important;
+}
+
+#docketScannerVideo{
+  width: 100% !important;
+  height: min(62vh, 460px) !important;
+  min-height: 280px !important;
+  object-fit: cover !important;
+}
+
+#docketScannerView .absolute,
+#docketScanHint{
+  display: none !important;
+}
+
+.docket-shell h4{
+  margin: 0;
+  color: #10251d;
+  font-size: 0 !important;
+}
+
+.docket-shell h4::after{
+  content: "Results";
+  font-size: 15px;
+  font-weight: 900;
+}
+
+#docketMatchCount{
+  background: #e7f4ef !important;
+  color: #0f766e !important;
+  border: 1px solid rgba(15,118,110,0.25) !important;
+  border-radius: 999px !important;
+  font-weight: 900 !important;
+}
+
+#docketScanResults,
+#docketScanResults *{
+  color: #10251d !important;
+}
+
+#docketScanResults > div{
+  background: #ffffff !important;
+  border: 1px solid rgba(15,118,110,0.16) !important;
+  box-shadow: 0 10px 22px rgba(36,52,41,0.08) !important;
+}
+
+.docket-empty{
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8fafc !important;
+  border: 1px dashed #cbd5e1 !important;
+  color: #475569 !important;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#docketScanResults details{
+  background: #f8fafc !important;
+  border: 1px solid #dbe4df !important;
+}
+
+#docketScanResults details summary{
+  color: #0f766e !important;
+}
+
+#docketScanResults details summary{
+  font-size: 0 !important;
+}
+
+#docketScanResults details summary::after{
+  content: "Fields";
+  font-size: 13px;
+  font-weight: 900;
+}
+
+@media (min-width: 768px){
+  .docket-shell{
+    width: min(100%, 720px);
+  }
+}
+
 </style>
 
 
@@ -1768,6 +2133,7 @@ let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
 const REQUEST_VIEW_LIMIT = 600;
+const DATE_FILTER_VIEW_LIMIT = 5000;
 const REQUEST_CACHE_TTL_MS = 45 * 1000;
 const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
@@ -2055,6 +2421,21 @@ async function fetchRequestRowsForView(scope, buildQuery, filters = {}, ttl = RE
   if(error) throw error;
   const rows = data || [];
   requestViewCache.set(key, { at: Date.now(), rows });
+  return rows;
+}
+
+async function fetchRequestRowsPaged(buildQuery, maxRows = DATE_FILTER_VIEW_LIMIT, pageSize = 1000){
+  const rows = [];
+  for(let offset = 0; offset < maxRows; offset += pageSize){
+    const end = Math.min(offset + pageSize - 1, maxRows - 1);
+    const { data, error } = await buildQuery()
+      .order("created_at", { ascending: false })
+      .range(offset, end);
+    if(error) throw error;
+    if(!data || data.length === 0) break;
+    rows.push(...data);
+    if(data.length < (end - offset + 1)) break;
+  }
   return rows;
 }
 
@@ -2373,6 +2754,11 @@ function updateMenuHighlight(){
     }
   });
 
+  const offerStrip = document.querySelector(".offer-strip");
+  if(offerStrip){
+    offerStrip.style.display = window.activeTab === "scanner" ? "none" : "";
+  }
+
 }
 
 let responsiveLayoutObserver = null;
@@ -2483,8 +2869,8 @@ document.getElementById("app").innerHTML = `
 
   <div class="h-6 w-px bg-gray-400 opacity-50"></div>
 
-  <button type="button" onclick="goHomeTab()" class="text-sm font-semibold tracking-widest uppercase" style="color: var(--pc-text); background:transparent; border:none; padding:0;">
-  ${getUserBranch(user)} / ${(user?.Name || "User")}
+  <button type="button" onclick="goHomeTab()" class="text-sm font-semibold tracking-widest uppercase" style="color: #ffffff; background:transparent; border:none; padding:0;">
+  ${escapeHtml(getUserBranch(user))}
 </button>
 
 </div>
@@ -2760,16 +3146,12 @@ function loadDocketScanner(){
   if(!main) return;
 
   main.innerHTML = `
-  <div class="w-full max-w-5xl mx-auto space-y-4">
-    <section class="pc-section p-3 md:p-5 rounded-2xl" style="background:linear-gradient(160deg, rgba(15,23,42,.95), rgba(17,24,39,.92));">
-      <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
-        <button class="top-btn" onclick="goHomeTab()">← Back</button>
-        <div>
-          <div class="text-[11px] tracking-wider uppercase mb-1" style="color:var(--pc-secondary);">Consignment Docket Scanner</div>
-          <h3 class="text-base md:text-xl font-semibold">Mobile Scan Console</h3>
-          <p class="text-xs md:text-sm mt-1" style="color:var(--pc-text-muted);">App-like quick workflow: scan, review complete row details, mark received.</p>
-        </div>
-        <span id="docketScannerState" class="text-[11px] px-2 py-1 rounded-full" style="background:rgba(148,163,184,0.16); border:1px solid rgba(148,163,184,0.32); color:#cbd5e1;">Camera idle</span>
+  <div class="docket-shell">
+    <section class="docket-panel">
+      <div class="docket-head">
+        <button class="top-btn" onclick="goHomeTab()">Back</button>
+        <h3 class="text-base md:text-xl font-semibold">Docket Scan</h3>
+        <span id="docketScannerState" class="text-[11px] px-2 py-1 rounded-full" style="background:rgba(148,163,184,0.16); border:1px solid rgba(148,163,184,0.32); color:#cbd5e1;">Idle</span>
       </div>
 
       <div class="space-y-3">
@@ -2782,30 +3164,25 @@ function loadDocketScanner(){
           class="pc-field w-full text-base md:text-lg px-4 py-3 rounded-xl"
         />
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <button class="top-btn w-full justify-center" onclick="lookupDocketRows()">Search Docket</button>
-          <button class="top-btn w-full justify-center" onclick="startDocketCameraScanner()">Start Camera</button>
-          <button class="top-btn w-full justify-center" onclick="stopDocketCameraScanner()">Stop Camera</button>
+          <button class="top-btn w-full justify-center" onclick="lookupDocketRows()">Search</button>
+          <button class="top-btn w-full justify-center" onclick="startDocketCameraScanner()">Camera</button>
+          <button class="top-btn w-full justify-center" onclick="stopDocketCameraScanner()">Stop</button>
         </div>
       </div>
 
       <div id="docketScannerView" class="hidden mt-4 rounded-xl overflow-hidden relative" style="border:1px solid var(--pc-border); background:#020617;">
         <video id="docketScannerVideo" class="w-full h-[62vh] max-h-[520px] min-h-[260px] object-cover" playsinline muted></video>
-        <div class="absolute inset-x-0 bottom-0 p-2 text-[11px]" style="background:linear-gradient(180deg, transparent, rgba(2,6,23,.88)); color:#e2e8f0;">
-          Continuous scan active • keep barcode inside frame
-        </div>
       </div>
-      <div id="docketScanHint" class="text-[11px] mt-2" style="color:var(--pc-text-muted);">
-        Tip: align barcode/QR inside camera frame. For unsupported browsers, use manual search.
-      </div>
+      <div id="docketScanHint" class="text-[11px] mt-2" style="color:var(--pc-text-muted);"></div>
     </section>
 
     <section class="pc-section p-3 md:p-5 rounded-2xl">
       <div class="flex items-center justify-between mb-2">
-        <h4 class="text-sm font-semibold">Matched rows</h4>
+        <h4 class="text-sm font-semibold">Results</h4>
         <span id="docketMatchCount" class="text-xs px-2 py-1 rounded-full" style="background:rgba(96,165,250,0.16); border:1px solid rgba(96,165,250,0.35); color:#bfdbfe;">0 rows</span>
       </div>
       <div id="docketScanResults" class="space-y-3 text-sm" style="color:var(--pc-text-muted);">
-        Scan a docket number to load row details.
+        <div class="docket-empty">No docket selected.</div>
       </div>
     </section>
   </div>
@@ -2833,7 +3210,7 @@ async function lookupDocketRows(rawValue){
     return;
   }
 
-  if(resultsEl) resultsEl.innerHTML = `<div class="text-xs">Searching...</div>`;
+  if(resultsEl) resultsEl.innerHTML = `<div class="docket-empty">Searching...</div>`;
 
   const { data, error } = await db
     .from("requests")
@@ -2864,7 +3241,7 @@ function renderDocketMatches(){
   if(!wrap) return;
 
   if(!rows.length){
-    wrap.innerHTML = `<div class="text-xs" style="color:var(--pc-text-muted);">No rows found for this docket.</div>`;
+    wrap.innerHTML = `<div class="docket-empty">No rows found.</div>`;
     return;
   }
 
@@ -2889,7 +3266,7 @@ function renderDocketMatches(){
         <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Qty ?? "-")}</span></div>
       </div>
       <details class="rounded-lg p-2" style="border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);">
-        <summary class="cursor-pointer text-sm font-semibold" style="color:#bfdbfe;">View complete row details</summary>
+        <summary class="cursor-pointer text-sm font-semibold" style="color:#bfdbfe;">Fields</summary>
         <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           ${
             Object.entries(r)
@@ -2989,17 +3366,18 @@ async function startDocketCameraScanner(){
     video.srcObject = docketScannerStream;
     await video.play();
     view.classList.remove("hidden");
-    if(hint) hint.textContent = "Camera scanning started.";
+    if(hint) hint.textContent = "";
     if(stateEl){
       stateEl.textContent = "Camera live • continuous scan";
-      stateEl.style.background = "rgba(34,197,94,0.18)";
-      stateEl.style.border = "1px solid rgba(34,197,94,0.38)";
-      stateEl.style.color = "#bbf7d0";
+      stateEl.textContent = "Live";
+      stateEl.style.background = "#dcfce7";
+      stateEl.style.border = "1px solid #22c55e";
+      stateEl.style.color = "#166534";
     }
     pollDocketBarcode();
   }catch(err){
     console.error(err);
-    if(hint) hint.textContent = "Unable to start camera. Check permissions and retry.";
+    if(hint) hint.textContent = "Unable to start camera.";
   }
 }
 
@@ -3019,12 +3397,12 @@ function stopDocketCameraScanner(){
     video.pause();
     video.srcObject = null;
   }
-  if(hint) hint.textContent = "Camera stopped.";
+  if(hint) hint.textContent = "";
   if(stateEl){
-    stateEl.textContent = "Camera idle";
-    stateEl.style.background = "rgba(148,163,184,0.16)";
-    stateEl.style.border = "1px solid rgba(148,163,184,0.32)";
-    stateEl.style.color = "#cbd5e1";
+    stateEl.textContent = "Idle";
+    stateEl.style.background = "#eef3ef";
+    stateEl.style.border = "1px solid #cbd5e1";
+    stateEl.style.color = "#475569";
   }
 }
 
@@ -3785,8 +4163,8 @@ loadCreate();
 function applyTrackDateFilter(orders){
   if(!TRACK_FROM_DATE && !TRACK_TO_DATE) return orders;
 
-  const fromDate = TRACK_FROM_DATE ? new Date(`${TRACK_FROM_DATE}T00:00:00`) : null;
-  const toDate = TRACK_TO_DATE ? new Date(`${TRACK_TO_DATE}T23:59:59`) : null;
+  const fromDate = TRACK_FROM_DATE ? getLocalDateBoundary(TRACK_FROM_DATE, "start").date : null;
+  const toDate = TRACK_TO_DATE ? getLocalDateBoundary(TRACK_TO_DATE, "end").date : null;
 
   return orders.filter(o => {
     const created = new Date(o.created_at);
@@ -3796,9 +4174,20 @@ function applyTrackDateFilter(orders){
   });
 }
 
+function getLocalDateBoundary(value, edge){
+  const time = edge === "end" ? "23:59:59.999" : "00:00:00.000";
+  const date = new Date(`${value}T${time}`);
+  return { date, iso: date.toISOString() };
+}
+
 function updateTrackDateFilter(kind, value){
-  if(kind === "from") TRACK_FROM_DATE = value || "";
-  if(kind === "to") TRACK_TO_DATE = value || "";
+  const nextValue = value || "";
+  if(kind === "from" && TRACK_FROM_DATE === nextValue) return;
+  if(kind === "to" && TRACK_TO_DATE === nextValue) return;
+  if(kind === "from") TRACK_FROM_DATE = nextValue;
+  if(kind === "to") TRACK_TO_DATE = nextValue;
+  clearRequestViewCache();
+  CURRENT_PAGE = 1;
   loadTrack("track", true);
 }
 
@@ -3829,7 +4218,8 @@ showLoader();
 
 let allRows = [];
 try{
-  allRows = await fetchRequestRowsForView("track", () => {
+  const hasDateFilter = !!(TRACK_FROM_DATE || TRACK_TO_DATE);
+  const buildTrackQuery = () => {
     let query = db.from("requests").select(REQUEST_LIST_SELECT);
 
   // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
@@ -3838,18 +4228,22 @@ try{
   }
 
     if(TRACK_FROM_DATE){
-      query = query.gte("created_at", `${TRACK_FROM_DATE}T00:00:00`);
+      query = query.gte("created_at", getLocalDateBoundary(TRACK_FROM_DATE, "start").iso);
     }
     if(TRACK_TO_DATE){
-      query = query.lte("created_at", `${TRACK_TO_DATE}T23:59:59`);
+      query = query.lte("created_at", getLocalDateBoundary(TRACK_TO_DATE, "end").iso);
     }
     return query;
-  }, {
-    branch: (!isAdmin && !isSuper && !isViewer && !isDeveloper) ? getUserBranch(user) : "ALL",
-    role: getUserRole(user),
-    from: TRACK_FROM_DATE,
-    to: TRACK_TO_DATE
-  });
+  };
+
+  if(hasDateFilter){
+    allRows = await fetchRequestRowsPaged(buildTrackQuery);
+  }else{
+    allRows = await fetchRequestRowsForView("track", buildTrackQuery, {
+      branch: (!isAdmin && !isSuper && !isViewer && !isDeveloper) ? getUserBranch(user) : "ALL",
+      role: getUserRole(user)
+    });
+  }
 }catch(error){
   console.error("loadTrack request error:", error.message || error);
   allRows = [];
@@ -3933,14 +4327,14 @@ let html = `
         <div class="track-filter-grid">
           <div>
             <label for="trackFromDate">From Date</label>
-            <input id="trackFromDate" type="date" class="pc-field h-[38px]" value="${TRACK_FROM_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('from', this.value)" />
+            <input id="trackFromDate" type="date" class="pc-field h-[38px]" value="${TRACK_FROM_DATE}" onclick="this.showPicker && this.showPicker()" oninput="updateTrackDateFilter('from', this.value)" onchange="updateTrackDateFilter('from', this.value)" />
           </div>
           <div>
             <label for="trackToDate">To Date</label>
-            <input id="trackToDate" type="date" class="pc-field h-[38px]" value="${TRACK_TO_DATE}" onclick="this.showPicker && this.showPicker()" onchange="updateTrackDateFilter('to', this.value)" />
+            <input id="trackToDate" type="date" class="pc-field h-[38px]" value="${TRACK_TO_DATE}" onclick="this.showPicker && this.showPicker()" oninput="updateTrackDateFilter('to', this.value)" onchange="updateTrackDateFilter('to', this.value)" />
           </div>
           <div class="flex items-end">
-            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; TRACK_STATUS_FILTER='ALL'; loadTrack('track', true)">Reset Filter</button>
+            <button class="track-page-btn w-full" onclick="TRACK_FROM_DATE=''; TRACK_TO_DATE=''; TRACK_STATUS_FILTER='ALL'; clearRequestViewCache(); CURRENT_PAGE=1; loadTrack('track', true)">Reset Filter</button>
           </div>
         </div>
       </div>
@@ -3986,21 +4380,8 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
 
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 <td class="px-4 py-3 text-center">
-  <span class="px-2 py-1 rounded-full text-xs font-semibold"
-    style="
-      background:${
-        o.OrderType === 'VOR' ? '#fef3c7' :
-        o.OrderType === 'SOP' ? '#dbeafe' :
-        o.OrderType === 'ZMAC' ? '#e0e7ff' :
-        '#ede9fe'
-      };
-      color:${
-        o.OrderType === 'VOR' ? '#92400e' :
-        o.OrderType === 'SOP' ? '#1e3a8a' :
-        o.OrderType === 'ZMAC' ? '#3730a3' :
-        '#5b21b6'
-      };
-    ">
+  <span class="px-2 py-1 rounded-full text-xs"
+    style="${getOrderTypeChipStyle(o.OrderType)}">
     ${o.OrderType || "-"}
   </span>
 </td>
@@ -4246,21 +4627,8 @@ style="${getOrderTypeRowStyle(o.OrderType)}">
 <td class="px-4 py-3 text-center">${formatDateTime(o.created_at)}</td>
 
 <td class="px-4 py-3 text-center">
-  <span class="px-2 py-1 rounded-full text-xs font-semibold"
-    style="
-      background:${
-        o.OrderType === 'VOR' ? '#fef3c7' :
-        o.OrderType === 'SOP' ? '#dbeafe' :
-        o.OrderType === 'ZMAC' ? '#e0e7ff' :
-        '#ede9fe'
-      };
-      color:${
-        o.OrderType === 'VOR' ? '#92400e' :
-        o.OrderType === 'SOP' ? '#1e3a8a' :
-        o.OrderType === 'ZMAC' ? '#3730a3' :
-        '#5b21b6'
-      };
-    ">
+  <span class="px-2 py-1 rounded-full text-xs"
+    style="${getOrderTypeChipStyle(o.OrderType)}">
     ${o.OrderType || "-"}
   </span>
 </td>
@@ -4731,19 +5099,31 @@ function getOrderStatusLabel(order){
 function getStatusChipStyle(status){
   const s = normalizeRowStatus(status);
   const palette = {
-    "PENDING APPROVAL": { bg:"rgba(59,130,246,0.2)", text:"#dbeafe", border:"rgba(96,165,250,0.45)" },
-    "APPROVED": { bg:"rgba(16,185,129,0.16)", text:"#d1fae5", border:"rgba(16,185,129,0.42)" },
-    "PROCESSED": { bg:"rgba(245,158,11,0.18)", text:"#fef3c7", border:"rgba(245,158,11,0.46)" },
-    "DISPATCHED": { bg:"rgba(59,130,246,0.22)", text:"#dbeafe", border:"rgba(96,165,250,0.5)" },
-    "PARTIALLY DISPATCHED": { bg:"rgba(217,119,6,0.22)", text:"#ffedd5", border:"rgba(251,191,36,0.45)" },
-    "PARTIALLY RECEIVED": { bg:"rgba(8,145,178,0.26)", text:"#cffafe", border:"rgba(6,182,212,0.46)" },
-    "RECEIVED": { bg:"rgba(22,163,74,0.30)", text:"#ecfdf5", border:"rgba(74,222,128,0.56)" },
-    "ISSUED": { bg:"rgba(37,99,235,0.24)", text:"#dbeafe", border:"rgba(96,165,250,0.56)" },
-    "NOT DESPATCHED": { bg:"rgba(71,85,105,0.35)", text:"#e2e8f0", border:"rgba(148,163,184,0.45)" },
-    "REJECTED": { bg:"rgba(239,68,68,0.18)", text:"#fecaca", border:"rgba(239,68,68,0.4)" }
+    "PENDING APPROVAL": { bg:"#dbeafe", text:"#1e3a8a", border:"#60a5fa" },
+    "APPROVED": { bg:"#dcfce7", text:"#14532d", border:"#22c55e" },
+    "PROCESSED": { bg:"#fef3c7", text:"#78350f", border:"#f59e0b" },
+    "DISPATCHED": { bg:"#dbeafe", text:"#1d4ed8", border:"#93c5fd" },
+    "PARTIALLY DISPATCHED": { bg:"#ffedd5", text:"#9a3412", border:"#fb923c" },
+    "PARTIALLY RECEIVED": { bg:"#cffafe", text:"#155e75", border:"#22d3ee" },
+    "RECEIVED": { bg:"#dcfce7", text:"#166534", border:"#4ade80" },
+    "ISSUED": { bg:"#dbeafe", text:"#1e40af", border:"#60a5fa" },
+    "NOT DESPATCHED": { bg:"#e2e8f0", text:"#334155", border:"#94a3b8" },
+    "REJECTED": { bg:"#fee2e2", text:"#991b1b", border:"#f87171" }
   };
-  const p = palette[s] || { bg:"rgba(148,163,184,0.2)", text:"#e2e8f0", border:"rgba(148,163,184,0.4)" };
-  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border}; white-space:nowrap; display:inline-flex; align-items:center; line-height:1.05;`;
+  const p = palette[s] || { bg:"#f1f5f9", text:"#334155", border:"#cbd5e1" };
+  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border}; white-space:nowrap; display:inline-flex; align-items:center; line-height:1.05; font-weight:800;`;
+}
+
+function getOrderTypeChipStyle(orderType){
+  const type = (orderType || "").toString().trim().toUpperCase();
+  const palette = {
+    VOR: { bg: "#ffedd5", text: "#9a3412", border: "#fb923c" },
+    SOP: { bg: "#dbeafe", text: "#1e40af", border: "#60a5fa" },
+    ZMAC: { bg: "#ede9fe", text: "#5b21b6", border: "#a78bfa" },
+    ZSPL: { bg: "#dcfce7", text: "#166534", border: "#4ade80" }
+  };
+  const p = palette[type] || { bg: "#f1f5f9", text: "#334155", border: "#cbd5e1" };
+  return `background:${p.bg}; color:${p.text}; border:1px solid ${p.border}; font-weight:900;`;
 }
 
 function getOrderTypeRowStyle(orderType){
@@ -5406,7 +5786,7 @@ ${actionButtons}
       <span class="text-xs font-semibold tracking-wider" style="color: var(--pc-secondary);">COMMENTS (${userCommentsCount})</span>
       <button id="toggleLogsBtn" onclick="toggleActionLogs()"
         class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
-        style="background:rgba(250,204,21,0.2);color:#fef3c7;border:1px solid rgba(250,204,21,0.4);">
+        style="background:#fffbeb;color:#78350f;border:1px solid #f59e0b;box-shadow:0 6px 12px rgba(146,64,14,0.12);">
         SHOW LOGS
       </button>
     </div>
@@ -5447,9 +5827,10 @@ ${actionButtons}
         <button onclick="acceptEditedQty('${orderNo}')"
           class="px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider"
           style="
-            background:${window.superAcceptedEdits?.[orderNo] ? 'rgba(22,163,74,0.24)' : 'rgba(250,204,21,0.2)'};
-            color:${window.superAcceptedEdits?.[orderNo] ? '#d1fae5' : '#fef3c7'};
-            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? 'rgba(34,197,94,0.45)' : 'rgba(250,204,21,0.4)'};
+            background:${window.superAcceptedEdits?.[orderNo] ? '#dcfce7' : '#fffbeb'};
+            color:${window.superAcceptedEdits?.[orderNo] ? '#166534' : '#78350f'};
+            border:1px solid ${window.superAcceptedEdits?.[orderNo] ? '#22c55e' : '#f59e0b'};
+            box-shadow:0 8px 16px rgba(120,53,15,0.16);
           ">
           ${window.superAcceptedEdits?.[orderNo] ? "EDITED QTY ACCEPTED" : "ACCEPT EDITED QTY"}
         </button>
@@ -5505,9 +5886,9 @@ ${actionButtons}
       ${isSuper ? `` : ""}
 
       <div class="text-right mt-4 font-bold"
-           style="color: #fef3c7;">
+           style="color: #78350f;">
         <span class="inline-block px-4 py-2 rounded-lg"
-          style="background:linear-gradient(135deg, rgba(250,204,21,0.18), rgba(217,119,6,0.16)); border:1px solid rgba(250,204,21,0.3); box-shadow:0 6px 16px rgba(15,23,42,0.25);">
+          style="background:#fffbeb; border:1px solid #f59e0b; box-shadow:0 8px 18px rgba(146,64,14,0.14); color:#78350f;">
           Total Value: ₹ ${Math.round(Number(total || 0)).toLocaleString("en-IN")}
         </span>
       </div>
@@ -6753,21 +7134,8 @@ function renderSearchResults(data){
 
       <td>${formatDateTime(o.created_at)}</td>
       <td>
-  <span class="px-2 py-1 rounded-full text-xs font-semibold"
-    style="
-      background:${
-        o.OrderType === 'VOR' ? '#fef3c7' :
-        o.OrderType === 'SOP' ? '#dbeafe' :
-        o.OrderType === 'ZMAC' ? '#e0e7ff' :
-        '#ede9fe'
-      };
-      color:${
-        o.OrderType === 'VOR' ? '#92400e' :
-        o.OrderType === 'SOP' ? '#1e3a8a' :
-        o.OrderType === 'ZMAC' ? '#3730a3' :
-        '#5b21b6'
-      };
-    ">
+  <span class="px-2 py-1 rounded-full text-xs"
+    style="${getOrderTypeChipStyle(o.OrderType)}">
     ${o.OrderType || "-"}
   </span>
 	</td>
@@ -7023,11 +7391,7 @@ function renderManagerDashboard(orders){
       </button>`;
   };
   const getManagerTypeChipStyle = (orderType) => {
-    const type = (orderType || "").toUpperCase();
-    if (type === "VOR") return "background:rgba(245,158,11,0.22); color:#fde68a; border:1px solid rgba(255,255,255,0.15);";
-    if (type === "ZMAC") return "background:rgba(99,102,241,0.24); color:#e0e7ff; border:1px solid rgba(255,255,255,0.15);";
-    if (type === "LUBES") return "background:rgba(20,184,166,0.22); color:#ccfbf1; border:1px solid rgba(255,255,255,0.15);";
-    return "background:rgba(148,163,184,0.2); color:#e2e8f0; border:1px solid rgba(255,255,255,0.15);";
+    return getOrderTypeChipStyle(orderType);
   };
 
   if(window.managerInventoryTabOpen){
@@ -7981,21 +8345,8 @@ const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
             style="${getOrderTypeRowStyle(o.OrderType)}">
       <td>${formatDateTime(o.created_at)}</td>
       <td>
-        <span class="px-2 py-1 rounded-full text-xs font-semibold"
-          style="
-            background:${
-              o.OrderType === 'VOR' ? '#fef3c7' :
-              o.OrderType === 'SOP' ? '#dbeafe' :
-              o.OrderType === 'ZMAC' ? '#e0e7ff' :
-              '#ede9fe'
-            };
-            color:${
-              o.OrderType === 'VOR' ? '#92400e' :
-              o.OrderType === 'SOP' ? '#1e3a8a' :
-              o.OrderType === 'ZMAC' ? '#3730a3' :
-              '#5b21b6'
-            };
-          ">
+        <span class="px-2 py-1 rounded-full text-xs"
+          style="${getOrderTypeChipStyle(o.OrderType)}">
           ${o.OrderType || "-"}
         </span>
       </td>
@@ -9067,3 +9418,4 @@ document.addEventListener("click", function(evt){
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </body>
 </html>
+
