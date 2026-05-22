@@ -792,31 +792,73 @@ tr[style*="f59e0b"]:hover {
 }
 .mgr-kpi-grid{
   display:grid;
-  grid-template-columns: repeat(6, minmax(0,1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
 }
 .mgr-kpi-grid-single-row{
-  display:flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  overflow-x: visible;
+  padding-bottom: 0;
 }
 .mgr-kpi-grid-single-row .mgr-kpi-card{
-  min-width: 150px;
-  flex: 0 0 auto;
+  min-width: 0;
 }
 .mgr-kpi-card{
   border-radius: 12px;
-  padding: 8px;
+  padding: 8px 9px;
   border: 1px solid rgba(255,255,255,0.12);
-  min-height: 76px;
-  transition: transform .22s ease, box-shadow .22s ease;
+  min-height: 68px;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease, background-color .22s ease;
 }
 .mgr-kpi-card:hover{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(2,6,23,0.24); }
 .mgr-kpi-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
-.mgr-kpi-count{ font-size: 1.35rem; font-weight: 900; line-height: 1; color:#f8fafc; }
-.mgr-kpi-value{ font-size: 0.86rem; font-weight: 800; color:#fde68a; margin-top: 16px; }
+.mgr-kpi-count{ font-size: 1.12rem; font-weight: 900; line-height: 1; color:#f8fafc; }
+.mgr-kpi-value{ font-size: 0.78rem; font-weight: 800; color:#fde68a; margin-top: 10px; }
+.mgr-kpi-card-active{
+  border-color: #0f766e !important;
+  background: linear-gradient(160deg, rgba(15,118,110,0.24), rgba(15,23,42,0.92)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 0 0 2px rgba(15,118,110,0.18), 0 14px 28px rgba(15,118,110,0.20) !important;
+}
+.mgr-important-strip{
+  display:flex;
+  gap: 0;
+  min-width: 310px;
+  border: 1px solid rgba(15,118,110,0.24);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(36,52,41,0.08);
+}
+.mgr-important-card{
+  min-height: 42px;
+  flex: 1 1 0;
+  padding: 6px 10px;
+  border-radius: 0;
+  border: 0;
+  background: #e7f4ef;
+  box-shadow: none;
+}
+.mgr-important-card + .mgr-important-card{
+  border-left: 1px solid rgba(15,118,110,0.18);
+}
+.mgr-important-card:nth-child(2){
+  background: #ffe4e6;
+}
+.mgr-important-card .mgr-kpi-count,
+.mgr-important-card .mgr-kpi-value,
+.mgr-important-card .mgr-important-label{
+  color: #10251d !important;
+}
+.mgr-important-card .mgr-important-label{
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mgr-important-card .mgr-kpi-count{ font-size: 1rem; }
+.mgr-important-card .mgr-kpi-value{ margin-top: 2px; color:#075e55 !important; font-size: 0.72rem; }
 .mgr-filter-bar{
   display:flex;
   gap: 10px;
@@ -827,9 +869,27 @@ tr[style*="f59e0b"]:hover {
 .mgr-header-bar{
   display:flex;
   justify-content:space-between;
-  gap: 10px;
-  align-items:flex-start;
+  gap: 12px;
+  align-items:center;
   margin-bottom: 10px;
+  flex-wrap: nowrap;
+}
+.mgr-priority-row{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.mgr-filter-bar{
+  flex-wrap: nowrap !important;
+  align-items:center !important;
+}
+.mgr-filter-control{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  min-width: 0;
 }
 .mgr-filter-label{
   font-size: 11px;
@@ -920,12 +980,16 @@ input[type="date"]::-webkit-calendar-picker-indicator{
 }
 
 @media (max-width: 1200px){
-  .mgr-kpi-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .mgr-kpi-grid{ grid-template-columns: repeat(auto-fit, minmax(112px,1fr)); }
 }
 @media (max-width: 768px){
-  .mgr-kpi-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mgr-kpi-grid,
+  .mgr-kpi-grid-single-row{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mgr-important-strip{ min-width: 0; width: 100%; }
+  .mgr-priority-row{ width:100%; flex-wrap: wrap; }
+  .mgr-filter-bar{ flex-wrap: wrap !important; }
   .mgr-filter-bar{ justify-content:flex-start; }
-  .mgr-header-bar{ flex-direction: column; }
+  .mgr-header-bar{ flex-direction: column; align-items:stretch; }
   .inv-tab-layout{ grid-template-columns: 1fr; }
 }
 
@@ -1884,6 +1948,64 @@ textarea{
   color: inherit !important;
 }
 
+.mgr-shell .mgr-kpi-card{
+  background: linear-gradient(180deg, #ffffff, #f6faf7) !important;
+  color: #10251d !important;
+  border-color: rgba(15,118,110,0.18) !important;
+  box-shadow: 0 8px 18px rgba(36,52,41,0.08) !important;
+}
+
+.mgr-shell .mgr-kpi-card:hover{
+  border-color: rgba(15,118,110,0.42) !important;
+  box-shadow: 0 12px 24px rgba(36,52,41,0.13) !important;
+}
+
+.mgr-shell .mgr-kpi-card .mgr-kpi-count,
+.mgr-shell .mgr-kpi-card .mgr-kpi-value{
+  color: #10251d !important;
+}
+
+.mgr-shell .mgr-kpi-card .mgr-kpi-value{
+  color: #075e55 !important;
+}
+
+.mgr-shell .mgr-kpi-card-active{
+  background: linear-gradient(180deg, #0f766e, #0b5f59) !important;
+  color: #ffffff !important;
+  border-color: #0f766e !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 0 0 2px rgba(15,118,110,0.18), 0 14px 28px rgba(15,118,110,0.22) !important;
+}
+
+.mgr-shell .mgr-kpi-card.mgr-kpi-card-active *,
+.mgr-shell .mgr-kpi-card.mgr-kpi-card-active .mgr-kpi-count,
+.mgr-shell .mgr-kpi-card.mgr-kpi-card-active .mgr-kpi-value,
+.mgr-shell .mgr-kpi-card.mgr-kpi-card-active .mgr-important-label,
+.mgr-shell .mgr-important-card.mgr-kpi-card-active *,
+.mgr-shell .mgr-important-card.mgr-kpi-card-active .mgr-kpi-count,
+.mgr-shell .mgr-important-card.mgr-kpi-card-active .mgr-kpi-value,
+.mgr-shell .mgr-important-card.mgr-kpi-card-active .mgr-important-label{
+  color: #ffffff !important;
+}
+
+.mgr-shell .mgr-important-card{
+  border-color: rgba(15,118,110,0.28) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75) !important;
+}
+
+.mgr-shell .mgr-important-card:first-child{
+  background: #e7f4ef !important;
+}
+
+.mgr-shell .mgr-important-card:nth-child(2){
+  background: #ffe4e6 !important;
+}
+
+.mgr-shell .mgr-important-card.mgr-kpi-card-active{
+  background: linear-gradient(180deg, #0f766e, #0b5f59) !important;
+  border-color: #0f766e !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 0 0 2px rgba(15,118,110,0.18), 0 10px 22px rgba(15,118,110,0.20) !important;
+}
+
 thead th{
   background: #e7f0ea !important;
   color: #26362d !important;
@@ -2328,7 +2450,7 @@ header .tracking-widest.uppercase{
 
 /* Mobile-first docket scanner */
 .docket-shell{
-  width: min(100%, 560px);
+  width: min(100%, 900px);
   margin: 0 auto;
   display: grid;
   gap: 14px;
@@ -2483,6 +2605,209 @@ header .tracking-widest.uppercase{
   box-shadow: 0 10px 22px rgba(36,52,41,0.08) !important;
 }
 
+.docket-result-card{
+  border-radius: 14px !important;
+  padding: 14px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%) !important;
+  border: 1px solid rgba(15,118,110,0.18) !important;
+  box-shadow: 0 10px 24px rgba(36,52,41,0.08) !important;
+}
+
+.docket-result-title{
+  color: #10251d !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+}
+
+.docket-header-stack{
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.docket-type-badge{
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  min-height: 30px !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #fff7d6 0%, #ffe8a3 100%) !important;
+  color: #7c2d12 !important;
+  border: 1px solid rgba(183,121,31,0.32) !important;
+  box-shadow: 0 8px 18px rgba(183,121,31,0.14) !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.docket-part-line{
+  color: #075e55 !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+}
+
+.docket-part-line span{
+  color: #10251d !important;
+  font-weight: 900 !important;
+}
+
+.docket-meta-grid{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 9px 16px !important;
+}
+
+.docket-meta-label{
+  color: #506258 !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+}
+
+.docket-meta-value{
+  color: #10251d !important;
+  font-weight: 700 !important;
+}
+
+.docket-actions{
+  display: grid !important;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(180px, 1.2fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.docket-fields{
+  border: 1px solid rgba(15,118,110,0.24) !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.docket-fields summary{
+  list-style: none !important;
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  cursor: pointer !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8f5 100%) !important;
+  color: #075e55 !important;
+  border-radius: 12px !important;
+  font-size: 0 !important;
+}
+
+.docket-fields summary::-webkit-details-marker{
+  display: none !important;
+}
+
+.docket-fields summary::after{
+  content: "Fields" !important;
+  color: #075e55 !important;
+  font-size: 0.92rem !important;
+  font-weight: 900 !important;
+}
+
+.docket-fields[open] summary{
+  border-bottom: 1px solid rgba(15,118,110,0.16) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.docket-field-grid{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  padding: 12px !important;
+  background: #f8fbf9 !important;
+}
+
+.docket-field-card{
+  min-width: 0 !important;
+  border-radius: 10px !important;
+  padding: 10px 11px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15,118,110,0.14) !important;
+}
+
+.docket-field-label{
+  color: #075e55 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+}
+
+.docket-field-value{
+  margin-top: 3px !important;
+  color: #10251d !important;
+  word-break: break-word !important;
+  font-size: 0.92rem !important;
+  font-weight: 650 !important;
+}
+
+.docket-receive-btn{
+  min-height: 48px !important;
+  border-radius: 12px !important;
+  font-size: 0.95rem !important;
+  font-weight: 900 !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
+}
+
+.docket-receive-btn:not(:disabled){
+  background: linear-gradient(180deg, #12877d 0%, #0f766e 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #0f766e !important;
+  box-shadow: 0 3px 0 #084f49, 0 12px 24px rgba(15,118,110,0.24) !important;
+}
+
+.docket-receive-btn:not(:disabled):hover{
+  transform: translateY(-1px) !important;
+  background: linear-gradient(180deg, #0f766e 0%, #0b5f59 100%) !important;
+}
+
+.docket-receive-btn:disabled{
+  background: #e7f4ef !important;
+  color: #0f766e !important;
+  border: 1px solid rgba(15,118,110,0.22) !important;
+  box-shadow: none !important;
+}
+
+.docket-bulk-bar{
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(120deg, #f7fbf8 0%, #eef7f3 100%) !important;
+  border: 1px solid rgba(15,118,110,0.18) !important;
+  box-shadow: 0 10px 24px rgba(36,52,41,0.08) !important;
+}
+
+.docket-bulk-title{
+  color: #10251d !important;
+  font-weight: 900 !important;
+}
+
+.docket-bulk-meta{
+  color: #506258 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+.docket-bulk-btn{
+  min-height: 42px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, #12877d 0%, #0f766e 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #0f766e !important;
+  box-shadow: 0 3px 0 #084f49, 0 12px 22px rgba(15,118,110,0.22) !important;
+  font-weight: 900 !important;
+}
+
 .docket-empty{
   padding: 14px;
   border-radius: 12px;
@@ -2493,28 +2818,26 @@ header .tracking-widest.uppercase{
   font-weight: 700;
 }
 
-#docketScanResults details{
-  background: #f8fafc !important;
-  border: 1px solid #dbe4df !important;
-}
-
-#docketScanResults details summary{
-  color: #0f766e !important;
-}
-
-#docketScanResults details summary{
-  font-size: 0 !important;
-}
-
-#docketScanResults details summary::after{
-  content: "Fields";
-  font-size: 13px;
-  font-weight: 900;
-}
-
 @media (min-width: 768px){
   .docket-shell{
-    width: min(100%, 720px);
+    width: min(100%, 900px);
+  }
+}
+
+@media (max-width: 640px){
+  .docket-meta-grid,
+  .docket-actions,
+  .docket-field-grid{
+    grid-template-columns: 1fr !important;
+  }
+
+  .docket-bulk-bar{
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .docket-bulk-btn{
+    width: 100% !important;
   }
 }
 
@@ -2532,8 +2855,9 @@ let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
 const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
-const REQUEST_VIEW_LIMIT = 600;
-const DATE_FILTER_VIEW_LIMIT = 5000;
+const REQUEST_FETCH_PAGE_SIZE = 1000;
+const REQUEST_VIEW_LIMIT = 50000;
+const DATE_FILTER_VIEW_LIMIT = 50000;
 const REQUEST_CACHE_TTL_MS = 45 * 1000;
 const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
@@ -2814,17 +3138,12 @@ async function fetchRequestRowsForView(scope, buildQuery, filters = {}, ttl = RE
     return cached.rows;
   }
 
-  const { data, error } = await buildQuery()
-    .order("created_at", { ascending: false })
-    .range(0, REQUEST_VIEW_LIMIT - 1);
-
-  if(error) throw error;
-  const rows = data || [];
+  const rows = await fetchRequestRowsPaged(buildQuery, REQUEST_VIEW_LIMIT, REQUEST_FETCH_PAGE_SIZE);
   requestViewCache.set(key, { at: Date.now(), rows });
   return rows;
 }
 
-async function fetchRequestRowsPaged(buildQuery, maxRows = DATE_FILTER_VIEW_LIMIT, pageSize = 1000){
+async function fetchRequestRowsPaged(buildQuery, maxRows = REQUEST_VIEW_LIMIT, pageSize = REQUEST_FETCH_PAGE_SIZE){
   const rows = [];
   for(let offset = 0; offset < maxRows; offset += pageSize){
     const end = Math.min(offset + pageSize - 1, maxRows - 1);
@@ -2835,6 +3154,9 @@ async function fetchRequestRowsPaged(buildQuery, maxRows = DATE_FILTER_VIEW_LIMI
     if(!data || data.length === 0) break;
     rows.push(...data);
     if(data.length < (end - offset + 1)) break;
+  }
+  if(rows.length >= maxRows){
+    console.warn(`Request fetch reached ${maxRows} rows. Increase REQUEST_VIEW_LIMIT if older rows are still missing.`);
   }
   return rows;
 }
@@ -3235,7 +3557,7 @@ if(isDeveloper){
 }else if(isAdmin){
   window.activeTab = "Approved";
 }else if(isSuper){
-  window.activeTab = isManager ? "Dashboard" : "PendingApproval";
+  window.activeTab = isManager ? "Dashboard" : (["PendingApproval", "All"].includes(window.activeTab) ? window.activeTab : "PendingApproval");
 }else if(isViewer){
   window.activeTab = "track";
 }else{
@@ -3357,19 +3679,7 @@ ${isDeveloper ? `
     <button onclick="loadSuper('PendingApproval')" 
     class="top-btn ${window.activeTab==='PendingApproval' ? 'active-top-btn' : ''}"
     data-tab="PendingApproval">
-      Pending Approvals
-    </button>
-
-    <button onclick="loadSuper('Approved')" 
-    class="top-btn ${window.activeTab==='Approved' ? 'active-top-btn' : ''}"
-    data-tab="Approved">
-      Approved
-    </button>
-
-    <button onclick="loadSuper('Rejected')" 
-    class="top-btn ${window.activeTab==='Rejected' ? 'active-top-btn' : ''}"
-    data-tab="Rejected">
-      Rejected
+      Pending
     </button>
 
     <button onclick="loadSuper('All')" 
@@ -3409,7 +3719,7 @@ ${isDeveloper ? `
   `}
 
 
-    ${canAccessDocketScanner(user) ? `
+    ${canAccessDocketScanner(user) && !(!isAdmin && isSuper && !isManager && !isDeveloper) ? `
       <button onclick="loadDocketScanner()"
       class="top-btn ${window.activeTab==='scanner' ? 'active-top-btn' : ''}"
       data-tab="scanner">
@@ -3417,6 +3727,14 @@ ${isDeveloper ? `
         <i data-lucide="scan-line" class="w-4 h-4"></i>
         Docket Scan
       </span>
+      </button>
+    ` : ``}
+
+    ${isManager ? `
+      <button onclick="openManagerInventoryLookupTab()"
+      class="top-btn ${window.managerInventoryTabOpen ? 'active-top-btn' : ''}"
+      data-tab="ManagerInventory">
+        Inventory Lookup
       </button>
     ` : ``}
 
@@ -3645,62 +3963,90 @@ function renderDocketMatches(){
     return;
   }
 
-  const preferredOrder = [
-    "OrderNo","Status","CustomerName","Branch","OrderType","OrderFor","PartNo","PartName","Qty","Docket","BillNo",
-    "MachineNo","MachineType","CallId","EmployeeName","ApprovedBy","Transporter","VehicleNo","Remarks","created_at"
+  const readDocketField = (row, keys) => {
+    for(const key of keys){
+      if(row?.[key] !== null && row?.[key] !== undefined && row?.[key] !== ""){
+        return row[key];
+      }
+    }
+    return "-";
+  };
+
+  const docketFieldDefs = [
+    ["Created At", ["created_at"]],
+    ["Part No", ["PartNo", "Part No", "part_no"]],
+    ["Description", ["PartName", "Description", "PartDescription", "Part Description"]],
+    ["DNP", ["DNP", "Dnp", "dnp"]],
+    ["Order Qty", ["Qty", "OrderQty", "Order Qty"]],
+    ["Billed Qty", ["BilledQty", "Billed Qty", "BilledQtyTotal"]],
+    ["Bill No", ["BillNo", "Bill No", "bill_no"]],
+    ["Packing Detail", ["PackingDetail", "Packing Detail", "packing_detail"]],
+    ["Transport Name", ["TransportName", "Transporter", "Transport Name", "transport_name"]]
   ];
 
-  wrap.innerHTML = rows.map(r=>`
-    <div class="rounded-xl p-3 space-y-2" style="border:1px solid var(--pc-border); background:rgba(15,23,42,0.58);">
+  const pendingRows = rows.filter(r => getResolvedRowStatus(r) !== "RECEIVED");
+  const bulkActionHtml = rows.length > 1 && pendingRows.length
+    ? `<div class="docket-bulk-bar">
+        <div>
+          <div class="docket-bulk-title">Multiple parts found</div>
+          <div class="docket-bulk-meta">${pendingRows.length} of ${rows.length} pending receipt</div>
+        </div>
+        <button class="docket-bulk-btn" onclick="markAllDocketRowsReceived()">Mark All Received</button>
+      </div>`
+    : "";
+
+  wrap.innerHTML = `${bulkActionHtml}${rows.map(r=>`
+    <div class="docket-result-card space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-base font-semibold" style="color:#e2e8f0;">Order: ${r.OrderNo || "-"}</div>
+        <div class="docket-header-stack">
+          <div class="docket-result-title">Order: ${escapeHtml(r.OrderNo || "-")}</div>
+          <div class="docket-type-badge">${escapeHtml(r.OrderType || "-")}</div>
+          <div class="docket-part-line">Part No: <span>${escapeHtml(readDocketField(r, ["PartNo", "Part No", "part_no"]))}</span></div>
+        </div>
         <div class="flex items-center gap-2 flex-wrap justify-end">
           ${getResolvedRowStatus(r) === "RECEIVED" ? `<span class="px-2 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide" style="background:#16a34a;color:#ecfdf5;border:1px solid #86efac;">Already Received</span>` : ""}
           <span class="px-3 py-1 rounded text-sm font-bold" style="${getStatusChipStyle(getResolvedRowStatus(r))}">${getPrintableStatusLabel(r)}</span>
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-        <div><span style="color:var(--pc-text-muted);">Customer:</span> <span style="color:#e2e8f0;">${escapeHtml(r.CustomerName || "-")}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Branch:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Branch || "-")}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Docket:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Docket || "-")}</span></div>
-        <div><span style="color:var(--pc-text-muted);">Qty:</span> <span style="color:#e2e8f0;">${escapeHtml(r.Qty ?? "-")}</span></div>
-      </div>
-      <details class="rounded-lg p-2" style="border:1px dashed rgba(148,163,184,.35); background:rgba(2,6,23,.35);">
-        <summary class="cursor-pointer text-sm font-semibold" style="color:#bfdbfe;">Fields</summary>
-        <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          ${
-            Object.entries(r)
-              .sort(([a],[b])=>{
-                const ai = preferredOrder.indexOf(a);
-                const bi = preferredOrder.indexOf(b);
-                if(ai === -1 && bi === -1) return a.localeCompare(b);
-                if(ai === -1) return 1;
-                if(bi === -1) return -1;
-                return ai - bi;
-              })
-              .map(([key,val])=>{
-                const label = key.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2");
-                const printable = val === null || val === undefined || val === "" ? "-" : String(val);
-                return `<div class="rounded-lg px-2 py-1" style="background:rgba(15,23,42,.75); border:1px solid rgba(71,85,105,.45);">
-                  <div style="color:var(--pc-text-muted); text-transform:uppercase; letter-spacing:.04em; font-size:12px; font-weight:700;">${escapeHtml(label)}</div>
-                  <div style="color:#e2e8f0; word-break:break-word; font-size:14px;">${escapeHtml(printable)}</div>
-                </div>`;
-              })
-              .join("")
-          }
+      <div class="docket-meta-grid text-sm">
+        <div>
+          <div class="docket-meta-label">Customer</div>
+          <div class="docket-meta-value">${escapeHtml(r.CustomerName || "-")}</div>
         </div>
-      </details>
-      <button
-        class="w-full rounded-lg py-2.5 text-sm font-bold transition-all ${getResolvedRowStatus(r) === "RECEIVED" ? "opacity-80 cursor-not-allowed" : "hover:-translate-y-[1px]"}"
-        style="${getResolvedRowStatus(r) === "RECEIVED"
-          ? "background:rgba(22,163,74,0.24); color:#dcfce7; border:1px solid rgba(74,222,128,0.6);"
-          : "background:linear-gradient(180deg, #2563eb, #1d4ed8); color:#eff6ff; border:1px solid #93c5fd; box-shadow:0 8px 16px rgba(30,64,175,0.35);"}"
-        ${getResolvedRowStatus(r) === "RECEIVED" ? "disabled" : ""}
-        onclick="markDocketRowReceived('${r.id}')">
-        ${getResolvedRowStatus(r) === "RECEIVED" ? "Already Received" : "Mark Received"}
-      </button>
+        <div>
+          <div class="docket-meta-label">Branch</div>
+          <div class="docket-meta-value">${escapeHtml(r.Branch || "-")}</div>
+        </div>
+        <div>
+          <div class="docket-meta-label">Docket</div>
+          <div class="docket-meta-value">${escapeHtml(r.Docket || "-")}</div>
+        </div>
+        <div>
+          <div class="docket-meta-label">Qty</div>
+          <div class="docket-meta-value">${escapeHtml(r.Qty ?? "-")}</div>
+        </div>
+      </div>
+      <div class="docket-actions">
+        <details class="docket-fields">
+          <summary>Fields</summary>
+          <div class="docket-field-grid text-sm">
+            ${docketFieldDefs.map(([label, keys]) => `
+              <div class="docket-field-card">
+                <div class="docket-field-label">${escapeHtml(label)}</div>
+                <div class="docket-field-value">${escapeHtml(readDocketField(r, keys))}</div>
+              </div>
+            `).join("")}
+          </div>
+        </details>
+        <button
+          class="docket-receive-btn"
+          ${getResolvedRowStatus(r) === "RECEIVED" ? "disabled" : ""}
+          onclick="markDocketRowReceived('${r.id}')">
+          ${getResolvedRowStatus(r) === "RECEIVED" ? "Already Received" : "Mark Received"}
+        </button>
+      </div>
     </div>
-  `).join("");
+  `).join("")}`;
 }
 
 async function markDocketRowReceived(rowId){
@@ -3733,6 +4079,48 @@ async function markDocketRowReceived(rowId){
   );
   renderDocketMatches();
   showPopup("Marked as received ✅");
+}
+
+async function markAllDocketRowsReceived(){
+  const rows = (window.docketScanMatches || []).filter(x => getResolvedRowStatus(x) !== "RECEIVED");
+  if(!rows.length) return;
+
+  const ids = rows.map(x => x.id).filter(x => x !== null && x !== undefined);
+  if(!ids.length) return;
+
+  showLoader();
+  const receivedAt = new Date().toISOString();
+  const { error } = await db
+    .from("requests")
+    .update({
+      Status: "RECEIVED",
+      receivedDate: receivedAt
+    })
+    .in("id", ids);
+  hideLoader();
+
+  if(error){
+    console.error(error);
+    showPopup("Failed to mark all as received.");
+    return;
+  }
+
+  const docket = rows[0]?.Docket || null;
+  const orderNos = [...new Set(rows.map(r => r.OrderNo).filter(Boolean))];
+  for(const orderNo of orderNos){
+    await appendOrderActionLog(
+      orderNo,
+      "STATUS_UPDATED",
+      `${rows.length} row(s) marked as RECEIVED via docket scanner by ${getUser()?.Name || "Unknown User"}.`,
+      { status: "RECEIVED", docket, rowCount: rows.length }
+    );
+  }
+
+  window.docketScanMatches = (window.docketScanMatches || []).map(x =>
+    ids.some(id => String(id) === String(x.id)) ? { ...x, Status: "RECEIVED", receivedDate: receivedAt } : x
+  );
+  renderDocketMatches();
+  showPopup("All matching parts marked as received.");
 }
 
 async function startDocketCameraScanner(){
@@ -7636,8 +8024,9 @@ function renderManagerDashboard(orders){
   const today = new Date().toISOString().slice(0, 10);
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   window.managerDashDateRange = window.managerDashDateRange || { from: firstDayOfMonth, to: today };
-  window.managerDashFilter = window.managerDashFilter || { type: "status", key: "ALL", label: "All Orders" };
+  window.managerDashFilter = window.managerDashFilter || { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
   window.managerDashBranchFilter = (window.managerDashBranchFilter || "ALL").toString();
+  window.managerDashOrderTypeFilter = (window.managerDashOrderTypeFilter || "ALL").toString();
   window.managerDashTableVisible = window.managerDashTableVisible !== false;
   window.managerInventoryTabOpen = window.managerInventoryTabOpen === true;
   window.managerInvLookupQuery = (window.managerInvLookupQuery || "").toString();
@@ -7654,7 +8043,7 @@ function renderManagerDashboard(orders){
     .replace(/>{7}.*$/gm, "")
     .trim();
   if(/[<>]{3,}|={3,}/.test(window.managerDashFilter?.label || "")){
-    window.managerDashFilter = { type: "status", key: "ALL", label: "All Orders" };
+    window.managerDashFilter = { type: "status", key: "PENDING APPROVAL", label: "Pending Approval" };
   }
 
   const fromDate = window.managerDashDateRange.from ? new Date(window.managerDashDateRange.from + "T00:00:00") : null;
@@ -7707,10 +8096,12 @@ function renderManagerDashboard(orders){
     .filter(Boolean)
     .filter(k => k !== "ISSUED")
     .sort((a, b) => byStatus(b).count - byStatus(a).count);
+  const importantCards = [
+    { key:"ISSUED", label:"Issued (Customer)", ...summaryFrom(customerIssuedOrders), ...cardPalette[1], filterType: "issued_bucket" },
+    { key:"NOT_ISSUED", label:"Not Issued (Customer)", ...summaryFrom(customerNotIssuedOrders), ...cardPalette[2], filterType: "issued_bucket" }
+  ];
   const statusCards = [
     { key:"ALL", label:"Total Orders", ...summaryFrom(dashboardOrders), ...cardPalette[0] },
-    { key:"ISSUED", label:"Issued (Customer)", ...summaryFrom(customerIssuedOrders), ...cardPalette[1], filterType: "issued_bucket" },
-    { key:"NOT_ISSUED", label:"Not Issued (Customer)", ...summaryFrom(customerNotIssuedOrders), ...cardPalette[2], filterType: "issued_bucket" },
     ...statusEntries.map((k, idx) => ({
       key: k,
       label: formatCardLabel(k),
@@ -7721,15 +8112,12 @@ function renderManagerDashboard(orders){
   const typeEntries = Array.from(new Set(dashboardOrders.map(o => orderTypeKey(o) || "OTHER")))
     .filter(Boolean)
     .sort((a, b) => byType(b).count - byType(a).count);
-  const typeCards = typeEntries.map((k, idx) => ({
-    key: k,
-    label: formatCardLabel(k),
-    ...byType(k),
-    ...(cardPalette[idx % cardPalette.length])
-  }));
   const branchFilterOptions = Array.from(new Set(allOrders.map(o => (o.Branch || "-").toString())))
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b));
+  const typeFilteredOrders = window.managerDashOrderTypeFilter === "ALL"
+    ? dashboardOrders
+    : dashboardOrders.filter(o => orderTypeKey(o) === window.managerDashOrderTypeFilter);
 
   const branchMap = {};
   dashboardOrders.forEach(o => {
@@ -7752,18 +8140,16 @@ function renderManagerDashboard(orders){
   });
   const branchRows = Object.values(branchMap).sort((a,b)=> b.totalValue - a.totalValue);
 
-  let selectedOrders = dashboardOrders;
+  let selectedOrders = typeFilteredOrders;
   const activeFilter = window.managerDashFilter;
   if(activeFilter?.type === "status" && activeFilter.key !== "ALL"){
-    selectedOrders = dashboardOrders.filter(o => statusKey(o) === activeFilter.key);
+    selectedOrders = typeFilteredOrders.filter(o => statusKey(o) === activeFilter.key);
   } else if(activeFilter?.type === "issued_bucket"){
     selectedOrders = activeFilter.key === "ISSUED"
-      ? customerIssuedOrders
-      : customerNotIssuedOrders;
-  } else if(activeFilter?.type === "type"){
-    selectedOrders = dashboardOrders.filter(o => orderTypeKey(o) === activeFilter.key);
+      ? typeFilteredOrders.filter(o => (o.OrderFor || "").toUpperCase() === "CUSTOMER" && statusKey(o) === "ISSUED")
+      : typeFilteredOrders.filter(o => (o.OrderFor || "").toUpperCase() === "CUSTOMER" && statusKey(o) === "RECEIVED");
   } else if(activeFilter?.type === "branch"){
-    selectedOrders = dashboardOrders.filter(o => (o.Branch || "-") === activeFilter.key);
+    selectedOrders = typeFilteredOrders.filter(o => (o.Branch || "-") === activeFilter.key);
   }
   window.managerDashSelectedOrders = selectedOrders;
   updateManagerPendingFavicon(byStatus("PENDING APPROVAL").count);
@@ -7782,10 +8168,22 @@ function renderManagerDashboard(orders){
     const active = activeFilter && activeFilter.type === (c.filterType || "status") && activeFilter.key === c.key;
     return `
       <button onclick="setManagerDashboardCardFilter('${c.filterType || "status"}','${c.key}','${c.label}')"
-        class="mgr-kpi-card text-left"
+        class="mgr-kpi-card text-left ${active ? "mgr-kpi-card-active" : ""}"
         style="background:linear-gradient(160deg, ${c.tint}, rgba(15,23,42,0.86)); border-color:${active ? '#facc15' : c.border};">
         <div class="mgr-kpi-head">
           <div class="text-[10px] uppercase tracking-[0.08em] font-bold" style="color:#fcd34d;">${sanitizeUiText(c.label)}</div>
+          <div class="mgr-kpi-count">${c.count}</div>
+        </div>
+        <div class="mgr-kpi-value">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
+      </button>`;
+  };
+  const importantCardHtml = (c) => {
+    const active = activeFilter && activeFilter.type === (c.filterType || "status") && activeFilter.key === c.key;
+    return `
+      <button onclick="setManagerDashboardCardFilter('${c.filterType || "status"}','${c.key}','${c.label}')"
+        class="mgr-important-card text-left ${active ? "mgr-kpi-card-active" : ""}">
+        <div class="mgr-kpi-head">
+          <div class="mgr-important-label">${sanitizeUiText(c.label)}</div>
           <div class="mgr-kpi-count">${c.count}</div>
         </div>
         <div class="mgr-kpi-value">₹ ${Math.round(c.value).toLocaleString("en-IN")}</div>
@@ -7804,30 +8202,36 @@ function renderManagerDashboard(orders){
     <div class="mgr-shell">
       <section class="mgr-panel p-4" style="background:linear-gradient(145deg, rgba(17,24,39,0.98), rgba(10,15,27,0.96));">
         <div class="mgr-header-bar">
-          <div>
-            ${isManager ? `<button class="mgr-inv-lookup-btn" onclick="openManagerInventoryLookupTab()">Inventory Lookup</button>` : ``}
+          <div class="mgr-priority-row">
+            <div class="mgr-important-strip">${importantCards.map(importantCardHtml).join("")}</div>
           </div>
-          <div class="mgr-filter-bar mb-2 w-full max-w-[900px]">
-            <div class="flex items-center gap-2">
+          <div class="mgr-filter-bar mb-2">
+            <div class="mgr-filter-control">
               <span class="mgr-filter-label !mb-0">Branch</span>
-              <select id="mgrDashBranch" class="pc-field h-[38px] min-w-[210px]" onchange="onManagerDashboardBranchFilterChange(this.value)">
+              <select id="mgrDashBranch" class="pc-field h-[38px] min-w-[170px]" onchange="onManagerDashboardBranchFilterChange(this.value)">
                 <option value="ALL" ${window.managerDashBranchFilter === "ALL" ? "selected" : ""}>ALL Branches</option>
                 ${branchFilterOptions.map(b => `<option value="${escapeHtml(b)}" ${window.managerDashBranchFilter === b ? "selected" : ""}>${escapeHtml(b)}</option>`).join("")}
               </select>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="mgr-filter-label !mb-0">From</span>
-              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
+            <div class="mgr-filter-control">
+              <span class="mgr-filter-label !mb-0">Order Type</span>
+              <select id="mgrDashOrderType" class="pc-field h-[38px] min-w-[160px]" onchange="onManagerDashboardOrderTypeFilterChange(this.value)">
+                <option value="ALL" ${window.managerDashOrderTypeFilter === "ALL" ? "selected" : ""}>ALL Types</option>
+                ${typeEntries.map(t => `<option value="${escapeHtml(t)}" ${window.managerDashOrderTypeFilter === t ? "selected" : ""}>${escapeHtml(formatCardLabel(t))}</option>`).join("")}
+              </select>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="mgr-filter-control">
+              <span class="mgr-filter-label !mb-0">From</span>
+              <input id="mgrDashFrom" type="date" class="pc-field h-[38px] max-w-[145px]" value="${window.managerDashDateRange.from || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
+            </div>
+            <div class="mgr-filter-control">
               <span class="mgr-filter-label !mb-0">To</span>
-              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[170px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
+              <input id="mgrDashTo" type="date" class="pc-field h-[38px] max-w-[145px]" value="${window.managerDashDateRange.to || ""}" onclick="this.showPicker && this.showPicker()" onchange="onManagerDashboardDateChange()" />
             </div>
           </div>
         </div>
 
         <div class="mgr-kpi-grid-single-row">${statusCards.map(cardHtml).join("")}</div>
-        <div class="mgr-kpi-grid mt-2">${typeCards.map(c => cardHtml({ ...c, filterType: "type" })).join("")}</div>
       </section>
 
       <section class="mgr-panel p-4" style="background:linear-gradient(160deg, rgba(20,24,34,0.94), rgba(14,23,39,0.92));">
@@ -7846,7 +8250,7 @@ function renderManagerDashboard(orders){
               <tr><th class="px-2">Date</th><th class="px-2">Type</th><th class="px-2">Customer</th><th class="px-2">Branch</th><th class="px-2 text-center">Qty</th><th class="px-2 text-right">Value</th><th class="px-2">Order No</th><th class="px-2">Status</th></tr>
             </thead>
             <tbody>
-              ${selectedOrders.map(o=>`<tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer"><td class="px-2">${formatDateTime(o.created_at)}</td><td class="px-2"><span class="px-2 py-1 rounded-full text-xs font-semibold" style="${getManagerTypeChipStyle(o.OrderType)}">${o.OrderType || "-"}</span></td><td class="px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td><td class="px-2">${o.Branch || "-"}</td><td class="px-2 text-center">${(o.items || []).reduce((s,x)=>s+Number(getEffectiveQty(x) || 0),0)}</td><td class="px-2 text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td><td class="px-2 font-semibold">${o.OrderNo} ${getOrderCommentCount(o) > 0 ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>` : ""}</td><td class="px-2"><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td></tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected range.</td></tr>`}
+              ${selectedOrders.map(o=>`<tr onclick="openOrderView('${o.OrderNo}')" class="cursor-pointer" style="${(o.OrderType || "").toUpperCase() === "VOR" ? "background:#fff7ed;" : ""}"><td class="px-2">${formatDateTime(o.created_at)}</td><td class="px-2"><span class="px-2 py-1 rounded-full text-xs font-semibold" style="${getManagerTypeChipStyle(o.OrderType)}">${o.OrderType || "-"}</span></td><td class="px-2">${(o.OrderFor || "").toUpperCase() === "CUSTOMER" ? (o.CustomerName || "Customer") : "Stock"}</td><td class="px-2">${o.Branch || "-"}</td><td class="px-2 text-center">${(o.items || []).reduce((s,x)=>s+Number(getEffectiveQty(x) || 0),0)}</td><td class="px-2 text-right">₹ ${Math.round(orderValue(o)).toLocaleString("en-IN")}</td><td class="px-2 font-semibold">${o.OrderNo} ${getOrderCommentCount(o) > 0 ? `<span class="ml-1 px-2 py-[2px] rounded-full text-[10px]" style="background:rgba(250,204,21,0.16);color:#fef3c7;border:1px solid rgba(250,204,21,0.3);">💬 ${getOrderCommentCount(o)}</span>` : ""}</td><td class="px-2"><span class="px-2 py-1 rounded text-xs font-semibold" style="${getStatusChipStyle(getOrderStatusLabel(o))}">${getOrderStatusLabel(o)}</span></td></tr>`).join("") || `<tr><td colspan="8" class="text-center py-4">No orders in selected range.</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -7904,6 +8308,11 @@ function onManagerDashboardDateChange(){
 
 function onManagerDashboardBranchFilterChange(branch){
   window.managerDashBranchFilter = (branch || "ALL").toString();
+  loadSuper("Dashboard", true);
+}
+
+function onManagerDashboardOrderTypeFilterChange(type){
+  window.managerDashOrderTypeFilter = (type || "ALL").toString();
   loadSuper("Dashboard", true);
 }
 
@@ -8175,13 +8584,10 @@ function getOrderCommentsWithMeta(row){
 }
 
 async function fetchDeveloperCommentFeed(){
-  const { data, error } = await db
+  const rows = await fetchRequestRowsPaged(() => db
     .from("requests")
-    .select("id,OrderNo,Branch,OrderType,Status,created_at,OrderComments")
-    .order("created_at", { ascending: false })
-    .range(0, REQUEST_VIEW_LIMIT - 1);
-  if(error) throw error;
-  return (data || [])
+    .select("id,OrderNo,Branch,OrderType,Status,created_at,OrderComments"));
+  return (rows || [])
     .flatMap(getOrderCommentsWithMeta)
     .filter(c => !isSystemActionComment(c))
     .sort((a, b) => new Date(b?.at || 0).getTime() - new Date(a?.at || 0).getTime());
@@ -8193,13 +8599,13 @@ async function loadDeveloperDashboard(){
   updateMenuHighlight();
   showLoader();
   try{
-    const [{ data: users }, { data: requests }] = await Promise.all([
+    const [usersResult, requests] = await Promise.all([
       db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
-      db.from("requests")
-        .select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty")
-        .order("created_at", { ascending: false })
-        .range(0, REQUEST_VIEW_LIMIT - 1)
+      fetchRequestRowsPaged(() => db.from("requests")
+        .select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty"))
     ]);
+    if(usersResult.error) throw usersResult.error;
+    const users = usersResult.data || [];
     const byOrder = {};
     (requests || []).forEach(r => {
       if(!byOrder[r.OrderNo]) byOrder[r.OrderNo] = { ...r, items: [] };
@@ -8276,7 +8682,7 @@ async function loadDeveloperDashboard(){
             <div>
               <div class="text-[11px] uppercase tracking-[0.16em] font-bold" style="color:#818cf8; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">DEVELOPER WORKSPACE</div>
               <div class="text-sm md:text-base font-semibold mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
-                users:${(users || []).length} | orders:${orderList.length} | unread_comments:${unreadComments.length} | row_window:${REQUEST_VIEW_LIMIT}
+                users:${(users || []).length} | orders:${orderList.length} | unread_comments:${unreadComments.length} | request_rows:${(requests || []).length}
               </div>
             </div>
             <div class="flex gap-2 flex-wrap">
