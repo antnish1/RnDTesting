@@ -2873,6 +2873,84 @@ const requestViewCache = new Map();
 let pendingCountCache = { at: 0, count: 0 };
 let pendingCountChannel = null;
 
+window.__egressMonitor = window.__egressMonitor || {
+  events: [],
+  byFunction: {},
+  startedAt: Date.now()
+};
+
+function estimateBytes(obj){
+  return new TextEncoder().encode(JSON.stringify(obj || null)).length;
+}
+
+function recordQueryMetric({ fn, table, action, rows, bytes, ms, ok, error }){
+  const event = {
+    at: Date.now(),
+    fn,
+    table,
+    action,
+    rows: Number(rows || 0),
+    bytes: Number(bytes || 0),
+    ms: Number(ms || 0),
+    ok: Boolean(ok),
+    error: error ? String(error) : null
+  };
+  window.__egressMonitor.events.push(event);
+
+  const key = fn || "unknown";
+  const aggregate = window.__egressMonitor.byFunction[key] || {
+    count: 0,
+    totalBytes: 0,
+    totalMs: 0,
+    maxMs: 0,
+    totalRows: 0,
+    errors: 0
+  };
+
+  aggregate.count += 1;
+  aggregate.totalBytes += event.bytes;
+  aggregate.totalMs += event.ms;
+  aggregate.maxMs = Math.max(aggregate.maxMs, event.ms);
+  aggregate.totalRows += event.rows;
+  if (!event.ok) aggregate.errors += 1;
+
+  window.__egressMonitor.byFunction[key] = aggregate;
+}
+
+async function withQueryMetric(fnName, table, action, promiseFactory){
+  const startedAt = performance.now();
+  try {
+    const result = await promiseFactory();
+    const elapsedMs = performance.now() - startedAt;
+    const data = result?.data;
+    const rows = Array.isArray(data) ? data.length : (data ? 1 : 0);
+    const bytes = estimateBytes(data);
+    recordQueryMetric({
+      fn: fnName,
+      table,
+      action,
+      rows,
+      bytes,
+      ms: elapsedMs,
+      ok: true,
+      error: null
+    });
+    return result;
+  } catch (err) {
+    const elapsedMs = performance.now() - startedAt;
+    recordQueryMetric({
+      fn: fnName,
+      table,
+      action,
+      rows: 0,
+      bytes: 0,
+      ms: elapsedMs,
+      ok: false,
+      error: err?.message || err
+    });
+    throw err;
+  }
+}
 
 
 // ✅ REALTIME LISTENER FOR PENDING COUNT (NO LOGIC CHANGE)
