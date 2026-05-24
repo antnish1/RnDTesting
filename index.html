@@ -2849,12 +2849,14 @@ const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
-const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const REQUEST_TRACK_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper";
+const REQUEST_ADMIN_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper";
+const REQUEST_SUPER_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
-const REQUEST_FETCH_PAGE_SIZE = 1000;
-const REQUEST_VIEW_LIMIT = 50000;
+const REQUEST_FETCH_PAGE_SIZE = 500;
+const REQUEST_VIEW_LIMIT = 3000;
 const DATE_FILTER_VIEW_LIMIT = 50000;
-const REQUEST_CACHE_TTL_MS = 45 * 1000;
+const REQUEST_CACHE_TTL_MS = 90 * 1000;
 const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -5103,7 +5105,7 @@ let allRows = [];
 try{
   const hasDateFilter = !!(TRACK_FROM_DATE || TRACK_TO_DATE);
   const buildTrackQuery = () => {
-    let query = db.from("requests").select(REQUEST_LIST_SELECT);
+    let query = db.from("requests").select(REQUEST_TRACK_LIST_SELECT);
 
   // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
   if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
@@ -5349,6 +5351,9 @@ document.getElementById("row-"+i).classList.toggle("hidden");
 
 
 async function loadPendingCount(){
+  if(document.hidden){
+    return;
+  }
   if(Date.now() - pendingCountCache.at < PENDING_COUNT_CACHE_TTL_MS){
     const el = document.getElementById("pendingCount");
     if(el){
@@ -5429,7 +5434,7 @@ let data = [];
 try{
   data = await fetchRequestRowsForView("admin", () => db
     .from("requests")
-    .select(REQUEST_LIST_SELECT), { activeTab });
+    .select(REQUEST_ADMIN_LIST_SELECT), { activeTab });
 }catch(error){
   console.error("loadAdmin request error:", error.message || error);
   data = [];
@@ -8837,7 +8842,7 @@ async function loadDeveloperUsers(){
   updateMenuHighlight();
   showLoader();
   try{
-    const { data, error } = await withQueryMetric("loadDeveloperUsers", "users", "list-users", () => db.from("users").select("*").order("Name", { ascending: true }));
+    const { data, error } = await withQueryMetric("loadDeveloperUsers", "users", "list-users", () => db.from("users").select("id,Name,Branch,Role,Password").order("Name", { ascending: true }));
     if(error) throw error;
     const roleOptions = [...new Set((data || []).map(u => (getUserField(u, ["role"]) || "").toString().trim()).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b))
@@ -8907,7 +8912,7 @@ async function createDeveloperUser(){
 
 async function editDeveloperUser(id){
   if(!id) return;
-  const { data, error } = await db.from("users").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("users").select("id,Name,Branch,Role,Password").eq("id", id).maybeSingle();
   if(error || !data) return showPopup("User not found");
   const Name = prompt("Enter Name", data.Name || "");
   if(Name === null) return;
@@ -9088,7 +9093,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   try{
     allRows = await fetchRequestRowsForView("super", () => {
-      let query = db.from("requests").select(REQUEST_LIST_SELECT);
+      let query = db.from("requests").select(REQUEST_SUPER_LIST_SELECT);
       if(!isManager){
         query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
       }
@@ -9331,7 +9336,7 @@ async function openSuperOrder(orderNo){
     "order-details",
     () => db
       .from("requests")
-      .select("*")
+       .select("id,OrderNo,Branch,OrderType,OrderFor,MachineNo,CustomerName,PartNo,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ProcessedDate,BillNo,TransportName,Docket,created_at,OrderComments")
       .eq("OrderNo", orderNo)
   );
 
@@ -10227,12 +10232,12 @@ async function downloadOrderExcel(orderNo){
   showLoader();
 
   const { data } = await withQueryMetric(
-    "openSuperOrder",
+    "downloadOrderExcel",
     "requests",
-    "order-details",
+    "order-excel-data",
     () => db
       .from("requests")
-      .select("*")
+       .select("id,OrderNo,Branch,OrderType,OrderFor,MachineNo,CustomerName,PartNo,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ProcessedDate,BillNo,TransportName,Docket,created_at,OrderComments")
       .eq("OrderNo", orderNo)
   );
 
