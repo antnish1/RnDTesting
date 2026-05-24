@@ -2,10 +2,6 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
   <title>Parts Connect Portal</title>
         <link rel="icon" type="image/png" href="F.ico">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -2853,12 +2849,14 @@ const PAGE_SIZE = 10;
 let TRACK_FROM_DATE = "";
 let TRACK_TO_DATE = "";
 let TRACK_STATUS_FILTER = "ALL";
-const REQUEST_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
+const REQUEST_TRACK_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper";
+const REQUEST_ADMIN_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper";
+const REQUEST_SUPER_LIST_SELECT = "id,OrderNo,created_at,OrderType,OrderFor,Branch,CustomerName,MachineNo,PartNo,Qty,BilledQty,ProcessedDate,Value,editedqty,editedvalue,Status,ApprovalStatus,ApprovedBy,ApprovedBySuper,OrderComments";
 const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
-const REQUEST_FETCH_PAGE_SIZE = 1000;
-const REQUEST_VIEW_LIMIT = 50000;
+const REQUEST_FETCH_PAGE_SIZE = 500;
+const REQUEST_VIEW_LIMIT = 3000;
 const DATE_FILTER_VIEW_LIMIT = 50000;
-const REQUEST_CACHE_TTL_MS = 45 * 1000;
+const REQUEST_CACHE_TTL_MS = 90 * 1000;
 const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -3127,6 +3125,99 @@ function isDeveloperRole(user){
   return getUserRole(user) === "developer";
 }
 
+
+
+const EGRESS_MONITOR_KEY = "egressMonitor_v1";
+window.__egressMonitor = window.__egressMonitor || {
+  startedAt: Date.now(),
+  events: [],
+  byFunction: {},
+  enabled: true
+};
+
+function estimateBytes(payload){
+  try{
+    return new TextEncoder().encode(JSON.stringify(payload ?? null)).length;
+  }catch{
+    return 0;
+  }
+}
+
+function persistEgressMonitor(){
+  try{ localStorage.setItem(EGRESS_MONITOR_KEY, JSON.stringify(window.__egressMonitor)); }catch{}
+}
+
+function recordQueryMetric(metric){
+  const mon = window.__egressMonitor;
+  if(!mon || !mon.enabled) return;
+  mon.events.push(metric);
+  const bucket = mon.byFunction[metric.fn] || {
+    fn: metric.fn, count: 0, totalBytes: 0, totalMs: 0, totalRows: 0, errors: 0, maxMs: 0
+  };
+  bucket.count += 1;
+  bucket.totalBytes += metric.bytes || 0;
+  bucket.totalMs += metric.ms || 0;
+  bucket.totalRows += metric.rows || 0;
+  bucket.maxMs = Math.max(bucket.maxMs, metric.ms || 0);
+  if(!metric.ok) bucket.errors += 1;
+  mon.byFunction[metric.fn] = bucket;
+  if(mon.events.length % 20 === 0) persistEgressMonitor();
+}
+
+async function withQueryMetric(fnName, table, action, promiseFactory, extra = {}){
+  const started = performance.now();
+  try{
+    const result = await promiseFactory();
+    const data = result?.data;
+    const rows = Array.isArray(data) ? data.length : (data ? 1 : 0);
+    const ms = Math.round(performance.now() - started);
+    const bytes = estimateBytes(data);
+    recordQueryMetric({
+      at: new Date().toISOString(), fn: fnName, table, action, rows, bytes, ms, ok: !(result?.error),
+      error: result?.error?.message || null, visibility: document.hidden ? 'hidden' : 'visible',
+      routeTab: window.activeTab || '', ...extra
+    });
+    return result;
+  }catch(error){
+    const ms = Math.round(performance.now() - started);
+    recordQueryMetric({
+      at: new Date().toISOString(), fn: fnName, table, action, rows: 0, bytes: 0, ms, ok: false,
+      error: error?.message || String(error), visibility: document.hidden ? 'hidden' : 'visible', routeTab: window.activeTab || '', ...extra
+    });
+    throw error;
+  }
+}
+
+function startEgressMonitorSession(){
+  window.__egressMonitor = { startedAt: Date.now(), events: [], byFunction: {}, enabled: true };
+  persistEgressMonitor();
+}
+
+function getEgressMonitorSummary(){
+  const mon = window.__egressMonitor || { byFunction: {} };
+  return Object.values(mon.byFunction)
+    .map(x => ({
+      fn: x.fn,
+      count: x.count,
+      totalMB: +(x.totalBytes / (1024*1024)).toFixed(3),
+      avgMs: x.count ? +(x.totalMs / x.count).toFixed(1) : 0,
+      avgRows: x.count ? +(x.totalRows / x.count).toFixed(1) : 0,
+      errors: x.errors
+    }))
+    .sort((a,b)=>b.totalMB-a.totalMB);
+}
+
+function exportEgressMonitor(){
+  persistEgressMonitor();
+  const blob = new Blob([JSON.stringify(window.__egressMonitor, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `egress-monitor-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function getRequestCacheKey(scope, filters = {}){
   return `${scope}:${JSON.stringify(filters)}`;
 }
@@ -3147,9 +3238,14 @@ async function fetchRequestRowsPaged(buildQuery, maxRows = REQUEST_VIEW_LIMIT, p
   const rows = [];
   for(let offset = 0; offset < maxRows; offset += pageSize){
     const end = Math.min(offset + pageSize - 1, maxRows - 1);
-    const { data, error } = await buildQuery()
-      .order("created_at", { ascending: false })
-      .range(offset, end);
+    const { data, error } = await withQueryMetric(
+      "fetchRequestRowsPaged",
+      "requests",
+      `paged-select:${offset}-${end}`,
+      () => buildQuery()
+        .order("created_at", { ascending: false })
+        .range(offset, end)
+    );
     if(error) throw error;
     if(!data || data.length === 0) break;
     rows.push(...data);
@@ -5009,7 +5105,7 @@ let allRows = [];
 try{
   const hasDateFilter = !!(TRACK_FROM_DATE || TRACK_TO_DATE);
   const buildTrackQuery = () => {
-    let query = db.from("requests").select(REQUEST_LIST_SELECT);
+    let query = db.from("requests").select(REQUEST_TRACK_LIST_SELECT);
 
   // ✅ ONLY FILTER FOR NORMAL BRANCH USERS (viewer sees all branches)
   if(!isAdmin && !isSuper && !isViewer && !isDeveloper){
@@ -5255,6 +5351,9 @@ document.getElementById("row-"+i).classList.toggle("hidden");
 
 
 async function loadPendingCount(){
+  if(document.hidden){
+    return;
+  }
   if(Date.now() - pendingCountCache.at < PENDING_COUNT_CACHE_TTL_MS){
     const el = document.getElementById("pendingCount");
     if(el){
@@ -5268,11 +5367,17 @@ async function loadPendingCount(){
     return;
   }
 
-  const { data, error } = await db
-    .from("requests")
-    .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate")
-    .in("ApprovalStatus", ["Approved", "APPROVED"])
-    .limit(1000);
+  const { data, error } = await withQueryMetric(
+    "loadPendingCount",
+    "requests",
+    "pending-count-poll",
+    () => db
+      .from("requests")
+      .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate")
+      .in("ApprovalStatus", ["Approved", "APPROVED"])
+      .limit(1000),
+    { polling: true }
+  );
 
   if(error) return;
 
@@ -5329,7 +5434,7 @@ let data = [];
 try{
   data = await fetchRequestRowsForView("admin", () => db
     .from("requests")
-    .select(REQUEST_LIST_SELECT), { activeTab });
+    .select(REQUEST_ADMIN_LIST_SELECT), { activeTab });
 }catch(error){
   console.error("loadAdmin request error:", error.message || error);
   data = [];
@@ -8600,7 +8705,12 @@ async function loadDeveloperDashboard(){
   showLoader();
   try{
     const [usersResult, requests] = await Promise.all([
-      db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
+      withQueryMetric(
+        "loadDeveloperDashboard",
+        "users",
+        "dashboard-users",
+        () => db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true })
+      ),
       fetchRequestRowsPaged(() => db.from("requests")
         .select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty"))
     ]);
@@ -8732,7 +8842,7 @@ async function loadDeveloperUsers(){
   updateMenuHighlight();
   showLoader();
   try{
-    const { data, error } = await db.from("users").select("*").order("Name", { ascending: true });
+    const { data, error } = await withQueryMetric("loadDeveloperUsers", "users", "list-users", () => db.from("users").select("id,Name,Branch,Role,Password").order("Name", { ascending: true }));
     if(error) throw error;
     const roleOptions = [...new Set((data || []).map(u => (getUserField(u, ["role"]) || "").toString().trim()).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b))
@@ -8802,7 +8912,7 @@ async function createDeveloperUser(){
 
 async function editDeveloperUser(id){
   if(!id) return;
-  const { data, error } = await db.from("users").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("users").select("id,Name,Branch,Role,Password").eq("id", id).maybeSingle();
   if(error || !data) return showPopup("User not found");
   const Name = prompt("Enter Name", data.Name || "");
   if(Name === null) return;
@@ -8983,7 +9093,7 @@ async function loadSuper(activeTab = "PendingApproval", skipReset = false){
 
   try{
     allRows = await fetchRequestRowsForView("super", () => {
-      let query = db.from("requests").select(REQUEST_LIST_SELECT);
+      let query = db.from("requests").select(REQUEST_SUPER_LIST_SELECT);
       if(!isManager){
         query = query.or(`ApprovedBy.eq.${user.Name},ApprovedBySuper.eq.${user.Name}`);
       }
@@ -9220,10 +9330,15 @@ async function openSuperOrder(orderNo){
 
   showLoader();
 
-  const { data } = await db
-    .from("requests")
-    .select("*")
-    .eq("OrderNo", orderNo);
+  const { data } = await withQueryMetric(
+    "openSuperOrder",
+    "requests",
+    "order-details",
+    () => db
+      .from("requests")
+       .select("id,OrderNo,Branch,OrderType,OrderFor,MachineNo,CustomerName,PartNo,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ProcessedDate,BillNo,TransportName,Docket,created_at,OrderComments")
+      .eq("OrderNo", orderNo)
+  );
 
   hideLoader();
 
@@ -10116,10 +10231,15 @@ async function downloadOrderExcel(orderNo){
 
   showLoader();
 
-  const { data } = await db
-    .from("requests")
-    .select("*")
-    .eq("OrderNo", orderNo);
+  const { data } = await withQueryMetric(
+    "downloadOrderExcel",
+    "requests",
+    "order-excel-data",
+    () => db
+      .from("requests")
+       .select("id,OrderNo,Branch,OrderType,OrderFor,MachineNo,CustomerName,PartNo,Description,Qty,editedqty,BilledQty,Value,editedvalue,Status,ApprovalStatus,ProcessedDate,BillNo,TransportName,Docket,created_at,OrderComments")
+      .eq("OrderNo", orderNo)
+  );
 
   hideLoader();
 
