@@ -2,10 +2,6 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
   <title>Parts Connect Portal</title>
         <link rel="icon" type="image/png" href="F.ico">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -3127,6 +3123,99 @@ function isDeveloperRole(user){
   return getUserRole(user) === "developer";
 }
 
+
+
+const EGRESS_MONITOR_KEY = "egressMonitor_v1";
+window.__egressMonitor = window.__egressMonitor || {
+  startedAt: Date.now(),
+  events: [],
+  byFunction: {},
+  enabled: true
+};
+
+function estimateBytes(payload){
+  try{
+    return new TextEncoder().encode(JSON.stringify(payload ?? null)).length;
+  }catch{
+    return 0;
+  }
+}
+
+function persistEgressMonitor(){
+  try{ localStorage.setItem(EGRESS_MONITOR_KEY, JSON.stringify(window.__egressMonitor)); }catch{}
+}
+
+function recordQueryMetric(metric){
+  const mon = window.__egressMonitor;
+  if(!mon || !mon.enabled) return;
+  mon.events.push(metric);
+  const bucket = mon.byFunction[metric.fn] || {
+    fn: metric.fn, count: 0, totalBytes: 0, totalMs: 0, totalRows: 0, errors: 0, maxMs: 0
+  };
+  bucket.count += 1;
+  bucket.totalBytes += metric.bytes || 0;
+  bucket.totalMs += metric.ms || 0;
+  bucket.totalRows += metric.rows || 0;
+  bucket.maxMs = Math.max(bucket.maxMs, metric.ms || 0);
+  if(!metric.ok) bucket.errors += 1;
+  mon.byFunction[metric.fn] = bucket;
+  if(mon.events.length % 20 === 0) persistEgressMonitor();
+}
+
+async function withQueryMetric(fnName, table, action, promiseFactory, extra = {}){
+  const started = performance.now();
+  try{
+    const result = await promiseFactory();
+    const data = result?.data;
+    const rows = Array.isArray(data) ? data.length : (data ? 1 : 0);
+    const ms = Math.round(performance.now() - started);
+    const bytes = estimateBytes(data);
+    recordQueryMetric({
+      at: new Date().toISOString(), fn: fnName, table, action, rows, bytes, ms, ok: !(result?.error),
+      error: result?.error?.message || null, visibility: document.hidden ? 'hidden' : 'visible',
+      routeTab: window.activeTab || '', ...extra
+    });
+    return result;
+  }catch(error){
+    const ms = Math.round(performance.now() - started);
+    recordQueryMetric({
+      at: new Date().toISOString(), fn: fnName, table, action, rows: 0, bytes: 0, ms, ok: false,
+      error: error?.message || String(error), visibility: document.hidden ? 'hidden' : 'visible', routeTab: window.activeTab || '', ...extra
+    });
+    throw error;
+  }
+}
+
+function startEgressMonitorSession(){
+  window.__egressMonitor = { startedAt: Date.now(), events: [], byFunction: {}, enabled: true };
+  persistEgressMonitor();
+}
+
+function getEgressMonitorSummary(){
+  const mon = window.__egressMonitor || { byFunction: {} };
+  return Object.values(mon.byFunction)
+    .map(x => ({
+      fn: x.fn,
+      count: x.count,
+      totalMB: +(x.totalBytes / (1024*1024)).toFixed(3),
+      avgMs: x.count ? +(x.totalMs / x.count).toFixed(1) : 0,
+      avgRows: x.count ? +(x.totalRows / x.count).toFixed(1) : 0,
+      errors: x.errors
+    }))
+    .sort((a,b)=>b.totalMB-a.totalMB);
+}
+
+function exportEgressMonitor(){
+  persistEgressMonitor();
+  const blob = new Blob([JSON.stringify(window.__egressMonitor, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `egress-monitor-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function getRequestCacheKey(scope, filters = {}){
   return `${scope}:${JSON.stringify(filters)}`;
 }
@@ -3147,9 +3236,14 @@ async function fetchRequestRowsPaged(buildQuery, maxRows = REQUEST_VIEW_LIMIT, p
   const rows = [];
   for(let offset = 0; offset < maxRows; offset += pageSize){
     const end = Math.min(offset + pageSize - 1, maxRows - 1);
-    const { data, error } = await buildQuery()
-      .order("created_at", { ascending: false })
-      .range(offset, end);
+    const { data, error } = await withQueryMetric(
+      "fetchRequestRowsPaged",
+      "requests",
+      `paged-select:${offset}-${end}`,
+      () => buildQuery()
+        .order("created_at", { ascending: false })
+        .range(offset, end)
+    );
     if(error) throw error;
     if(!data || data.length === 0) break;
     rows.push(...data);
@@ -5268,11 +5362,17 @@ async function loadPendingCount(){
     return;
   }
 
-  const { data, error } = await db
-    .from("requests")
-    .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate")
-    .in("ApprovalStatus", ["Approved", "APPROVED"])
-    .limit(1000);
+  const { data, error } = await withQueryMetric(
+    "loadPendingCount",
+    "requests",
+    "pending-count-poll",
+    () => db
+      .from("requests")
+      .select("OrderNo, Status, ApprovalStatus, Qty, editedqty, BilledQty, ProcessedDate")
+      .in("ApprovalStatus", ["Approved", "APPROVED"])
+      .limit(1000),
+    { polling: true }
+  );
 
   if(error) return;
 
@@ -8600,7 +8700,12 @@ async function loadDeveloperDashboard(){
   showLoader();
   try{
     const [usersResult, requests] = await Promise.all([
-      db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true }),
+      withQueryMetric(
+        "loadDeveloperDashboard",
+        "users",
+        "dashboard-users",
+        () => db.from("users").select("id,Name,Role,Branch").order("Name", { ascending: true })
+      ),
       fetchRequestRowsPaged(() => db.from("requests")
         .select("id,OrderNo,OrderType,Status,created_at,OrderComments,Value,Qty,DNP,editedvalue,editedqty"))
     ]);
@@ -8732,7 +8837,7 @@ async function loadDeveloperUsers(){
   updateMenuHighlight();
   showLoader();
   try{
-    const { data, error } = await db.from("users").select("*").order("Name", { ascending: true });
+    const { data, error } = await withQueryMetric("loadDeveloperUsers", "users", "list-users", () => db.from("users").select("*").order("Name", { ascending: true }));
     if(error) throw error;
     const roleOptions = [...new Set((data || []).map(u => (getUserField(u, ["role"]) || "").toString().trim()).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b))
@@ -9220,10 +9325,15 @@ async function openSuperOrder(orderNo){
 
   showLoader();
 
-  const { data } = await db
-    .from("requests")
-    .select("*")
-    .eq("OrderNo", orderNo);
+  const { data } = await withQueryMetric(
+    "openSuperOrder",
+    "requests",
+    "order-details",
+    () => db
+      .from("requests")
+      .select("*")
+      .eq("OrderNo", orderNo)
+  );
 
   hideLoader();
 
@@ -10116,10 +10226,15 @@ async function downloadOrderExcel(orderNo){
 
   showLoader();
 
-  const { data } = await db
-    .from("requests")
-    .select("*")
-    .eq("OrderNo", orderNo);
+  const { data } = await withQueryMetric(
+    "openSuperOrder",
+    "requests",
+    "order-details",
+    () => db
+      .from("requests")
+      .select("*")
+      .eq("OrderNo", orderNo)
+  );
 
   hideLoader();
 
