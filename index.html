@@ -2856,7 +2856,7 @@ const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
 const REQUEST_FETCH_PAGE_SIZE = 500;
 const REQUEST_VIEW_LIMIT = 3000;
 const DATE_FILTER_VIEW_LIMIT = 50000;
-const REQUEST_CACHE_TTL_MS = 90 * 1000;
+const REQUEST_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -6222,6 +6222,7 @@ const user = getUser();
 const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
+  try{
 
   const { data } = await db
     .from("requests")
@@ -6229,8 +6230,6 @@ const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
     .eq("OrderNo", orderNo)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
-
-  hideLoader();
 
   if(!data || !data.length){
     return showPopup("Order not found ❗");
@@ -6799,7 +6798,9 @@ setTimeout(() => {
   document.getElementById("processOrderNo")?.focus();
 }, 100);
 
-    
+  } finally {
+    hideLoader();
+  }
 }
 
   
@@ -10345,4 +10346,3 @@ document.addEventListener("click", function(evt){
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </body>
 </html>
-
