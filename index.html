@@ -6222,6 +6222,7 @@ const user = getUser();
 const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
+  try{
 
   const { data } = await db
     .from("requests")
@@ -6229,8 +6230,6 @@ const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
     .eq("OrderNo", orderNo)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
-
-  hideLoader();
 
   if(!data || !data.length){
     return showPopup("Order not found ❗");
@@ -6799,7 +6798,9 @@ setTimeout(() => {
   document.getElementById("processOrderNo")?.focus();
 }, 100);
 
-    
+  } finally {
+    hideLoader();
+  }
 }
 
   
@@ -10345,4 +10346,3 @@ document.addEventListener("click", function(evt){
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </body>
 </html>
-
