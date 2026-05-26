@@ -2856,7 +2856,8 @@ const USER_LOGIN_SELECT = "id,Name,Branch,Role,Password";
 const REQUEST_FETCH_PAGE_SIZE = 500;
 const REQUEST_VIEW_LIMIT = 3000;
 const DATE_FILTER_VIEW_LIMIT = 50000;
-const REQUEST_CACHE_TTL_MS = 90 * 1000;
+const REQUEST_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const ORDER_DETAIL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const PENDING_COUNT_CACHE_TTL_MS = 60 * 1000;
 const { createClient } = supabase;
 let cancelUploadFlag = false;
@@ -2872,6 +2873,9 @@ let currentRow = null;
   "sb_publishable_L-SrVLzVHoSt9OKGAu1eTQ_UslGY7m3"
 );
 const requestViewCache = new Map();
+const orderDetailCache = new Map();
+let branchMappingCache = { at: 0, rows: [] };
+let superApproverUsersCache = { at: 0, rows: [] };
 let pendingCountCache = { at: 0, count: 0 };
 let pendingCountChannel = null;
 
@@ -3221,6 +3225,9 @@ function exportEgressMonitor(){
 function getRequestCacheKey(scope, filters = {}){
   return `${scope}:${JSON.stringify(filters)}`;
 }
+function getOrderDetailCacheKey(orderNo){
+  return `detail:${orderNo}`;
+}
 
 async function fetchRequestRowsForView(scope, buildQuery, filters = {}, ttl = REQUEST_CACHE_TTL_MS){
   const key = getRequestCacheKey(scope, filters);
@@ -3259,6 +3266,7 @@ async function fetchRequestRowsPaged(buildQuery, maxRows = REQUEST_VIEW_LIMIT, p
 
 function clearRequestViewCache(){
   requestViewCache.clear();
+  orderDetailCache.clear();
   pendingCountCache = { at: 0, count: 0 };
 }
 
@@ -6222,15 +6230,23 @@ const user = getUser();
 const isSuper = isSuperLikeRole(user) || isDeveloperRole(user);
 
   showLoader();
+  try{
 
-  const { data } = await db
-    .from("requests")
-    .select("*")
-    .eq("OrderNo", orderNo)
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
-
-  hideLoader();
+  const detailCacheKey = getOrderDetailCacheKey(orderNo);
+  const cachedDetail = orderDetailCache.get(detailCacheKey);
+  let data = null;
+  if(cachedDetail && Date.now() - cachedDetail.at < ORDER_DETAIL_CACHE_TTL_MS){
+    data = cachedDetail.rows;
+  } else {
+    const { data: freshRows } = await db
+      .from("requests")
+      .select("*")
+      .eq("OrderNo", orderNo)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true });
+    data = freshRows || [];
+    orderDetailCache.set(detailCacheKey, { at: Date.now(), rows: data });
+  }
 
   if(!data || !data.length){
     return showPopup("Order not found ❗");
@@ -6248,7 +6264,7 @@ const orderStatus = getOrderStatusLabel(data);
   if(partNosForPrev.length){
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - prevDays);
-    const { data: prevRows } = await db
+    const prevRowsPromise = db
       .from("requests")
       .select("PartNo, Qty, editedqty")
       .eq("Branch", order.Branch)
@@ -6258,6 +6274,19 @@ const orderStatus = getOrderStatusLabel(data);
       .gte("created_at", sinceDate.toISOString())
       .neq("OrderNo", orderNo);
 
+    let branchMappings = [];
+    if(Date.now() - branchMappingCache.at < REQUEST_CACHE_TTL_MS){
+      branchMappings = branchMappingCache.rows;
+    } else {
+      const { data: mappings } = await db
+        .from("branch_mapping")
+        .select("*");
+      branchMappings = mappings || [];
+      branchMappingCache = { at: Date.now(), rows: branchMappings };
+    }
+
+    const { data: prevRows } = await prevRowsPromise;
+
     (prevRows || []).forEach(pr => {
       const key = normalizePartNo(pr.PartNo);
       prevQtyMap[key] = (prevQtyMap[key] || 0) + getEffectiveQty(pr);
@@ -6265,9 +6294,6 @@ const orderStatus = getOrderStatusLabel(data);
 
     const normalizeBranchName = (val) => (val || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
     const orderBranchName = normalizeBranchName(order.Branch);
-    const { data: branchMappings } = await db
-      .from("branch_mapping")
-      .select("*");
     const matchedMapping = (branchMappings || []).find(m => {
       const mappingBranch = normalizeBranchName(getUserField(m, ["branchname", "branch_name"]));
       return mappingBranch && mappingBranch === orderBranchName;
@@ -6437,10 +6463,17 @@ const canSuperActions = isSuper && (
 const canProcessOrder = isAdminRole(user) || isDeveloperRole(user);
 
 if(isSuper){
-  const { data: superUsers } = await db
-    .from("users")
-    .select("Name")
-    .in("Role", ["super", "manager"]);
+  let superUsers = [];
+  if(Date.now() - superApproverUsersCache.at < REQUEST_CACHE_TTL_MS){
+    superUsers = superApproverUsersCache.rows;
+  } else {
+    const { data: fetchedUsers } = await db
+      .from("users")
+      .select("Name")
+      .in("Role", ["super", "manager"]);
+    superUsers = fetchedUsers || [];
+    superApproverUsersCache = { at: Date.now(), rows: superUsers };
+  }
 
   if(superUsers && superUsers.length){
     superApproverOptions += superUsers
@@ -6799,7 +6832,9 @@ setTimeout(() => {
   document.getElementById("processOrderNo")?.focus();
 }, 100);
 
-    
+  } finally {
+    hideLoader();
+  }
 }
 
   
@@ -10345,4 +10380,3 @@ document.addEventListener("click", function(evt){
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </body>
 </html>
-
